@@ -31,7 +31,12 @@
             },
         ]);
         for (let i of Object.keys(initReq.m)) {
-            webpackCache[i] = initReq(i);
+            try {
+                webpackCache[i] = initReq(i);
+            }
+            catch (e) {
+                console.debug("[DFL:Webpack]: Ignoring require error for module", i, e);
+            }
         }
     }
     const allModules = hasWebpack5
@@ -88,6 +93,11 @@
         return false;
     });
 
+    findModuleChild((mod) => {
+        if (typeof mod !== 'object' || !mod.__esModule)
+            return undefined;
+        return mod.Panel;
+    });
     const [panelSection, mod] = findModuleChild((mod) => {
         for (let prop in mod) {
             if (mod[prop]?.toString()?.includes('.PanelSection')) {
@@ -117,14 +127,14 @@
     findModule((mod) => typeof mod === 'object' && mod?.TopCapsule?.includes('sharedappdetailsheader'));
     findModule((mod) => typeof mod === 'object' && mod?.HeaderLoaded?.includes('appdetails_'));
     findModule((mod) => typeof mod === 'object' && mod?.BasicUiRoot?.includes('gamepadui_'));
+    findModule((mod) => typeof mod === 'object' && mod?.GamepadTabbedPage?.includes('gamepadtabbedpage_'));
+    findModule((mod) => typeof mod === 'object' && mod?.BasicContextMenuModal?.includes('gamepadcontextmenu'));
+    findModule((mod) => typeof mod === 'object' && mod?.AchievementListItemBase?.includes('achievementslist'));
+    findModule((mod) => typeof mod === 'object' && mod?.MainMenuAppRunning?.includes('mainmenuapprunning'));
+    findModule((mod) => typeof mod === 'object' && mod?.AppDetailsRoot?.includes('basicappdetailssectionstyler_'));
 
     const ToggleField = Object.values(CommonUIModule).find((mod) => mod?.render?.toString()?.includes('ToggleField,fallback'));
 
-    var FileSelectionType;
-    (function (FileSelectionType) {
-        FileSelectionType[FileSelectionType["FILE"] = 0] = "FILE";
-        FileSelectionType[FileSelectionType["FOLDER"] = 1] = "FOLDER";
-    })(FileSelectionType || (FileSelectionType = {}));
     // TypeScript helper function
     const definePlugin = (fn) => {
         return (...args) => {

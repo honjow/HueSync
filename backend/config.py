@@ -1,6 +1,4 @@
 import logging
-import subprocess
-from helpers import get_homebrew_path,get_home_path,get_user
 
 #日志配置
 try:
@@ -13,7 +11,6 @@ try:
         force = True)
 except Exception as e:
     logging.error(f"日志配置异常|{e}")
-
 
 #设备信息获取配置
 try:
