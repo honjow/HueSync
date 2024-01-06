@@ -28,6 +28,7 @@ try:
         "AYANEO 2S",
         "AYANEO GEEK",
         "AYANEO GEEK 1S",
+        "SLIDE",
         ):
         FAN_MANUAL_OFFSET=0x4a
         FAN_RPMWRITE_OFFSET=0x4b
