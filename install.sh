@@ -10,7 +10,7 @@ fi
 RELEASE=$(curl -s 'https://api.github.com/repos/honjow/ayaled/releases/latest')
 RELEASE_VERSION=$(echo "$RELEASE" | jq -r '.tag_name')
 RELEASE_URL=$(echo "$RELEASE" | jq -r '.assets[0].browser_download_url')
-curl -L -o /tmp/PowerControl.tar.gz "$RELEASE_URL"
+curl -L -o /tmp/ayaled.tar.gz "$RELEASE_URL"
 
 echo "Installing ayaled $RELEASE_VERSION"
 
