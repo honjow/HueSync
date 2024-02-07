@@ -9,7 +9,7 @@ export class Backend {
     this.serverAPI = serverAPI;
   }
 
-  private static applyLedOn(red: number,blue: number, green: number) {
+  private static applyLedOn(red: number, green: number, blue: number) {
       console.log(`Applying ledOn ${red} ${green} ${blue}`);
       Backend.serverAPI!.callPluginMethod("set_ledOn", {"r": red, "g": green, "b": blue });
   }

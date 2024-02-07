@@ -41,8 +41,8 @@ class AyaLed():
     @staticmethod
     def set_pixel(js, led, color: Color):
         AyaLed.set_subpixel(js, led * 3, color.R)
-        AyaLed.set_subpixel(js, led * 3 + 1, color.B)
-        AyaLed.set_subpixel(js, led * 3 + 2, color.G)
+        AyaLed.set_subpixel(js, led * 3 + 1, color.G)
+        AyaLed.set_subpixel(js, led * 3 + 2, color.B)
 
     @staticmethod
     def set_subpixel(js, subpixel_idx, brightness):
