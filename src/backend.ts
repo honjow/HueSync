@@ -21,7 +21,7 @@ export class Backend {
 
   public static throwSuspendEvt(){
     console.log("throwSuspendEvt");
-    this.serverAPI!.callPluginMethod("receive_suspendEvent", {});
+    this.serverAPI!.callPluginMethod("set_ledOff", {});
   }
 
   public static applySettings = () => {

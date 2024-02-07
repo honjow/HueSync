@@ -24,10 +24,11 @@ class AyaLed():
     def set_all_pixels(color:Color):
         # new method
         if IS_LED_SUPPORTED:
-            with open(os.path.join(LED_PATH, "brightness"), "w") as f:
-                f.write("255")
-            with open(os.path.join(LED_PATH, "multi_intensity"), "w") as f:
-                f.write(f"{color.R} {color.G} {color.B}")
+            for x in range(2):
+                with open(os.path.join(LED_PATH, "brightness"), "w") as f:
+                    f.write("255")
+                with open(os.path.join(LED_PATH, "multi_intensity"), "w") as f:
+                    f.write(f"{color.R} {color.G} {color.B}")
             return
 
         AyaLed.set_pixel(Joystick.ALL, LedPosition.Right, color)

@@ -194,6 +194,10 @@ export default definePlugin((serverApi: ServerAPI) => {
     Backend.applySettings();
     console.log("结束休眠");
   });
+  SteamClient.System.RegisterForOnSuspendRequest(async () => {
+    Backend.throwSuspendEvt();
+    console.log("开始休眠");
+  });
   return {
     title: <div className={staticClasses.Title}>ayaled</div>,
     content: <Content/>,
