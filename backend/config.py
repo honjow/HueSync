@@ -1,4 +1,5 @@
 import logging
+import os
 
 #日志配置
 try:
@@ -18,6 +19,13 @@ try:
 except Exception as e:
     logging.error(f"设备信息配置异常|{e}")
 
+LED_PATH = "/sys/class/leds/multicolor:chassis/"
+
+def is_led_supported():
+    return os.path.exists(LED_PATH)
+
+IS_LED_SUPPORTED = is_led_supported()
+
 #灯效ec偏移配置
 try:
     if PRODUCT_NAME in (
@@ -26,8 +34,8 @@ try:
         "AIR 1S"
         "AYANEO 2",
         "AYANEO 2S",
-        "AYANEO GEEK",
-        "AYANEO GEEK 1S",
+        "GEEK",
+        "GEEK 1S",
         ):
         FAN_MANUAL_OFFSET=0x4a
         FAN_RPMWRITE_OFFSET=0x4b

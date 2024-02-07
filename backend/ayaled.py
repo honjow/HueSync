@@ -1,3 +1,5 @@
+import os
+from config import IS_LED_SUPPORTED, LED_PATH
 from ec import EC
 import time
 class Joystick:
@@ -20,6 +22,12 @@ class Color():
 class AyaLed():
     @staticmethod
     def set_all_pixels(color:Color):
+        # new method
+        if IS_LED_SUPPORTED:
+            with open(os.path.join(LED_PATH, "multi_intensity"), "w") as f:
+                f.write(f"{color.R} {color.G} {color.B}")
+            return
+
         AyaLed.set_pixel(Joystick.ALL, LedPosition.Right, color)
         AyaLed.set_pixel(Joystick.ALL, LedPosition.Bottom, color)
         AyaLed.set_pixel(Joystick.ALL, LedPosition.Left, color)
