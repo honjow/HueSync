@@ -5,7 +5,7 @@ import {
 } from "typescript-json-serializer";
 import { Backend } from "./backend";
 
-const SETTINGS_KEY = "AyaLed";
+const SETTINGS_KEY = "HueSync";
 const serializer = new JsonSerializer();
 
 @JsonObject()

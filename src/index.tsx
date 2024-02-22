@@ -12,6 +12,7 @@ import { Backend } from "./backend";
 import { Setting } from "./settings";
 import { SlowSliderField } from "./SlowSliderField";
 import { Canvas } from "./canvas";
+import { localizeStrEnum, localizationManager } from "./i18n";
 
 const Content: VFC = () => {
   const [enableControl, setEnableControl] = useState<boolean>(
@@ -129,10 +130,10 @@ const Content: VFC = () => {
   }, [currentTargetRed, currentTargetGreen, currentTargetBlue, currentTargetBrightness]);
 
   return (
-    <PanelSection title="设置">
+    <PanelSection title={localizationManager.getString(localizeStrEnum.TITEL_SETTINGS)}>
       <PanelSectionRow>
         <ToggleField
-          label={"启用 LED 控制"}
+          label={localizationManager.getString(localizeStrEnum.ENABLE_LED_CONTROL)}
           checked={enableControl}
           onChange={(value) => {
             setEnableControl(value);
@@ -141,7 +142,7 @@ const Content: VFC = () => {
       </PanelSectionRow>
       <PanelSectionRow>
         <ToggleField
-          label={"开启灯效"}
+          label={localizationManager.getString(localizeStrEnum.LED_ON)}
           checked={ledOn}
           onChange={(value) => {
             setledOn(value);
@@ -153,16 +154,16 @@ const Content: VFC = () => {
           <Canvas
             draw={drawCanvas}
             width={268}
-            height={50}
+            height={48}
             style={{
               width: "268px",
-              height: "50px",
+              height: "48px",
               padding: "0px",
-              border: "1px solid #1a9fff",
+              border: "2px solid #1a9fff",
               //"position":"relative",
               "background-color": "#1a1f2c",
-              "border-radius": "4px",
-              //"margin":"auto",
+              "border-radius": "6px",
+              // "margin":"auto",
             }}
             onClick={(e: any) => onClickCanvas(e)}
           />
@@ -171,7 +172,7 @@ const Content: VFC = () => {
       {ledOn && (
         <PanelSectionRow>
           <SlowSliderField
-            label="亮度"
+            label={localizationManager.getString(localizeStrEnum.BRIGHTNESS)}
             value={currentTargetBrightness}
             step={1}
             max={100}
@@ -186,7 +187,7 @@ const Content: VFC = () => {
       {ledOn && (
         <PanelSectionRow>
           <SlowSliderField
-            label="红"
+            label={localizationManager.getString(localizeStrEnum.RED)}
             value={currentTargetRed}
             step={1}
             max={255}
@@ -201,7 +202,7 @@ const Content: VFC = () => {
       {ledOn && (
         <PanelSectionRow>
           <SlowSliderField
-            label="绿"
+            label={localizationManager.getString(localizeStrEnum.GREEN)}
             value={currentTargetGreen}
             step={1}
             max={255}
@@ -216,7 +217,7 @@ const Content: VFC = () => {
       {ledOn && (
         <PanelSectionRow>
           <SlowSliderField
-            label="蓝"
+            label={localizationManager.getString(localizeStrEnum.BLUE)}
             value={currentTargetBlue}
             step={1}
             max={255}
@@ -234,6 +235,7 @@ const Content: VFC = () => {
 
 export default definePlugin((serverApi: ServerAPI) => {
   Setting.loadSettingsFromLocalStorage();
+  localizationManager.init(serverApi);
   Backend.init(serverApi);
   Backend.applySettings();
   SteamClient.System.RegisterForOnResumeFromSuspend(async () => {

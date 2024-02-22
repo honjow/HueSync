@@ -4,7 +4,7 @@
   "flags": ["root"],
   "publish": {
     "tags": ["root"],
-    "description": "led plugin.",
+    "description": "LED plugin.",
     "image": "https://opengraph.githubassets.com/1/SteamDeckHomebrew/PluginLoader"
   }
 }

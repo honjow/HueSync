@@ -9,6 +9,7 @@ try:
     sys.path.append("{}/plugins/HueSync/backend".format(HOMEBREW_PATH))
     from config import logging
     from huesync import LedControl, Color
+    from sysInfo import sysInfoManager
 
     logging.info("HueSync main.py")
 except Exception as e:
@@ -35,3 +36,10 @@ class Plugin:
         except Exception as e:
             logging.error(e)
             return False
+    
+    async def get_language(self):
+        try:
+            return sysInfoManager.get_language()
+        except Exception as e:
+            logging.error(e)
+            return ""
