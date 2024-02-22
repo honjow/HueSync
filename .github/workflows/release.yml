@@ -30,17 +30,17 @@ jobs:
           pnpm install --no-frozen-lockfile
           pnpm update decky-frontend-lib --latest
           pnpm run build
-          tar -czvf ayaled.tar.gz --transform 's,^,ayaled/,' dist backend *.py *.json *.md *.js LICENSE
+          tar -czvf huesync.tar.gz --transform 's,^,HueSync/,' dist backend *.py *.json *.md *.js LICENSE
       
       - name: show files
         run: |
-          tar -tzvf ayaled.tar.gz
+          tar -tzvf huesync.tar.gz
       
       - name: Publish Artifacts
         uses: actions/upload-artifact@v2
         with:
-          name: ayaled
-          path: ayaled.tar.gz
+          name: huesync
+          path: huesync.tar.gz
 
   publish:
     if: startsWith(github.ref, 'refs/tags/v')
@@ -59,11 +59,10 @@ jobs:
       - name: publish to github release
         uses: softprops/action-gh-release@v1
         with:
-          files: /tmp/artifacts/ayaled/ayaled.tar.gz
+          files: /tmp/artifacts/huesync/huesync.tar.gz
           tag_name: ${{ github.ref_name }}
-          body:  |
-            ayaled
+          generate_release_notes: true
           draft: false
-          prerelease: contains(github.ref, 'pre')
+          prerelease: contains(github.ref, 'pre') || contains(github.ref, '.rc')
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
