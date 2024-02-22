@@ -8,10 +8,10 @@ import {
 } from "decky-frontend-lib";
 import { VFC, useState, useEffect } from "react";
 import { FaLightbulb } from "react-icons/fa";
-import { Backend } from "./backend";
-import { Setting } from "./settings";
-import { SlowSliderField } from "./SlowSliderField";
-import { Canvas } from "./canvas";
+import { Backend } from "./util/backend";
+import { Setting } from "./components/settings";
+import { SlowSliderField } from "./components/SlowSliderField";
+import { Canvas } from "./components/canvas";
 import { localizeStrEnum, localizationManager } from "./i18n";
 
 const Content: VFC = () => {
@@ -28,9 +28,8 @@ const Content: VFC = () => {
   const [currentTargetBlue, setCurrentTargetBlue] = useState<number>(
     Setting.getBlue()
   );
-  const [currentTargetBrightness, setCurrentTargetBrightness] = useState<number>(
-    Setting.getBrightness()
-  );
+  const [currentTargetBrightness, setCurrentTargetBrightness] =
+    useState<number>(Setting.getBrightness());
   const [currentMark, setCurrentMark] = useState<number>(0);
 
   function onClickCanvas(e: any) {
@@ -116,7 +115,12 @@ const Content: VFC = () => {
 
   useEffect(() => {
     if (ledOn) {
-      Setting.setLedOn(currentTargetRed, currentTargetGreen, currentTargetBlue, currentTargetBrightness);
+      Setting.setLedOn(
+        currentTargetRed,
+        currentTargetGreen,
+        currentTargetBlue,
+        currentTargetBrightness
+      );
     } else {
       Setting.setOff();
     }
@@ -127,13 +131,22 @@ const Content: VFC = () => {
     Setting.setGreen(currentTargetGreen);
     Setting.setBlue(currentTargetBlue);
     Setting.setBrightness(currentTargetBrightness);
-  }, [currentTargetRed, currentTargetGreen, currentTargetBlue, currentTargetBrightness]);
+  }, [
+    currentTargetRed,
+    currentTargetGreen,
+    currentTargetBlue,
+    currentTargetBrightness,
+  ]);
 
   return (
-    <PanelSection title={localizationManager.getString(localizeStrEnum.TITEL_SETTINGS)}>
+    <PanelSection
+      title={localizationManager.getString(localizeStrEnum.TITEL_SETTINGS)}
+    >
       <PanelSectionRow>
         <ToggleField
-          label={localizationManager.getString(localizeStrEnum.ENABLE_LED_CONTROL)}
+          label={localizationManager.getString(
+            localizeStrEnum.ENABLE_LED_CONTROL
+          )}
           checked={enableControl}
           onChange={(value) => {
             setEnableControl(value);
@@ -247,7 +260,7 @@ export default definePlugin((serverApi: ServerAPI) => {
     console.log("开始休眠");
   });
   return {
-    title: <div className={staticClasses.Title}>ayaled</div>,
+    title: <div className={staticClasses.Title}>HueSync</div>,
     content: <Content />,
     icon: <FaLightbulb />,
     onDismount() {},

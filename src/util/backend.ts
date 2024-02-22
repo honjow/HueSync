@@ -1,5 +1,5 @@
 import { ServerAPI } from "decky-frontend-lib";
-import { Setting } from "./settings";
+import { Setting } from "../components/settings";
 
 export class Backend {
   private static serverAPI: ServerAPI;

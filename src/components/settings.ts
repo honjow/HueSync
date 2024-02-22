@@ -3,7 +3,7 @@ import {
   JsonProperty,
   JsonSerializer,
 } from "typescript-json-serializer";
-import { Backend } from "./backend";
+import { Backend } from "../util/backend";
 
 const SETTINGS_KEY = "HueSync";
 const serializer = new JsonSerializer();
