@@ -9,6 +9,8 @@
   - AIR/Pro/1S
   - 2/2S
   - GEEK/1S
+- GPD
+  - Win 4 (测试中)
 
 ### 额外支持
 通过 [ayaneo-platform](https://github.com/ShadowBlip/ayaneo-platform) 对更多Ayaneo设备进行支持, 可通过 [aur](https://aur.archlinux.org/packages/ayaneo-platform-dkms-git) 安装 dkms 模块获得支持。ChimeraOS 最新系统自带
