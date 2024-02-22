@@ -23,6 +23,7 @@ export interface SlowSliderFieldProps extends ItemProps {
   minimumDpadGranularity?: number;
   onChange?(value: number): void;
   onChangeEnd?(value: number): void;
+  className?: string;
 }
 export const SlowSliderField: FC<SlowSliderFieldProps> = (slider) => {
   const [changeValue, SetChangeValue] = useState<number>(slider.value);
@@ -54,6 +55,7 @@ export const SlowSliderField: FC<SlowSliderFieldProps> = (slider) => {
       validValues={slider.validValues}
       valueSuffix={slider.valueSuffix}
       minimumDpadGranularity={slider.minimumDpadGranularity}
+      className={slider.className}
       onChange={(value: number) => {
         var tpvalue = value;
         if (slider.changeMax != undefined)

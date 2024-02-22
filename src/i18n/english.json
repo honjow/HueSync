@@ -5,5 +5,7 @@
     "BRIGHTNESS": "Brightness",
     "RED": "Red",
     "GREEN": "Green",
-    "BLUE": "Blue"
+    "BLUE": "Blue",
+    "HUE": "Hue",
+    "SATURATION": "Saturation"
 }

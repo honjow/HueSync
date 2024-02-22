@@ -21,15 +21,15 @@ class Plugin:
         while True:
             await asyncio.sleep(3)
 
-    def set_ledOn(self, r: int, g: int, b: int, brightness: int):
+    def setRGB(self, r: int, g: int, b: int, brightness: int = 100):
         try:
-            LedControl.set_Color(Color(r, g, b), brightness=brightness)
             logging.info(f"set_ledOn:{r},{g},{b}, brightness={brightness}")
+            LedControl.set_Color(Color(r, g, b), brightness=100)
         except Exception as e:
             logging.error(e)
             return False
 
-    def set_ledOff(self):
+    def setOff(self):
         try:
             LedControl.set_Color(Color(0, 0, 0), brightness=0)
             logging.info(f"set_ledoff")

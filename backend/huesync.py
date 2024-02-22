@@ -47,7 +47,7 @@ class LedControl:
                     f.write(str(_brightness))
                 with open(os.path.join(LED_PATH, "multi_intensity"), "w") as f:
                     f.write(f"{color.R} {color.G} {color.B}")
-                time.sleep(0.01)
+                # time.sleep(0.01)
         elif IS_AYANEO_EC_SUPPORTED:
             LedControl.set_aya_all_pixels(color, brightness)
         elif SYS_VENDOR == "GPD":

@@ -4,6 +4,7 @@ import {
   JsonSerializer,
 } from "typescript-json-serializer";
 import { Backend } from "../util/backend";
+import { hsvToRgb } from "../util/rgb";
 
 const SETTINGS_KEY = "HueSync";
 const serializer = new JsonSerializer();
@@ -27,13 +28,23 @@ export class Setting {
   // @ts-ignore
   blue?: number;
   @JsonProperty()
+  // @ts-ignore
   brightness?: number;
+  @JsonProperty()
+  // @ts-ignore
+  hue?: number;
+  @JsonProperty()
+  // @ts-ignore
+  saturation?: number;
+
   constructor() {
     this.enableControl = false;
     this.ledOn = true;
     this.red = 255;
     this.green = 255;
     this.blue = 255;
+    this.hue = 0;
+    this.saturation = 100;
     this.brightness = 100;
   }
 
@@ -53,21 +64,29 @@ export class Setting {
     return this._instance.ledOn!!;
   }
 
-  static setLedOn(red: number, green: number, blue: number, brightness: number) {
-    if (this._instance.ledOn != true) {
-      this._instance.ledOn = true;
-      this._instance.red = red;
-      this._instance.blue = blue;
-      this._instance.green = green;
-      this._instance.brightness = brightness;
+  static setOff() {
+    if (this._instance.ledOn != false) {
+      this._instance.ledOn = false;
       Setting.saveSettingsToLocalStorage();
       Backend.applySettings();
     }
   }
 
-  static setOff() {
-    if (this._instance.ledOn != false) {
-      this._instance.ledOn = false;
+  static toggleLed(enable: boolean) {
+    if (this._instance.ledOn != enable) {
+      this._instance.ledOn = enable;
+      this.initRGB();
+      Setting.saveSettingsToLocalStorage();
+      Backend.applySettings();
+    }
+  }
+
+  static applyRGB(red: number, green: number, blue: number) {
+    if (this._instance.ledOn != true) {
+      this._instance.ledOn = true;
+      this._instance.red = red;
+      this._instance.blue = blue;
+      this._instance.green = green;
       Setting.saveSettingsToLocalStorage();
       Backend.applySettings();
     }
@@ -97,12 +116,49 @@ export class Setting {
     }
   }
 
-  static setBrightness(brightness: number) {
-    if (this._instance.brightness != brightness) {
-      this._instance.brightness = brightness;
+  static setHue(hue: number) {
+    if (hue == 360) {
+      hue = 0;
+    }
+    if (this._instance.hue != hue) {
+      this._instance.hue = hue;
+      this.initRGB();
       Setting.saveSettingsToLocalStorage();
       Backend.applySettings();
     }
+  }
+
+  static setSaturation(saturation: number) {
+    if (this._instance.saturation != saturation) {
+      this._instance.saturation = saturation;
+      this.initRGB();
+      Setting.saveSettingsToLocalStorage();
+      Backend.applySettings();
+    }
+  }
+
+  static setBrightness(brightness: number) {
+    if (this._instance.brightness != brightness) {
+      this._instance.brightness = brightness;
+      this.initRGB();
+      Setting.saveSettingsToLocalStorage();
+      Backend.applySettings();
+    }
+  }
+
+  private static initRGB() {
+    const [r, g, b] = hsvToRgb(
+      this._instance.hue!!,
+      this._instance.saturation!!,
+      this._instance.brightness!!
+    );
+    this.setRed(r);
+    this.setBlue(b);
+    this.setGreen(g);
+  }
+
+  static getSaturation() {
+    return this._instance.saturation!!;
   }
 
   static getBrightness() {
@@ -119,6 +175,10 @@ export class Setting {
 
   static getBlue() {
     return this._instance.blue!!;
+  }
+
+  static getHue() {
+    return this._instance.hue!!;
   }
 
   static loadSettingsFromLocalStorage() {

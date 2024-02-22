@@ -69,5 +69,7 @@ export enum localizeStrEnum {
     RED="RED",
     GREEN="GREEN",
     BLUE="BLUE",
+    HUE="HUE",
+    SATURATION="SATURATION",
 }
     

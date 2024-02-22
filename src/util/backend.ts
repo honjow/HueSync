@@ -7,19 +7,18 @@ export class Backend {
     this.serverAPI = serverAPI;
   }
 
-  private static applyLedOn(red: number, green: number, blue: number, brightness: number) {
+  private static applyRGB(red: number, green: number, blue: number) {
     console.log(`Applying ledOn ${red} ${green} ${blue}`);
-    Backend.serverAPI!.callPluginMethod("set_ledOn", {
+    Backend.serverAPI!.callPluginMethod("setRGB", {
       r: red,
       g: green,
       b: blue,
-      brightness: brightness,
     });
   }
 
   private static applyLedOff() {
     console.log("Applying ledOff ");
-    Backend.serverAPI!.callPluginMethod("set_ledOff", {});
+    Backend.serverAPI!.callPluginMethod("setOff", {});
   }
 
   public static throwSuspendEvt() {
@@ -27,7 +26,7 @@ export class Backend {
       return;
     }
     console.log("throwSuspendEvt");
-    this.serverAPI!.callPluginMethod("set_ledOff", {});
+    this.serverAPI!.callPluginMethod("setOff", {});
   }
 
   public static applySettings = () => {
@@ -36,11 +35,10 @@ export class Backend {
     }
 
     if (Setting.getLedOn()) {
-      Backend.applyLedOn(
+      Backend.applyRGB(
         Setting.getRed(),
         Setting.getGreen(),
-        Setting.getBlue(),
-        Setting.getBrightness()
+        Setting.getBlue()
       );
     } else {
       Backend.applyLedOff();
