@@ -3,7 +3,7 @@ import os
 
 #日志配置
 try:
-    LOG_LOCATION = "/tmp/ayaled_py.log"
+    LOG_LOCATION = "/tmp/huesync_py.log"
     logging.basicConfig(
         level = logging.DEBUG,
         filename = LOG_LOCATION,

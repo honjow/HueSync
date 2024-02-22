@@ -1,10 +1,10 @@
 {
-  "name": "Ayaled",
-  "author": "yxx",
+  "name": "HueSync",
+  "author": "honjow",
   "flags": ["root"],
   "publish": {
     "tags": ["root"],
-    "description": "ayaled plugin.",
+    "description": "led plugin.",
     "image": "https://opengraph.githubassets.com/1/SteamDeckHomebrew/PluginLoader"
   }
 }

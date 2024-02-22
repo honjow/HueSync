@@ -7,24 +7,25 @@ if ! [ -x "$(command -v jq)" ]; then
 fi
 
 # Download latest release
-RELEASE=$(curl -s 'https://api.github.com/repos/honjow/ayaled/releases/latest')
+RELEASE=$(curl -s 'https://api.github.com/repos/honjow/HueSync/releases/latest')
 RELEASE_VERSION=$(echo "$RELEASE" | jq -r '.tag_name')
 RELEASE_URL=$(echo "$RELEASE" | jq -r '.assets[0].browser_download_url')
-curl -L -o /tmp/ayaled.tar.gz "$RELEASE_URL"
+curl -L -o /tmp/HueSync.tar.gz "$RELEASE_URL"
 
-echo "Installing ayaled $RELEASE_VERSION"
+echo "Installing HueSync $RELEASE_VERSION"
 
 # remove old version
 chmod -R 777 ${HOME}/homebrew/plugins
 rm -rf ${HOME}/homebrew/plugins/ayaled
+rm -rf ${HOME}/homebrew/plugins/HueSync
 
 # Extract
-tar -xzf /tmp/ayaled.tar.gz -C ${HOME}/homebrew/plugins
+tar -xzf /tmp/HueSync.tar.gz -C ${HOME}/homebrew/plugins
 
 # Cleanup
-rm -f /tmp/ayaled.tar.gz
+rm -f /tmp/HueSync.tar.gz
 
-echo "ayaled $RELEASE_VERSION installed"
+echo "HueSync $RELEASE_VERSION installed"
 
 # restart plugin_loader
 sudo systemctl restart plugin_loader.service
