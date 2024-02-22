@@ -4,7 +4,8 @@
 [![](https://img.shields.io/github/downloads/honjow/HueSync/total.svg)](https://gitHub.com/honjow/HueSync/releases) [![](https://img.shields.io/github/downloads/honjow/HueSync/latest/total)](https://github.com/honjow/HueSync/releases/latest) [![](https://img.shields.io/github/v/release/honjow/HueSync)](https://github.com/honjow/HueSync/releases/latest)
 
 用于[decky-loader](https://github.com/SteamDeckHomebrew/decky-loader)的插件  
-为手持设备提供LED灯光控制
+
+为手持设备提供 LED 灯光控制
 
 ## 支持设备
 
