@@ -24,16 +24,15 @@
 - AIR Plus
 - SLIDE
 
-## 手动安装
-
-1. 安装[decky-loader](https://github.com/SteamDeckHomebrew/decky-loader)
-2. 下载[Releases](https://github.com/honjow/huesync/releases)
-3. 调整插件目录权限 `chmod -R 777 ${HOME}/homebrew/plugins`
-4. 解压到/home/xxxx/homebrew/plugins/下
-5. 重启 decky-loader, `sudo systemctl restart plugin_loader.service`
-6. 进入游戏模式，即可在decky页面使用该插件
-
 ## 一键安装
 ```
 curl -L https://raw.githubusercontent.com/honjow/huesync/main/install.sh | sh
 ```
+
+## 手动安装
+
+1. 安装 [decky-loader](https://github.com/SteamDeckHomebrew/decky-loader)
+2. 下载 [Releases](https://github.com/honjow/huesync/releases)
+3. 调整插件目录权限 `chmod -R 777 ${HOME}/homebrew/plugins`
+4. 解压到 /home/xxxx/homebrew/plugins/ 下
+5. 重启 decky-loader, `sudo systemctl restrt plugin_loader.service`, 目录权限会自动更新

@@ -1,6 +1,6 @@
 {
   "name": "HueSync",
-  "version": "1.1.5",
+  "version": "1.2.0",
   "description": "ayaled plugin.",
   "scripts": {
     "build": "shx rm -rf dist && rollup -c",
