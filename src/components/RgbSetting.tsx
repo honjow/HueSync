@@ -59,8 +59,11 @@ const RGBComponent: VFC = () => {
           max={100}
           validValues="range"
           bottomSeparator="thick"
-          onChange={(value: number) => setSaturation(value)}
+          onChange={(value: number) => {
+            return setSaturation(value);
+          }}
           valueSuffix="%"
+          className="ColorPicker_SSlider"
         />
       </PanelSectionRow>
       <PanelSectionRow>
@@ -74,6 +77,7 @@ const RGBComponent: VFC = () => {
             setBrightness(value);
           }}
           valueSuffix="%"
+          className="ColorPicker_VSlider"
         />
       </PanelSectionRow>
       <style>
@@ -88,6 +92,24 @@ const RGBComponent: VFC = () => {
                 hsl(240, 100%, 50%),
                 hsl(300, 100%, 50%),
                 hsl(360, 100%, 50%)
+              ) !important;
+              --left-track-color: #0000 !important;
+              --colored-toggles-main-color: #0000 !important;
+            }
+            .ColorPicker_SSlider .${gamepadSliderClasses.SliderTrack} {
+              background: linear-gradient(
+                to right,
+                hsl(0, 100%, 100%),
+                hsl(${hue}, 100%, 50%)
+              ) !important;
+              --left-track-color: #0000 !important;
+              --colored-toggles-main-color: #0000 !important;
+            }
+            .ColorPicker_VSlider .${gamepadSliderClasses.SliderTrack} {
+              background: linear-gradient(
+                to right,
+                hsl(0, 100%, 0%),
+                hsl(${hue}, ${saturation}%, 50%)
               ) !important;
               --left-track-color: #0000 !important;
               --colored-toggles-main-color: #0000 !important;
