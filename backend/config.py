@@ -27,7 +27,7 @@ except Exception as e:
     logging.error(f"设备信息配置异常|{e}")
 
 LED_PATH = "/sys/class/leds/multicolor:chassis/"
-
+LED_MODE_PATH = os.path.join(LED_PATH, "device", "led_mode")
 
 def is_led_supported():
     return os.path.exists(LED_PATH)

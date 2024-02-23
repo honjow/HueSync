@@ -16,16 +16,21 @@ LED controller for handheld devices
   - 2/2S
   - GEEK/1S
 - GPD
-  - Win 4 (testing) (Support from [pyWinControls](https://github.com/pelrun/pyWinControls))
+  - Win 4 (Support from [pyWinControls](https://github.com/pelrun/pyWinControls))
 
 ### Additional Support
-Support for more Ayaneo devices through [ayaneo-platform](https://github.com/ShadowBlip/ayaneo-platform), can be obtained by installing the dkms module through [aur](https://aur.archlinux.org/packages/ayaneo-platform-dkms-git). The latest ChimeraOS comes with it.
+Support for more Ayaneo devices through [ayaneo-platform](https://github.com/ShadowBlip/ayaneo-platform), can be obtained by installing the dkms module through [AUR](https://aur.archlinux.org/packages/ayaneo-platform-dkms-git). The latest ChimeraOS comes with it.
 
-- AIR/Pro/1S
-- 2/2S
-- GEEK/1S
-- AIR Plus
-- SLIDE
+- AYANEO
+  - AIR/Pro/1S
+  - 2/2S
+  - GEEK/1S
+  - AIR Plus
+  - SLIDE
+
+Similarly, Support for Ayn devices through [ayn-platform](https://github.com/ShadowBlip/ayn-platform),  [AUR](https://aur.archlinux.org/packages/ayn-platform-dkms-git)
+- AYN
+  - Loki Max
 
 ## One-step Installation
 ```

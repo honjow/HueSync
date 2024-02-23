@@ -5,6 +5,7 @@ from config import (
     IS_LED_SUPPORTED,
     IS_AYANEO_EC_SUPPORTED,
     SYS_VENDOR,
+    LED_MODE_PATH,
 )
 from ec import EC
 import time
@@ -40,6 +41,10 @@ class LedControl:
     @staticmethod
     def set_Color(color: Color, brightness: int = 100):
         if IS_LED_SUPPORTED:
+            if os.path.exists(LED_MODE_PATH):
+                with open(LED_MODE_PATH, "w") as f:
+                    f.write("1")
+
             for x in range(2):
                 with open(os.path.join(LED_PATH, "brightness"), "w") as f:
                     _brightness: int = brightness * 255 // 100

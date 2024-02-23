@@ -21,17 +21,21 @@
   - 2/2S
   - GEEK/1S
 - GPD
-  - Win 4 (测试中) (支持来自 [pyWinControls](https://github.com/pelrun/pyWinControls))
+  - Win 4 (支持来自 [pyWinControls](https://github.com/pelrun/pyWinControls))
 
 ### 额外支持
 
-通过 [ayaneo-platform](https://github.com/ShadowBlip/ayaneo-platform) 对更多 Ayaneo 设备进行支持, 可通过 [aur](https://aur.archlinux.org/packages/ayaneo-platform-dkms-git) 安装 dkms 模块获得支持。ChimeraOS 最新系统自带
+通过 [ayaneo-platform](https://github.com/ShadowBlip/ayaneo-platform) 对更多 Ayaneo 设备进行支持, 可通过 [AUR](https://aur.archlinux.org/packages/ayaneo-platform-dkms-git) 安装 dkms 模块获得支持。ChimeraOS 最新系统自带
+- AYANEO
+  - AIR/Pro/1S
+  - 2/2S
+  - GEEK/1S
+  - AIR Plus
+  - SLIDE
 
-- AIR/Pro/1S
-- 2/2S
-- GEEK/1S
-- AIR Plus
-- SLIDE
+同理，通过 [ayn-platform](https://github.com/ShadowBlip/ayn-platform) 对Ayn设备进行支持, [AUR](https://aur.archlinux.org/packages/ayn-platform-dkms-git)
+- AYN
+  - Loki Max
 
 ## 一键安装
 
