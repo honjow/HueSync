@@ -5,6 +5,10 @@ Plugin for [decky-loader](https://github.com/SteamDeckHomebrew/decky-loader)
 
 LED controller for handheld devices
 
+|                           |
+| ------------------------- |
+| ![](./assets/HueSync.jpg) |
+
 ## Supported Devices
 ### Directly Supported
 - AYANEO
