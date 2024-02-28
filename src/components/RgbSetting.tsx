@@ -45,7 +45,7 @@ const RGBComponent: VFC = () => {
           max={360}
           validValues="range"
           bottomSeparator="thick"
-          onChange={(value: number) => setHue(value)}
+          onChangeEnd={(value: number) => setHue(value)}
           className="ColorPicker_HSlider"
           valueSuffix="°"
         />
@@ -59,7 +59,7 @@ const RGBComponent: VFC = () => {
           max={100}
           validValues="range"
           bottomSeparator="thick"
-          onChange={(value: number) => {
+          onChangeEnd={(value: number) => {
             return setSaturation(value);
           }}
           valueSuffix="%"
