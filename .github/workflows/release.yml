@@ -30,7 +30,7 @@ jobs:
           pnpm install --no-frozen-lockfile
           pnpm update decky-frontend-lib --latest
           pnpm run build
-          tar -czvf huesync.tar.gz --transform 's,^,HueSync/,' dist backend *.py *.json *.md *.js LICENSE
+          tar -czvf huesync.tar.gz --transform 's,^,HueSync/,' dist backend py_modules *.py *.json *.md *.js LICENSE
       
       - name: show files
         run: |

@@ -8,11 +8,7 @@ from config import (
     LED_MODE_PATH,
 )
 from ec import EC
-import time
-try:
-    from wincontrols import WinControls
-except:
-    from .wincontrols import WinControls
+from wincontrols.hardware import WinControls
 
 class AyaJoystick:
     Left = 1
@@ -68,7 +64,7 @@ class LedControl:
                 color.B * brightness // 100,
             )
             conf = ["ledmode=solid", f"colour={color.hex()}"]
-            logging.debug(f"conf={conf}")
+            logging.info(f"conf={conf}")
             if wc.loaded and wc.setConfig(conf):
                 wc.writeConfig()
         except Exception as e:

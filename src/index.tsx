@@ -8,10 +8,11 @@ import {
 } from "decky-frontend-lib";
 import { VFC, useState, useEffect } from "react";
 import { FaLightbulb } from "react-icons/fa";
-import { Backend } from "./util/backend";
-import { Setting } from "./components/settings";
+
 import { localizeStrEnum, localizationManager } from "./i18n";
-import RGBComponent from "./components/RgbSetting";
+import { RGBComponent } from "./components";
+import { Backend } from "./util";
+import { Setting } from "./hooks";
 
 const Content: VFC = () => {
   const [enableControl, setEnableControl] = useState<boolean>(
@@ -59,6 +60,6 @@ export default definePlugin((serverApi: ServerAPI) => {
     title: <div className={staticClasses.Title}>HueSync</div>,
     content: <Content />,
     icon: <FaLightbulb />,
-    onDismount() {},
+    onDismount() { },
   };
 });

@@ -3,12 +3,20 @@ import {
   ToggleField,
   gamepadSliderClasses,
 } from "decky-frontend-lib";
-import { useEffect, useState, VFC } from "react";
+import { VFC, useEffect, useState } from "react";
 import { localizationManager, localizeStrEnum } from "../i18n";
-import { Setting } from "./settings";
-import { SlowSliderField } from "./SlowSliderField";
+import { Setting } from "../hooks";
+import { SlowSliderField } from ".";
 
-const RGBComponent: VFC = () => {
+export const RGBComponent: VFC = () => {
+  // const {
+  //   hue,
+  //   saturation,
+  //   brightness,
+  //   setHsv,
+  //   ledOn,
+  //   setledOn,
+  // } = useRgb();
   const [hue, setHue] = useState<number>(Setting.getHue());
   const [saturation, setSaturation] = useState<number>(Setting.getSaturation());
   const [brightness, setBrightness] = useState<number>(Setting.getBrightness());
@@ -16,14 +24,49 @@ const RGBComponent: VFC = () => {
   const [ledOn, setledOn] = useState<boolean>(Setting.getLedOn());
 
   useEffect(() => {
-    Setting.setHue(hue);
-    Setting.setSaturation(saturation);
-    Setting.setBrightness(brightness);
+    // 关联更新三个 slider 的 UI
+    setHue(hue);
+    setSaturation(saturation);
+    setBrightness(brightness);
   }, [hue, saturation, brightness]);
 
   useEffect(() => {
     Setting.toggleLed(ledOn);
   }, [ledOn]);
+
+  const setHsv = (
+    h: number,
+    s: number,
+    v: number,
+    apply: boolean = true
+  ) => {
+    if (h >= 360) {
+      h = 0;
+    }
+
+    // setHue(h);
+    // setSaturation(s);
+    // setBrightness(v);
+
+    if (apply) {
+      Setting.setHue(h);
+      Setting.setSaturation(s);
+      Setting.setBrightness(v);
+    }
+  };
+
+  // 调用更新 RGB 颜色, 放在 onChangeEnd 事件中，避免频繁更新
+  const _setHue = (value: number) => {
+    setHsv(value, saturation, brightness);
+  }
+
+  const _setSaturation = (value: number) => {
+    setHsv(hue, value, brightness);
+  }
+
+  const _setBrightness = (value: number) => {
+    setHsv(hue, saturation, value);
+  }
 
   return (
     <div>
@@ -45,7 +88,8 @@ const RGBComponent: VFC = () => {
           max={360}
           validValues="range"
           bottomSeparator="thick"
-          onChangeEnd={(value: number) => setHue(value)}
+          onChangeEnd={_setHue}
+          onChange={setHue}
           className="ColorPicker_HSlider"
           valueSuffix="°"
         />
@@ -59,9 +103,8 @@ const RGBComponent: VFC = () => {
           max={100}
           validValues="range"
           bottomSeparator="thick"
-          onChangeEnd={(value: number) => {
-            return setSaturation(value);
-          }}
+          onChangeEnd={_setSaturation}
+          onChange={setSaturation}
           valueSuffix="%"
           className="ColorPicker_SSlider"
         />
@@ -73,9 +116,8 @@ const RGBComponent: VFC = () => {
           value={brightness}
           min={0}
           max={100}
-          onChangeEnd={(value: number) => {
-            setBrightness(value);
-          }}
+          onChangeEnd={_setBrightness}
+          onChange={setBrightness}
           valueSuffix="%"
           className="ColorPicker_VSlider"
         />
@@ -119,5 +161,3 @@ const RGBComponent: VFC = () => {
     </div>
   );
 };
-
-export default RGBComponent;

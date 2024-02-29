@@ -1,31 +1,57 @@
-#!/bin/bash
+#!/usr/bin/bash
 
-# check if jq is installed
-if ! [ -x "$(command -v jq)" ]; then
-  echo 'Error: jq is not installed.' >&2
+set -e
+
+if [ "$EUID" -eq 0 ]; then
+  echo "Please do not run as root"
+  exit
+fi
+
+github_api_url="https://api.github.com/repos/honjow/HueSync/releases/latest"
+package="HueSync"
+
+echo "installing $package"
+
+temp=$(mktemp -d)
+
+plugin_dir="${HOME}/homebrew/plugins/${package}"
+mkdir -p $plugin_dir
+
+use_jq=false
+if [ -x "$(command -v jq)" ]; then
+  use_jq=true
+fi
+
+RELEASE=$(curl -s "$github_api_url")
+
+if [[ $use_jq == true ]]; then
+  echo "Using jq"
+  MESSAGE=$(echo "$RELEASE" | jq -r '.message')
+  RELEASE_VERSION=$(echo "$RELEASE" | jq -r '.tag_name')
+  RELEASE_URL=$(echo "$RELEASE" | jq -r '.assets[0].browser_download_url')
+else
+  MESSAGE=$(echo $RELEASE | grep "message" | cut -d '"' -f 4)
+  RELEASE_URL=$(echo $RELEASE | grep "browser_download_url" | cut -d '"' -f 4)
+  RELEASE_VERSION=$(echo $RELEASE | grep "tag_name" | cut -d '"' -f 4)
+fi
+
+if [[ "$MESSAGE" != "null" ]]; then
+  echo "error: $MESSAGE" >&2
   exit 1
 fi
 
-# Download latest release
-RELEASE=$(curl -s 'https://api.github.com/repos/honjow/HueSync/releases/latest')
-RELEASE_VERSION=$(echo "$RELEASE" | jq -r '.tag_name')
-RELEASE_URL=$(echo "$RELEASE" | jq -r '.assets[0].browser_download_url')
-curl -L -o /tmp/HueSync.tar.gz "$RELEASE_URL"
+if [ -z "$RELEASE_URL" ]; then
+  echo "Failed to get latest release" >&2
+  exit 1
+fi
 
-echo "Installing HueSync $RELEASE_VERSION"
+temp_file="${temp}/${package}.tar.gz"
 
-# remove old version
-chmod -R 777 ${HOME}/homebrew/plugins
-rm -rf ${HOME}/homebrew/plugins/ayaled
-rm -rf ${HOME}/homebrew/plugins/HueSync
+echo "Downloading $package $RELEASE_VERSION"
+curl -L "$RELEASE_URL" -o "$temp_file"
 
-# Extract
-tar -xzf /tmp/HueSync.tar.gz -C ${HOME}/homebrew/plugins
+sudo tar -xzf "$temp_file" -C $temp
+sudo rsync -av "${temp}/${package}/" $plugin_dir --delete
 
-# Cleanup
-rm -f /tmp/HueSync.tar.gz
-
-echo "HueSync $RELEASE_VERSION installed"
-
-# restart plugin_loader
+rm "$temp_file"
 sudo systemctl restart plugin_loader.service

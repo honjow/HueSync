@@ -3,8 +3,7 @@ import {
   JsonProperty,
   JsonSerializer,
 } from "typescript-json-serializer";
-import { Backend } from "../util/backend";
-import { hsvToRgb } from "../util/rgb";
+import { Backend, hsvToRgb } from "../util";
 
 const SETTINGS_KEY = "HueSync";
 const serializer = new JsonSerializer();
@@ -14,6 +13,7 @@ const serializer = new JsonSerializer();
 export class Setting {
   private static _instance: Setting = new Setting();
   @JsonProperty()
+  // @ts-ignore
   enableControl?: boolean;
   @JsonProperty()
   // @ts-ignore
@@ -81,40 +81,16 @@ export class Setting {
     }
   }
 
-  static applyRGB(red: number, green: number, blue: number) {
-    if (this._instance.ledOn != true) {
-      this._instance.ledOn = true;
-      this._instance.red = red;
-      this._instance.blue = blue;
-      this._instance.green = green;
-      Setting.saveSettingsToLocalStorage();
-      Backend.applySettings();
-    }
-  }
-
-  static setRed(red: number) {
-    if (this._instance.red != red) {
-      this._instance.red = red;
-      Setting.saveSettingsToLocalStorage();
-      Backend.applySettings();
-    }
-  }
-
-  static setGreen(green: number) {
-    if (this._instance.green != green) {
-      this._instance.green = green;
-      Setting.saveSettingsToLocalStorage();
-      Backend.applySettings();
-    }
-  }
-
-  static setBlue(blue: number) {
-    if (this._instance.blue != blue) {
-      this._instance.blue = blue;
-      Setting.saveSettingsToLocalStorage();
-      Backend.applySettings();
-    }
-  }
+  // static applyRGB(red: number, green: number, blue: number) {
+  //   if (this._instance.ledOn != true) {
+  //     this._instance.ledOn = true;
+  //     this._instance.red = red;
+  //     this._instance.blue = blue;
+  //     this._instance.green = green;
+  //     Setting.saveSettingsToLocalStorage();
+  //     Backend.applySettings();
+  //   }
+  // }
 
   static setHue(hue: number) {
     if (hue == 360) {
@@ -152,9 +128,9 @@ export class Setting {
       this._instance.saturation!!,
       this._instance.brightness!!
     );
-    this.setRed(r);
-    this.setBlue(b);
-    this.setGreen(g);
+    this._instance.red = r;
+    this._instance.green = g;
+    this._instance.blue = b;
   }
 
   static getSaturation() {
