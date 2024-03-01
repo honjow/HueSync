@@ -7,5 +7,10 @@
     "GREEN": "绿",
     "BLUE": "蓝",
     "HUE": "色调",
-    "SATURATION": "饱和度"
+    "SATURATION": "饱和度",
+    "VERSION":"版本",
+    "REINSTALL_PLUGIN": "重新安装插件",
+    "UPDATE_PLUGIN": "更新插件到",
+    "INSTALLED_VERSION": "当前版本",
+    "LATEST_VERSION": "最新版本"
 }

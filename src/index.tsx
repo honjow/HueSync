@@ -13,6 +13,7 @@ import { localizeStrEnum, localizationManager } from "./i18n";
 import { RGBComponent } from "./components";
 import { Backend } from "./util";
 import { Setting } from "./hooks";
+import { MoreComponent } from "./components/more";
 
 const Content: VFC = () => {
   const [enableControl, setEnableControl] = useState<boolean>(
@@ -24,22 +25,25 @@ const Content: VFC = () => {
   }, [enableControl]);
 
   return (
-    <PanelSection
-      title={localizationManager.getString(localizeStrEnum.TITEL_SETTINGS)}
-    >
-      <PanelSectionRow>
-        <ToggleField
-          label={localizationManager.getString(
-            localizeStrEnum.ENABLE_LED_CONTROL
-          )}
-          checked={enableControl}
-          onChange={(value) => {
-            setEnableControl(value);
-          }}
-        />
-      </PanelSectionRow>
-      <RGBComponent />
-    </PanelSection>
+    <div>
+      <PanelSection
+        title={localizationManager.getString(localizeStrEnum.TITEL_SETTINGS)}
+      >
+        <PanelSectionRow>
+          <ToggleField
+            label={localizationManager.getString(
+              localizeStrEnum.ENABLE_LED_CONTROL
+            )}
+            checked={enableControl}
+            onChange={(value) => {
+              setEnableControl(value);
+            }}
+          />
+        </PanelSectionRow>
+        {enableControl && <RGBComponent />}
+      </PanelSection>
+      <MoreComponent />
+    </div>
   );
 };
 

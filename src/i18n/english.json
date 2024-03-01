@@ -7,5 +7,9 @@
     "GREEN": "Green",
     "BLUE": "Blue",
     "HUE": "Hue",
-    "SATURATION": "Saturation"
+    "SATURATION": "Saturation",
+    "VERSION":"Version",
+    "REINSTALL_PLUGIN": "Reinstall Plugin",
+    "UPDATE_PLUGIN": "Update Plugin To",
+    "INSTALLED_VERSION": "Installed Version"
 }

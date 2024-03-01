@@ -1,10 +1,59 @@
 import { ServerAPI } from "decky-frontend-lib";
 import { Setting } from "../hooks";
 
+export class BackendData {
+  private serverAPI: ServerAPI | undefined;
+  private current_version = "1.0.0";
+  private latest_version = "";
+
+  public async init(serverAPI: ServerAPI) {
+    this.serverAPI = serverAPI;
+
+    await this.serverAPI!.callPluginMethod<{}, string>("get_version", {}).then(
+      (res) => {
+        if (res.success) {
+          console.info("current_version = " + res.result);
+          this.current_version = res.result;
+        }
+      }
+    );
+
+    await this.serverAPI!.callPluginMethod<{}, string>(
+      "get_latest_version",
+      {}
+    ).then((res) => {
+      if (res.success) {
+        console.info("latest_version = " + res.result);
+        this.latest_version = res.result;
+      }
+    });
+  }
+
+  public getCurrentVersion() {
+    return this.current_version;
+  }
+
+  public setCurrentVersion(version: string) {
+    this.current_version = version;
+  }
+
+  public getLatestVersion() {
+    return this.latest_version;
+  }
+
+  public setLatestVersion(version: string) {
+    this.latest_version = version;
+  }
+}
+
 export class Backend {
   private static serverAPI: ServerAPI;
+  public static data: BackendData;
+
   public static async init(serverAPI: ServerAPI) {
     this.serverAPI = serverAPI;
+    this.data = new BackendData();
+    await this.data.init(serverAPI);
   }
 
   private static applyRGB(red: number, green: number, blue: number) {
@@ -29,17 +78,23 @@ export class Backend {
     this.serverAPI!.callPluginMethod("setOff", {});
   }
 
+  public static async getLatestVersion(): Promise<string> {
+    return (await this.serverAPI!.callPluginMethod("get_latest_version", {}))
+      .result as string;
+  }
+
+  // updateLatest
+  public static async updateLatest() {
+    await this.serverAPI!.callPluginMethod("update_latest", {});
+  }
+
   public static applySettings = () => {
     if (!Setting.getEnableControl()) {
       return;
     }
 
     if (Setting.getLedOn()) {
-      Backend.applyRGB(
-        Setting.getRed(),
-        Setting.getGreen(),
-        Setting.getBlue()
-      );
+      Backend.applyRGB(Setting.getRed(), Setting.getGreen(), Setting.getBlue());
     } else {
       Backend.applyLedOff();
     }

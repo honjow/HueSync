@@ -32,7 +32,6 @@ LED_MODE_PATH = os.path.join(LED_PATH, "device", "led_mode")
 def is_led_supported():
     return os.path.exists(LED_PATH)
 
-
 IS_LED_SUPPORTED = is_led_supported()
 
 AYANEO_EC_SUPPORT_LIST = [
@@ -47,3 +46,5 @@ AYANEO_EC_SUPPORT_LIST = [
 ]
 
 IS_AYANEO_EC_SUPPORTED = PRODUCT_NAME in AYANEO_EC_SUPPORT_LIST
+
+API_URL = "https://api.github.com/repos/honjow/HueSync/releases/latest"

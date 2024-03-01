@@ -10,6 +10,7 @@ try:
     from config import logging
     from huesync import LedControl, Color
     from sysInfo import sysInfoManager
+    import update
 
     logging.info("HueSync main.py")
 except Exception as e:
@@ -43,3 +44,13 @@ class Plugin:
         except Exception as e:
             logging.error(e)
             return ""
+        
+    async def update_latest(self):
+        logging.info("Updating latest")
+        return update.update_latest()
+    
+    async def get_version(self):
+        return update.get_version()
+    
+    async def get_latest_version(self):
+        return update.get_latest_version()
