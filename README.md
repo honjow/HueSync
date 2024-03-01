@@ -1,4 +1,4 @@
-[English](https://github.com/honjow/HueSync/blob/main/README_en.md)
+[English](./README_en.md) | 简体中文
 
 # HueSync
 
