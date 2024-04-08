@@ -13,7 +13,7 @@ package="HueSync"
 echo "installing $package"
 
 temp=$(mktemp -d)
-
+chmod -R +w "${HOME}/homebrew/plugins/"
 plugin_dir="${HOME}/homebrew/plugins/${package}"
 mkdir -p $plugin_dir
 
