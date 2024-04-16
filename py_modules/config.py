@@ -29,10 +29,18 @@ except Exception as e:
 LED_PATH = "/sys/class/leds/multicolor:chassis/"
 LED_MODE_PATH = os.path.join(LED_PATH, "device", "led_mode")
 
+# Value: oem, off, keep. Default: oem
+LED_SUSPEND_MODE_PATH = os.path.join(LED_PATH, "suspend_mode")
+
 def is_led_supported():
     return os.path.exists(LED_PATH)
 
+def is_led_suspend_mode_supported():
+    return os.path.exists(LED_SUSPEND_MODE_PATH)
+
 IS_LED_SUPPORTED = is_led_supported()
+IS_LED_SUSPEND_MODE_SUPPORTED = is_led_suspend_mode_supported()
+
 
 AYANEO_EC_SUPPORT_LIST = [
     "AIR",

@@ -3,7 +3,7 @@ import {
   JsonProperty,
   JsonSerializer,
 } from "typescript-json-serializer";
-import { Backend, hsvToRgb } from "../util";
+import { Backend, SuspendMode, hsvToRgb } from "../util";
 
 const SETTINGS_KEY = "HueSync";
 const serializer = new JsonSerializer();
@@ -37,6 +37,8 @@ export class Setting {
   // @ts-ignore
   saturation?: number;
 
+  suspendMode?: string;
+
   constructor() {
     this.enableControl = false;
     this.ledOn = true;
@@ -46,6 +48,12 @@ export class Setting {
     this.hue = 0;
     this.saturation = 100;
     this.brightness = 100;
+  }
+
+  static async init() {
+    Backend.getSuspendMode().then((suspendMode) => {
+      this.setSuspendMode(suspendMode);
+    });
   }
 
   static getEnableControl() {
@@ -120,6 +128,18 @@ export class Setting {
       Setting.saveSettingsToLocalStorage();
       Backend.applySettings();
     }
+  }
+
+  static setSuspendMode(suspendMode: string) {
+    if (this._instance.suspendMode != suspendMode) {
+      this._instance.suspendMode = suspendMode;
+      Setting.saveSettingsToLocalStorage();
+      Backend.applySettings();
+    }
+  }
+
+  static getSuspendMode() {
+    return this._instance.suspendMode || SuspendMode.OEM;
   }
 
   private static initRGB() {

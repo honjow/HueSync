@@ -10,7 +10,7 @@ import { VFC, useState, useEffect } from "react";
 import { FaLightbulb } from "react-icons/fa";
 
 import { localizeStrEnum, localizationManager } from "./i18n";
-import { RGBComponent } from "./components";
+import { RGBComponent, SuspendModeComponent } from "./components";
 import { Backend } from "./util";
 import { Setting } from "./hooks";
 import { MoreComponent } from "./components/more";
@@ -41,6 +41,7 @@ const Content: VFC = () => {
           />
         </PanelSectionRow>
         {enableControl && <RGBComponent />}
+        <SuspendModeComponent />
       </PanelSection>
       <MoreComponent />
     </div>
@@ -48,10 +49,16 @@ const Content: VFC = () => {
 };
 
 export default definePlugin((serverApi: ServerAPI) => {
-  Setting.loadSettingsFromLocalStorage();
-  localizationManager.init(serverApi);
-  Backend.init(serverApi);
-  Backend.applySettings();
+  const init = async () => {
+    Setting.loadSettingsFromLocalStorage();
+    localizationManager.init();
+    Backend.init(serverApi);
+    await Setting.init();
+    Backend.applySettings();
+  }
+
+  init();
+
   SteamClient.System.RegisterForOnResumeFromSuspend(async () => {
     Backend.applySettings();
     console.log("结束休眠");

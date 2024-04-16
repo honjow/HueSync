@@ -6,6 +6,7 @@ from config import (
     IS_AYANEO_EC_SUPPORTED,
     SYS_VENDOR,
     LED_MODE_PATH,
+    LED_SUSPEND_MODE_PATH,
 )
 from ec import EC
 from wincontrols.hardware import WinControls
@@ -69,6 +70,22 @@ class LedControl:
                 wc.writeConfig()
         except Exception as e:
             logging.error(e)
+    
+    @staticmethod
+    def get_suspend_mode():
+        if IS_LED_SUPPORTED:
+            if os.path.exists(LED_MODE_PATH):
+                with open(LED_MODE_PATH, "r") as f:
+                    # eg: [oem] keep off, read the part between []
+                    return f.read().split("[")[1].split("]")[0]          
+        return ""
+    
+    @staticmethod
+    def set_suspend_mode(mode: str):
+        if IS_LED_SUPPORTED:
+            if os.path.exists(LED_SUSPEND_MODE_PATH):
+                with open(LED_SUSPEND_MODE_PATH, "w") as f:
+                    f.write(f"{mode}")
 
     @staticmethod
     def set_aya_all_pixels(color: Color, brightness: int = 100):

@@ -8,57 +8,78 @@ import * as thai from "./thai.json";
 import * as bulgarian from "./bulgarian.json";
 import * as italian from "./italian.json";
 import * as french from "./french.json";
-export const localizeMap = {
-    schinese: {
-      label: '简体中文',
-      strings: schinese,
-      credit: ["honjow"],
-    },
-    tchinese: {
-        label: '繁體中文',
-        strings: tchinese,
-        credit: [],
-      },
-    english: {
-      label: 'English',
-      strings: english,
-      credit: [],
-    }, 
-    german: {
-      label: 'Deutsch',
-      strings: german,
-      credit: [],
-    },
-    japanese: {
-      label: '日本語',
-      strings: japanese,
-      credit: [],
-    },
-    koreana: {
-      label: '한국어',
-      strings: koreana,
-      credit: [],
-    },  
-    thai: {
-      label: 'ไทย',
-      strings: thai,
-      credit: [],
-    },
-    bulgarian: {
-      label: 'Български',
-      strings: bulgarian,
-      credit: [],
-    },
-    italian: {
-      label: 'Italiano',
-      strings: italian,
-      credit: [],
-    },
-    french: {
-      label: 'Français',
-      strings: french,
-      credit: [],
-    },
+export interface LanguageProps {
+  label: string;
+  strings: any;
+  credit: string[];
+  locale: string;
+}
+
+export const defaultLanguage = "english";
+export const defaultLocale = "en";
+export const defaultMessages = english;
+
+export const localizeMap: { [key: string]: LanguageProps } = {
+  schinese: {
+    label: "简体中文",
+    strings: schinese,
+    credit: ["honjow"],
+    locale: "zh-CN",
+  },
+  tchinese: {
+    label: "繁體中文",
+    strings: tchinese,
+    credit: [],
+    locale: "zh-TW",
+  },
+  english: {
+    label: "English",
+    strings: english,
+    credit: [],
+    locale: "en",
+  },
+  german: {
+    label: "Deutsch",
+    strings: german,
+    credit: ["dctr"],
+    locale: "de",
+  },
+  japanese: {
+    label: "日本語",
+    strings: japanese,
+    credit: [],
+    locale: "ja",
+  },
+  koreana: {
+    label: "한국어",
+    strings: koreana,
+    credit: [],
+    locale: "ko",
+  },
+  thai: {
+    label: "ไทย",
+    strings: thai,
+    credit: [],
+    locale: "th",
+  },
+  bulgarian: {
+    label: "Български",
+    strings: bulgarian,
+    credit: [],
+    locale: "bg",
+  },
+  italian: {
+    label: "Italiano",
+    strings: italian,
+    credit: [],
+    locale: "it",
+  },
+  french: {
+    label: "Français",
+    strings: french,
+    credit: [],
+    locale: "fr",
+  },
 };
 
 export enum localizeStrEnum {
@@ -77,5 +98,11 @@ export enum localizeStrEnum {
     UPDATE_PLUGIN = "UPDATE_PLUGIN",
     INSTALLED_VERSION = "INSTALLED_VERSION",
     LATEST_VERSION = "LATEST_VERSION",
+
+    SUSPEND_MODE = "SUSPEND_MODE",
+    SUSPEND_MODE_OEM = "SUSPEND_MODE_OEM",
+    SUSPEND_MODE_KEEP = "SUSPEND_MODE_KEEP",
+    SUSPEND_MODE_OFF = "SUSPEND_MODE_OFF",
+    SUSPEND_MODE_DESC = "SUSPEND_MODE_DESC",
 }
     

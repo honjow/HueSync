@@ -75,7 +75,18 @@ export class Backend {
       return;
     }
     console.log("throwSuspendEvt");
-    this.serverAPI!.callPluginMethod("setOff", {});
+    // this.serverAPI!.callPluginMethod("setOff", {});
+  }
+
+  // get_suspend_mode
+  public static async getSuspendMode(): Promise<string> {
+    return (await this.serverAPI!.callPluginMethod("get_suspend_mode", {}))
+      .result as string;
+  }
+
+  // set_suspend_mode
+  public static async setSuspendMode(mode: string) {
+    await this.serverAPI!.callPluginMethod("set_suspend_mode", { mode });
   }
 
   public static async getLatestVersion(): Promise<string> {
@@ -92,6 +103,9 @@ export class Backend {
     if (!Setting.getEnableControl()) {
       return;
     }
+
+    console.log(`HusSync: set suspend mode ${Setting.getSuspendMode()}`)
+    Backend.setSuspendMode(Setting.getSuspendMode());
 
     if (Setting.getLedOn()) {
       Backend.applyRGB(Setting.getRed(), Setting.getGreen(), Setting.getBlue());
