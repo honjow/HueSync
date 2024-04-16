@@ -3,7 +3,7 @@ import {
   JsonProperty,
   JsonSerializer,
 } from "typescript-json-serializer";
-import { Backend, SuspendMode, hsvToRgb } from "../util";
+import { Backend, hsvToRgb } from "../util";
 
 const SETTINGS_KEY = "HueSync";
 const serializer = new JsonSerializer();
@@ -139,7 +139,7 @@ export class Setting {
   }
 
   static getSuspendMode() {
-    return this._instance.suspendMode || SuspendMode.OEM;
+    return this._instance.suspendMode ?? '';
   }
 
   private static initRGB() {
