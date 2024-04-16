@@ -9,14 +9,7 @@ import { Setting } from "../hooks";
 import { SlowSliderField } from ".";
 
 export const RGBComponent: VFC = () => {
-  // const {
-  //   hue,
-  //   saturation,
-  //   brightness,
-  //   setHsv,
-  //   ledOn,
-  //   setledOn,
-  // } = useRgb();
+
   const [hue, setHue] = useState<number>(Setting.getHue());
   const [saturation, setSaturation] = useState<number>(Setting.getSaturation());
   const [brightness, setBrightness] = useState<number>(Setting.getBrightness());
@@ -43,10 +36,6 @@ export const RGBComponent: VFC = () => {
     if (h >= 360) {
       h = 0;
     }
-
-    // setHue(h);
-    // setSaturation(s);
-    // setBrightness(v);
 
     if (apply) {
       Setting.setHue(h);

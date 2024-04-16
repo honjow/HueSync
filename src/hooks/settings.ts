@@ -37,6 +37,8 @@ export class Setting {
   // @ts-ignore
   saturation?: number;
 
+  suspendMode?: string;
+
   constructor() {
     this.enableControl = false;
     this.ledOn = true;
@@ -46,6 +48,13 @@ export class Setting {
     this.hue = 0;
     this.saturation = 100;
     this.brightness = 100;
+  }
+
+  static async init() {
+    Backend.getSuspendMode().then((suspendMode) => {
+      console.log(`HueSync: suspendMode: [${suspendMode}]`);
+      this._instance.suspendMode = suspendMode;
+    });
   }
 
   static getEnableControl() {
@@ -120,6 +129,18 @@ export class Setting {
       Setting.saveSettingsToLocalStorage();
       Backend.applySettings();
     }
+  }
+
+  static setSuspendMode(suspendMode: string) {
+    if (this._instance.suspendMode != suspendMode) {
+      this._instance.suspendMode = suspendMode;
+      Setting.saveSettingsToLocalStorage();
+      Backend.applySettings();
+    }
+  }
+
+  static getSuspendMode() {
+    return this._instance.suspendMode ?? '';
   }
 
   private static initRGB() {
