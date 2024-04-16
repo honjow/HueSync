@@ -74,8 +74,8 @@ class LedControl:
     @staticmethod
     def get_suspend_mode():
         if IS_LED_SUPPORTED:
-            if os.path.exists(LED_MODE_PATH):
-                with open(LED_MODE_PATH, "r") as f:
+            if os.path.exists(LED_SUSPEND_MODE_PATH):
+                with open(LED_SUSPEND_MODE_PATH, "r") as f:
                     # eg: [oem] keep off, read the part between []
                     return f.read().split("[")[1].split("]")[0]          
         return ""

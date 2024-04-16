@@ -52,7 +52,8 @@ export class Setting {
 
   static async init() {
     Backend.getSuspendMode().then((suspendMode) => {
-      this.setSuspendMode(suspendMode);
+      console.log(`HueSync: suspendMode: [${suspendMode}]`);
+      this._instance.suspendMode = suspendMode;
     });
   }
 
