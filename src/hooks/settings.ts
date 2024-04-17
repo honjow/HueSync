@@ -37,7 +37,10 @@ export class Setting {
   // @ts-ignore
   saturation?: number;
 
+  @JsonProperty()
   suspendMode?: string;
+
+  isSupportSuspendMode: boolean = false;
 
   constructor() {
     this.enableControl = false;
@@ -51,9 +54,14 @@ export class Setting {
   }
 
   static async init() {
-    Backend.getSuspendMode().then((suspendMode) => {
-      console.log(`HueSync: suspendMode: [${suspendMode}]`);
-      this._instance.suspendMode = suspendMode;
+    // Backend.getSuspendMode().then((suspendMode) => {
+    //   console.log(`HueSync: suspendMode: [${suspendMode}]`);
+    //   this._instance.suspendMode = suspendMode;
+    // });
+
+    Backend.isSupportSuspendMode().then((isSupportSuspendMode) => {
+      console.log(`HueSync: isSupportSuspendMode: [${isSupportSuspendMode}]`);
+      this._instance.isSupportSuspendMode = isSupportSuspendMode;
     });
   }
 
@@ -88,6 +96,10 @@ export class Setting {
       Setting.saveSettingsToLocalStorage();
       Backend.applySettings();
     }
+  }
+
+  static isSupportSuspendMode() {
+    return this._instance.isSupportSuspendMode;
   }
 
   // static applyRGB(red: number, green: number, blue: number) {
@@ -140,7 +152,7 @@ export class Setting {
   }
 
   static getSuspendMode() {
-    return this._instance.suspendMode ?? '';
+    return this._instance.suspendMode ?? "";
   }
 
   private static initRGB() {

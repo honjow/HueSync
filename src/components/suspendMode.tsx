@@ -14,6 +14,8 @@ export const SuspendModeComponent: VFC = () => {
 
     const [suspendMode, setSuspendMode] = useState<string>(Setting.getSuspendMode());
 
+    const [isSupportSuspendMode, _] = useState<boolean>(Setting.isSupportSuspendMode());
+
     const options = [
         { mode: SuspendMode.OEM, label: localizationManager.getString(localizeStrEnum.SUSPEND_MODE_OEM) },
         { mode: SuspendMode.KEEP, label: localizationManager.getString(localizeStrEnum.SUSPEND_MODE_KEEP) },
@@ -46,7 +48,7 @@ export const SuspendModeComponent: VFC = () => {
 
     return (
         <>
-            {suspendMode && <PanelSectionRow>
+            {isSupportSuspendMode && <PanelSectionRow>
                 <SlowSliderField
                     label={localizationManager.getString(localizeStrEnum.SUSPEND_MODE)}
                     description={localizationManager.getString(localizeStrEnum.SUSPEND_MODE_DESC)}

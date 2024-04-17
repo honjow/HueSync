@@ -55,6 +55,9 @@ class Plugin:
         except Exception as e:
             logging.error(e)
             return False
+        
+    async def is_support_suspend_mode(self):
+        return IS_LED_SUSPEND_MODE_SUPPORTED
 
     async def get_language(self):
         try:
