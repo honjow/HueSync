@@ -99,6 +99,12 @@ export class Backend {
     await this.serverAPI!.callPluginMethod("update_latest", {});
   }
 
+  // is_support_suspend_mode
+  public static async isSupportSuspendMode(): Promise<boolean> {
+    return (await this.serverAPI!.callPluginMethod("is_support_suspend_mode", {}))
+      .result as boolean;
+  }
+
   public static applySettings = () => {
     if (!Setting.getEnableControl()) {
       return;
