@@ -1,7 +1,8 @@
-import { ButtonItem, Field, PanelSection, PanelSectionRow } from "decky-frontend-lib";
+import { Field, PanelSection, PanelSectionRow } from "decky-frontend-lib";
 import { VFC, useEffect, useState } from "react";
 import { localizationManager, localizeStrEnum } from "../i18n";
 import { Backend } from "../util";
+import { ActionButtonItem } from ".";
 
 export const MoreComponent: VFC = () => {
     const [currentVersion, _] = useState<string>(Backend.data.getCurrentVersion());
@@ -25,12 +26,12 @@ export const MoreComponent: VFC = () => {
     return (
         <PanelSection title={localizationManager.getString(localizeStrEnum.VERSION)}>
             <PanelSectionRow>
-                <ButtonItem
+                <ActionButtonItem
                     layout="below"
                     onClick={() => {
                         Backend.updateLatest();
                     }}
-                >{uptButtonText}</ButtonItem>
+                >{uptButtonText}</ActionButtonItem>
             </PanelSectionRow>
             <PanelSectionRow>
                 <Field disabled label={localizationManager.getString(localizeStrEnum.INSTALLED_VERSION)}>
