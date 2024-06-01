@@ -1,6 +1,6 @@
 import threading
 import os
-from config import logging
+from config import logger
 from helpers import get_user
 
 class SysInfoManager (threading.Thread):
@@ -18,11 +18,11 @@ class SysInfoManager (threading.Thread):
                             self._language = line.split('"')[3]
                             break
             else:
-                logging.error(f"{lang_path} not found, using default language english")
-            logging.info(f"get_language {self._language} path={lang_path}")
+                logger.error(f"{lang_path} not found, using default language english")
+            logger.info(f"get_language {self._language} path={lang_path}")
             return self._language
         except Exception as e:
-            logging.error(e)
+            logger.error(e)
             return self._language
 
 sysInfoManager = SysInfoManager()
