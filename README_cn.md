@@ -21,7 +21,7 @@
   - 2/2S
   - GEEK/1S
 - GPD
-  - Win 4 (支持来自 [pyWinControls](https://github.com/pelrun/pyWinControls))
+  - Win 4 (由 [pyWinControls](https://github.com/pelrun/pyWinControls) 提供支持)
 - OneXPlayer
   - 飞行家 (实验性)
 - Aokzoe

@@ -17,7 +17,7 @@ LED controller for handheld devices
   - 2/2S
   - GEEK/1S
 - GPD
-  - Win 4 (Support from [pyWinControls](https://github.com/pelrun/pyWinControls))
+  - Win 4 (Support by [pyWinControls](https://github.com/pelrun/pyWinControls))
 - OneXPlayer
   - OneXFly (Experimental)
 - Aokzoe
