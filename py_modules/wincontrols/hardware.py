@@ -4,7 +4,7 @@ import struct
 
 from wincontrols.config import *
 
-import wincontrols.gpd_hid as gpd_hid
+import hid as hid
 
 class WinControls():
     """Class for reading and writing configuration to the GPD Win controller hardware."""
@@ -88,10 +88,10 @@ class WinControls():
 
     def _openHid(self):
         self.device = None
-        for dev in gpd_hid.enumerate(vid=0x2f24):
+        for dev in hid.enumerate(vid=0x2f24):
             if dev['usage_page'] == 0xff00:
                 #print(dev['path'])
-                self.device = gpd_hid.Device(path=dev['path'])
+                self.device = hid.Device(path=dev['path'])
                 break
         if not self.device:
             raise RuntimeError("Unable to open GPD controller device")

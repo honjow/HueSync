@@ -1,18 +1,28 @@
 import logging
 import os
+import traceback
+
+from logging_handler import SystemdHandler
 
 # 日志配置
+LOG_LOCATION = "/tmp/huesync_py.log"
 try:
-    LOG_LOCATION = "/tmp/huesync_py.log"
     logging.basicConfig(
-        level=logging.DEBUG,
-        filename=LOG_LOCATION,
+        level=logging.INFO,
         format="[%(asctime)s | %(filename)s:%(lineno)s:%(funcName)s] %(levelname)s: %(message)s",
-        filemode="w",
         force=True,
+        handlers=[
+            SystemdHandler(),
+            logging.FileHandler(filename=LOG_LOCATION, mode="w"),
+        ],
     )
 except Exception as e:
-    logging.error(f"日志配置异常|{e}")
+    stack = traceback.format_exc()
+    with open(LOG_LOCATION, "a") as f:
+        f.write(str(e))
+        f.write(stack)
+
+logger = logging.getLogger(__name__)
 
 # 设备信息获取配置
 try:

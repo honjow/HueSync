@@ -9,29 +9,9 @@ from config import (
     LED_SUSPEND_MODE_PATH,
 )
 from ec import EC
+from hid_led.onex_led_device import OneXLEDDevice
+from utils import AyaJoystick, AyaLedPosition, Color, LEDLevel
 from wincontrols.hardware import WinControls
-
-class AyaJoystick:
-    Left = 1
-    Right = 2
-    ALL = 3
-
-
-class AyaLedPosition:
-    Right = 1
-    Bottom = 2
-    Left = 3
-    Top = 4
-
-
-class Color:
-    def __init__(self, r, g, b):
-        self.R = r
-        self.G = g
-        self.B = b
-
-    def hex(self):
-        return f"{self.R:02x}{self.G:02x}{self.B:02x}"
 
 
 class LedControl:
@@ -54,7 +34,13 @@ class LedControl:
             LedControl.set_aya_all_pixels(color, brightness)
         elif SYS_VENDOR == "GPD":
             LedControl.set_gpd_color(color, brightness)
-    
+        elif (
+            SYS_VENDOR == "ONE-NETBOOK"
+            or SYS_VENDOR == "ONE-NETBOOK TECHNOLOGY CO., LTD."
+            or SYS_VENDOR == "AOKZOE"
+        ):
+            LedControl.set_onex_color(color, brightness)
+
     @staticmethod
     def set_gpd_color(color: Color, brightness: int = 100):
         try:
@@ -69,17 +55,28 @@ class LedControl:
             if wc.loaded and wc.setConfig(conf):
                 wc.writeConfig()
         except Exception as e:
-            logging.error(e)
-    
+            logging.error(e, exc_info=True)
+
+    @staticmethod
+    def set_onex_color(color: Color, brightness: int = 100):
+        try:
+            ledDevice = OneXLEDDevice(0x1A2C, 0xB001)
+            _brightness: int = 299 * color.R + 587 * color.G + 114 * color.B // 1000
+            if ledDevice.is_ready():
+                ledDevice.set_led_color(color, level=LEDLevel.SolidColor)
+                ledDevice.set_led_brightness(_brightness)
+        except Exception as e:
+            logging.error(e, exc_info=True)
+
     @staticmethod
     def get_suspend_mode():
         if IS_LED_SUPPORTED:
             if os.path.exists(LED_SUSPEND_MODE_PATH):
                 with open(LED_SUSPEND_MODE_PATH, "r") as f:
                     # eg: [oem] keep off, read the part between []
-                    return f.read().split("[")[1].split("]")[0]          
+                    return f.read().split("[")[1].split("]")[0]
         return ""
-    
+
     @staticmethod
     def set_suspend_mode(mode: str):
         if IS_LED_SUPPORTED:
