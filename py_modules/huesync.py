@@ -64,11 +64,16 @@ class LedControl:
     def set_onex_color(color: Color, brightness: int = 100):
         try:
             ledDevice = OneXLEDDevice(0x1A2C, 0xB001)
-            _brightness: int = 299 * color.R + 587 * color.G + 114 * color.B // 1000
+            # ledDevice = OneXLEDDevice(0x2f24, 0x135)
+            _brightness: int = int(
+                round(
+                    (299 * color.R + 587 * color.G + 114 * color.B) / 1000 / 255.0 * 100
+                )
+            )
             if ledDevice.is_ready():
                 logger.info(f"set_onex_color: color={color}, brightness={_brightness}")
-                ledDevice.set_led_color(color, color, LEDLevel.SolidColor)
                 ledDevice.set_led_brightness(_brightness)
+                ledDevice.set_led_color(color, color, LEDLevel.SolidColor)
         except Exception as e:
             logger.error(e, exc_info=True)
 

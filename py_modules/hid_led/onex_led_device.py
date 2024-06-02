@@ -1,8 +1,8 @@
 from math import sqrt
-from itertools import repeat
+from itertools import repeat, chain
 import hid as hid
 from utils import Color, LEDLevel
-
+from config import logger
 
 """
 convert from https://github.com/Valkirie/HandheldCompanion/blob/main/HandheldCompanion/Devices/OneXPlayer/OneXPlayerOneXFly.cs 
@@ -15,7 +15,7 @@ class OneXLEDDevice:
         self._pid = pid
         self.hid_device = None
 
-    def is_ready(self):
+    def is_ready(self) -> bool:
         # Prepare list for all HID devices
         hid_device_list = hid.enumerate(self._vid, self._pid)
 
@@ -28,7 +28,7 @@ class OneXLEDDevice:
 
         return False
 
-    def set_led_brightness(self, brightness):
+    def set_led_brightness(self, brightness: int) -> bool:
         # OneXFly brightness range is: 0 - 4 range, 0 is off, convert from 0 - 100 % range
         brightness = round(brightness / 20)
 
@@ -37,10 +37,10 @@ class OneXLEDDevice:
             return False
 
         # Define the HID message for setting brightness.
-        msg = [0x00, 0x07, 0xFF, 0xFD, 0x01, 0x05, brightness]
+        msg: bytearray = bytearray([0x00, 0x07, 0xFF, 0xFD, 0x01, 0x05, brightness])
 
         # Write the HID message to set the LED brightness.
-        self.hid_device.write(msg)
+        self.hid_device.write(bytes(msg))
 
         return True
 
@@ -70,9 +70,11 @@ class OneXLEDDevice:
         else:
             return False
 
-        msg = prefix + LEDOption + rgbData + [0x00]
+        msg = list(chain(prefix, LEDOption, chain(*rgbData), [0x00]))
+        logger.info(f"msg={msg}")
+        result: bytearray = bytearray(msg)
 
-        self.hid_device.write(msg)
+        self.hid_device.write(bytes(result))
 
         return True
 
