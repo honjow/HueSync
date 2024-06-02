@@ -34,7 +34,7 @@ class LedControl:
                 # time.sleep(0.01)
         elif IS_AYANEO_EC_SUPPORTED:
             LedControl.set_aya_all_pixels(color, brightness)
-        elif SYS_VENDOR == "GPD":
+        elif SYS_VENDOR == "GPD" and PRODUCT_NAME == "G1618-04":
             LedControl.set_gpd_color(color, brightness)
         elif (
             SYS_VENDOR == "ONE-NETBOOK"
@@ -71,8 +71,8 @@ class LedControl:
                 )
             )
             if ledDevice.is_ready():
-                logger.info(f"set_onex_color: color={color}, brightness={_brightness}")
-                ledDevice.set_led_brightness(_brightness)
+                logger.info(f"set_onex_color: color={color}, brightness={brightness}")
+                ledDevice.set_led_brightness(brightness)
                 ledDevice.set_led_color(color, color, LEDLevel.SolidColor)
         except Exception as e:
             logger.error(e, exc_info=True)

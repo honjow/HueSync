@@ -41,6 +41,7 @@ class OneXLEDDevice:
 
         # Write the HID message to set the LED brightness.
         self.hid_device.write(bytes(msg))
+        # self.hid_device.send_feature_report(bytes(msg))
 
         return True
 
@@ -57,9 +58,11 @@ class OneXLEDDevice:
         prefix = [0x00, 0x07, 0xFF]
         LEDOption = [0x00]
         rgbData = [0x00]
+        suffix = [0x00]
 
         if level == LEDLevel.SolidColor:
-            led_color = self.find_closest_color(main_color)
+            # led_color = self.find_closest_color(main_color)
+            led_color = main_color
             LEDOption = [0xFE]
             rgbData = list(repeat([led_color.R, led_color.G, led_color.B], 20))
 
@@ -70,11 +73,12 @@ class OneXLEDDevice:
         else:
             return False
 
-        msg = list(chain(prefix, LEDOption, chain(*rgbData), [0x00]))
+        msg = list(chain(prefix, LEDOption, chain(*rgbData), suffix))
         logger.info(f"msg={msg}")
         result: bytearray = bytearray(msg)
 
         self.hid_device.write(bytes(result))
+        # self.hid_device.send_feature_report(bytes(result))
 
         return True
 
