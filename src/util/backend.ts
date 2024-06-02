@@ -3,7 +3,7 @@ import { Setting } from "../hooks";
 
 export class BackendData {
   private serverAPI: ServerAPI | undefined;
-  private current_version = "1.0.0";
+  private current_version = "";
   private latest_version = "";
 
   public async init(serverAPI: ServerAPI) {

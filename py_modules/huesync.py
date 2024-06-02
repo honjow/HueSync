@@ -1,10 +1,11 @@
 import os
 from config import (
-    logging,
+    logger,
     LED_PATH,
     IS_LED_SUPPORTED,
     IS_AYANEO_EC_SUPPORTED,
     SYS_VENDOR,
+    PRODUCT_NAME,
     LED_MODE_PATH,
     LED_SUSPEND_MODE_PATH,
 )
@@ -17,6 +18,7 @@ from wincontrols.hardware import WinControls
 class LedControl:
     @staticmethod
     def set_Color(color: Color, brightness: int = 100):
+        logger.info(f"SYS_VENDOR={SYS_VENDOR}, PRODUCT_NAME={PRODUCT_NAME}")
         if IS_LED_SUPPORTED:
             if os.path.exists(LED_MODE_PATH):
                 with open(LED_MODE_PATH, "w") as f:
@@ -25,7 +27,7 @@ class LedControl:
             for x in range(2):
                 with open(os.path.join(LED_PATH, "brightness"), "w") as f:
                     _brightness: int = brightness * 255 // 100
-                    logging.debug(f"brightness={_brightness}")
+                    logger.debug(f"brightness={_brightness}")
                     f.write(str(_brightness))
                 with open(os.path.join(LED_PATH, "multi_intensity"), "w") as f:
                     f.write(f"{color.R} {color.G} {color.B}")
@@ -39,6 +41,7 @@ class LedControl:
             or SYS_VENDOR == "ONE-NETBOOK TECHNOLOGY CO., LTD."
             or SYS_VENDOR == "AOKZOE"
         ):
+            logger.info(f"onxplayer color={color}")
             LedControl.set_onex_color(color, brightness)
 
     @staticmethod
@@ -51,11 +54,11 @@ class LedControl:
                 color.B * brightness // 100,
             )
             conf = ["ledmode=solid", f"colour={color.hex()}"]
-            logging.info(f"conf={conf}")
+            logger.info(f"conf={conf}")
             if wc.loaded and wc.setConfig(conf):
                 wc.writeConfig()
         except Exception as e:
-            logging.error(e, exc_info=True)
+            logger.error(e, exc_info=True)
 
     @staticmethod
     def set_onex_color(color: Color, brightness: int = 100):
@@ -63,10 +66,11 @@ class LedControl:
             ledDevice = OneXLEDDevice(0x1A2C, 0xB001)
             _brightness: int = 299 * color.R + 587 * color.G + 114 * color.B // 1000
             if ledDevice.is_ready():
+                logger.info(f"set_onex_color: color={color}, brightness={_brightness}")
                 ledDevice.set_led_color(color, level=LEDLevel.SolidColor)
                 ledDevice.set_led_brightness(_brightness)
         except Exception as e:
-            logging.error(e, exc_info=True)
+            logger.error(e, exc_info=True)
 
     @staticmethod
     def get_suspend_mode():
@@ -111,7 +115,7 @@ class LedControl:
 
     @staticmethod
     def set_aya_subpixel(js, subpixel_idx, brightness):
-        logging.debug(f"js={js} subpixel_idx={subpixel_idx},brightness={brightness}")
+        logger.debug(f"js={js} subpixel_idx={subpixel_idx},brightness={brightness}")
         LedControl.aya_ec_cmd(js, subpixel_idx, brightness)
 
     @staticmethod

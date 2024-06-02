@@ -28,13 +28,13 @@ logger = logging.getLogger(__name__)
 try:
     PRODUCT_NAME = open("/sys/devices/virtual/dmi/id/product_name", "r").read().strip()
 except Exception as e:
-    logging.error(f"设备信息配置异常|{e}")
+    logging.error(f"设备信息配置异常", exc_info=True)
 
 # sys_vendor
 try:
     SYS_VENDOR = open("/sys/devices/virtual/dmi/id/sys_vendor", "r").read().strip()
 except Exception as e:
-    logging.error(f"设备信息配置异常|{e}")
+    logging.error(f"设备信息配置异常",exc_info=True)
 
 LED_PATH = "/sys/class/leds/multicolor:chassis/"
 LED_MODE_PATH = os.path.join(LED_PATH, "device", "led_mode")
