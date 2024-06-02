@@ -22,6 +22,9 @@ class Color:
 
     def hex(self):
         return f"{self.R:02x}{self.G:02x}{self.B:02x}"
+    
+    def __str__(self):
+        return f"Color(R={self.R}, G={self.G}, B={self.B})"
 
 
 class LEDLevel(Enum):

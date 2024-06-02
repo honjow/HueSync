@@ -22,7 +22,7 @@ class OneXLEDDevice:
         # Check every HID device to find LED device
         for device in hid_device_list:
             # OneXFly device for LED control does not support a FeatureReport, hardcoded to match the Interface Number
-            if "&mi_00" in device["path"]:
+            if device["interface_number"] == 0:
                 self.hid_device = hid.Device(path=device["path"])
                 return True
 
