@@ -67,7 +67,7 @@ class LedControl:
             _brightness: int = 299 * color.R + 587 * color.G + 114 * color.B // 1000
             if ledDevice.is_ready():
                 logger.info(f"set_onex_color: color={color}, brightness={_brightness}")
-                ledDevice.set_led_color(color, level=LEDLevel.SolidColor)
+                ledDevice.set_led_color(color, color, LEDLevel.SolidColor)
                 ledDevice.set_led_brightness(_brightness)
         except Exception as e:
             logger.error(e, exc_info=True)
