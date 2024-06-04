@@ -34,7 +34,11 @@ jobs:
           pnpm install --no-frozen-lockfile
           pnpm update decky-frontend-lib --latest
           pnpm run build
-          tar -czvf huesync.tar.gz --transform 's,^,HueSync/,' dist backend py_modules *.py *.json *.md *.js LICENSE
+          # tar -czvf huesync.tar.gz --transform 's,^,HueSync/,' dist backend py_modules *.py *.json *.md *.js LICENSE
+          temp_dir=$(mktemp -d)
+          mkdir -p $temp_dir/HueSync
+          cp -r dist backend py_modules *.py *.json *.md *.js LICENSE $temp_dir/HueSync
+          tar -czvf huesync.tar.gz -C $temp_dir HueSync
       
       - name: show files
         run: |

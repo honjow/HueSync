@@ -1,4 +1,3 @@
-import asyncio
 import os
 import decky_plugin
 
@@ -15,9 +14,10 @@ except Exception as e:
 
 class Plugin:
     async def _main(self):
-        self.ledControl = LedControl()
-        while True:
-            await asyncio.sleep(3)
+        try:
+            self.ledControl = LedControl()
+        except Exception as e:
+            logger.error(e, exc_info=True)
 
     async def setRGB(self, r: int, g: int, b: int, brightness: int = 100):
         try:
