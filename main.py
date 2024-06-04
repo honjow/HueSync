@@ -6,7 +6,6 @@ try:
     from config import logger, IS_LED_SUSPEND_MODE_SUPPORTED
     from huesync import LedControl
     from utils import Color
-    from sysInfo import sysInfoManager
     import update
 
     logger.info("HueSync main.py")
@@ -56,13 +55,6 @@ class Plugin:
 
     async def is_support_suspend_mode(self):
         return IS_LED_SUSPEND_MODE_SUPPORTED
-
-    async def get_language(self):
-        try:
-            return sysInfoManager.get_language()
-        except Exception as e:
-            logger.error(e, exc_info=True)
-            return ""
 
     async def update_latest(self):
         logger.info("Updating latest")
