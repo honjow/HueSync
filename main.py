@@ -28,7 +28,7 @@ class Plugin:
             logger.info(f"set_ledOn:{r},{g},{b}, brightness={brightness}")
             LedControl.set_Color(Color(r, g, b), brightness=100)
         except Exception as e:
-            logger.error(e)
+            logger.error(e, exc_info=True)
             return False
 
     async def setOff(self):
@@ -43,7 +43,7 @@ class Plugin:
         try:
             return LedControl.get_suspend_mode()
         except Exception as e:
-            logger.error(e)
+            logger.error(e, exc_info=True)
             return ""
 
     async def set_suspend_mode(self, mode: str):
@@ -54,7 +54,7 @@ class Plugin:
             else:
                 return False
         except Exception as e:
-            logger.error(e)
+            logger.error(e, exc_info=True)
             return False
 
     async def is_support_suspend_mode(self):
@@ -64,18 +64,30 @@ class Plugin:
         try:
             return sysInfoManager.get_language()
         except Exception as e:
-            logger.error(e)
+            logger.error(e, exc_info=True)
             return ""
 
     async def update_latest(self):
         logger.info("Updating latest")
-        return update.update_latest()
+        try:
+            return update.update_latest()
+        except Exception as e:
+            logger.error(e, exc_info=True)
+            return False
 
     async def get_version(self):
-        return update.get_version()
+        try:
+            return update.get_version()
+        except Exception as e:
+            logger.error(e, exc_info=True)
+            return ""
 
     async def get_latest_version(self):
-        return update.get_latest_version()
+        try:
+            return update.get_latest_version()
+        except Exception as e:
+            logger.error(e, exc_info=True)
+
 
     # Function called first during the unload process, utilize this to handle your plugin being removed
     async def _unload(self):

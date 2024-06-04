@@ -1,6 +1,6 @@
 from math import sqrt
 from itertools import repeat, chain
-import hid as hid
+import hid
 from utils import Color, LEDLevel
 from config import logger
 
@@ -41,7 +41,6 @@ class OneXLEDDevice:
 
         # Write the HID message to set the LED brightness.
         self.hid_device.write(bytes(msg))
-        # self.hid_device.send_feature_report(bytes(msg))
 
         return True
 
@@ -61,7 +60,6 @@ class OneXLEDDevice:
         suffix = [0x00]
 
         if level == LEDLevel.SolidColor:
-            # led_color = self.find_closest_color(main_color)
             led_color = main_color
             LEDOption = [0xFE]
             rgbData = list(repeat([led_color.R, led_color.G, led_color.B], 20))
@@ -74,11 +72,11 @@ class OneXLEDDevice:
             return False
 
         msg = list(chain(prefix, LEDOption, chain(*rgbData), suffix))
-        logger.info(f"msg={msg}")
+        msg_hex = "".join([f"{x:02X}" for x in msg])
+        logger.info(f"msg={msg_hex}")
         result: bytearray = bytearray(msg)
 
         self.hid_device.write(bytes(result))
-        # self.hid_device.send_feature_report(bytes(result))
 
         return True
 
