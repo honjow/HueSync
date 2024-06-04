@@ -10,7 +10,8 @@ from config import (
     LED_SUSPEND_MODE_PATH,
 )
 from ec import EC
-from hid_led.onex_led_device import OneXLEDDevice
+from led.onex_led_device import OneXLEDDevice
+from led.onex_led_device_serial import OneXLEDDeviceSerial
 from utils import AyaJoystick, AyaLedPosition, Color, LEDLevel
 from wincontrols.hardware import WinControls
 
@@ -61,21 +62,31 @@ class LedControl:
             logger.error(e, exc_info=True)
 
     @staticmethod
+    def set_onex_color_hid(color: Color, brightness: int = 100):
+        ledDevice = OneXLEDDevice(0x1A2C, 0xB001)
+        # ledDevice = OneXLEDDevice(0x2f24, 0x135)
+        # _brightness: int = int(
+        #     round((299 * color.R + 587 * color.G + 114 * color.B) / 1000 / 255.0 * 100)
+        # )
+        if ledDevice.is_ready():
+            logger.info(f"set_onex_color: color={color}, brightness={brightness}")
+            ledDevice.set_led_brightness(brightness)
+            ledDevice.set_led_color(color, color, LEDLevel.SolidColor)
+
+    @staticmethod
+    def set_onex_color_serial(color: Color, brightness: int = 100):
+        ledDevice = OneXLEDDeviceSerial()
+        if ledDevice.is_ready():
+            logger.info(f"set_onex_color_serial: color={color}")
+            ledDevice.set_led_brightness(brightness)
+            ledDevice.set_led_color(color, color, LEDLevel.SolidColor)
+
+    @staticmethod
     def set_onex_color(color: Color, brightness: int = 100):
-        try:
-            ledDevice = OneXLEDDevice(0x1A2C, 0xB001)
-            # ledDevice = OneXLEDDevice(0x2f24, 0x135)
-            _brightness: int = int(
-                round(
-                    (299 * color.R + 587 * color.G + 114 * color.B) / 1000 / 255.0 * 100
-                )
-            )
-            if ledDevice.is_ready():
-                logger.info(f"set_onex_color: color={color}, brightness={brightness}")
-                ledDevice.set_led_brightness(brightness)
-                ledDevice.set_led_color(color, color, LEDLevel.SolidColor)
-        except Exception as e:
-            logger.error(e, exc_info=True)
+        if "ONE-NETBOOK ONEXPLAYER X1" in PRODUCT_NAME:
+            LedControl.set_onex_color_serial(color, brightness)
+        else:
+            LedControl.set_onex_color_hid(color, brightness)
 
     @staticmethod
     def get_suspend_mode():
