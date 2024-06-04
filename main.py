@@ -3,10 +3,6 @@ import os
 import decky_plugin
 
 try:
-    # from helpers import get_homebrew_path
-
-    # HOMEBREW_PATH = get_homebrew_path()
-    # sys.path.append("{}/plugins/HueSync/backend".format(HOMEBREW_PATH))
     from config import logger, IS_LED_SUSPEND_MODE_SUPPORTED
     from huesync import LedControl
     from utils import Color
@@ -20,20 +16,21 @@ except Exception as e:
 
 class Plugin:
     async def _main(self):
+        self.ledControl = LedControl()
         while True:
             await asyncio.sleep(3)
 
     async def setRGB(self, r: int, g: int, b: int, brightness: int = 100):
         try:
             logger.info(f"set_ledOn:{r},{g},{b}, brightness={brightness}")
-            LedControl.set_Color(Color(r, g, b), brightness=100)
+            self.ledControl.set_Color(Color(r, g, b), brightness=100)
         except Exception as e:
             logger.error(e, exc_info=True)
             return False
 
     async def setOff(self):
         try:
-            LedControl.set_Color(Color(0, 0, 0), brightness=0)
+            self.ledControl.set_Color(Color(0, 0, 0), brightness=0)
             logger.info(f"set_ledoff")
         except Exception as e:
             logger.error(e)
@@ -41,7 +38,7 @@ class Plugin:
 
     async def get_suspend_mode(self):
         try:
-            return LedControl.get_suspend_mode()
+            return self.ledControl.get_suspend_mode()
         except Exception as e:
             logger.error(e, exc_info=True)
             return ""
@@ -49,7 +46,7 @@ class Plugin:
     async def set_suspend_mode(self, mode: str):
         try:
             if IS_LED_SUSPEND_MODE_SUPPORTED:
-                LedControl.set_suspend_mode(mode)
+                self.ledControl.set_suspend_mode(mode)
                 return True
             else:
                 return False
@@ -87,7 +84,6 @@ class Plugin:
             return update.get_latest_version()
         except Exception as e:
             logger.error(e, exc_info=True)
-
 
     # Function called first during the unload process, utilize this to handle your plugin being removed
     async def _unload(self):

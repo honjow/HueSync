@@ -17,8 +17,7 @@ from wincontrols.hardware import WinControls
 
 
 class LedControl:
-    @staticmethod
-    def set_Color(color: Color, brightness: int = 100):
+    def set_Color(self, color: Color, brightness: int = 100):
         logger.info(f"SYS_VENDOR={SYS_VENDOR}, PRODUCT_NAME={PRODUCT_NAME}")
         if IS_LED_SUPPORTED:
             if os.path.exists(LED_MODE_PATH):
@@ -34,19 +33,18 @@ class LedControl:
                     f.write(f"{color.R} {color.G} {color.B}")
                 # time.sleep(0.01)
         elif IS_AYANEO_EC_SUPPORTED:
-            LedControl.set_aya_all_pixels(color, brightness)
+            self.set_aya_all_pixels(color, brightness)
         elif SYS_VENDOR == "GPD" and PRODUCT_NAME == "G1618-04":
-            LedControl.set_gpd_color(color, brightness)
+            self.set_gpd_color(color, brightness)
         elif (
             SYS_VENDOR == "ONE-NETBOOK"
             or SYS_VENDOR == "ONE-NETBOOK TECHNOLOGY CO., LTD."
             or SYS_VENDOR == "AOKZOE"
         ):
             logger.info(f"onxplayer color={color}")
-            LedControl.set_onex_color(color, brightness)
+            self.set_onex_color(color, brightness)
 
-    @staticmethod
-    def set_gpd_color(color: Color, brightness: int = 100):
+    def set_gpd_color(self, color: Color, brightness: int = 100):
         try:
             wc = WinControls(disableFwCheck=True)
             color = Color(
@@ -61,8 +59,7 @@ class LedControl:
         except Exception as e:
             logger.error(e, exc_info=True)
 
-    @staticmethod
-    def set_onex_color_hid(color: Color, brightness: int = 100):
+    def set_onex_color_hid(self, color: Color, brightness: int = 100):
         ledDevice = OneXLEDDevice(0x1A2C, 0xB001)
         # ledDevice = OneXLEDDevice(0x2f24, 0x135)
         # _brightness: int = int(
@@ -73,23 +70,20 @@ class LedControl:
             ledDevice.set_led_brightness(brightness)
             ledDevice.set_led_color(color, color, LEDLevel.SolidColor)
 
-    @staticmethod
-    def set_onex_color_serial(color: Color, brightness: int = 100):
+    def set_onex_color_serial(self, color: Color, brightness: int = 100):
         ledDevice = OneXLEDDeviceSerial()
         if ledDevice.is_ready():
             logger.info(f"set_onex_color_serial: color={color}")
             ledDevice.set_led_brightness(brightness)
             ledDevice.set_led_color(color, color, LEDLevel.SolidColor)
 
-    @staticmethod
-    def set_onex_color(color: Color, brightness: int = 100):
+    def set_onex_color(self, color: Color, brightness: int = 100):
         if "ONE-NETBOOK ONEXPLAYER X1" in PRODUCT_NAME:
-            LedControl.set_onex_color_serial(color, brightness)
+            self.set_onex_color_serial(color, brightness)
         else:
-            LedControl.set_onex_color_hid(color, brightness)
+            self.set_onex_color_hid(color, brightness)
 
-    @staticmethod
-    def get_suspend_mode():
+    def get_suspend_mode(self):
         if IS_LED_SUPPORTED:
             if os.path.exists(LED_SUSPEND_MODE_PATH):
                 with open(LED_SUSPEND_MODE_PATH, "r") as f:
@@ -97,15 +91,13 @@ class LedControl:
                     return f.read().split("[")[1].split("]")[0]
         return ""
 
-    @staticmethod
-    def set_suspend_mode(mode: str):
+    def set_suspend_mode(self, mode: str):
         if IS_LED_SUPPORTED:
             if os.path.exists(LED_SUSPEND_MODE_PATH):
                 with open(LED_SUSPEND_MODE_PATH, "w") as f:
                     f.write(f"{mode}")
 
-    @staticmethod
-    def set_aya_all_pixels(color: Color, brightness: int = 100):
+    def set_aya_all_pixels(self, color: Color, brightness: int = 100):
 
         color = Color(
             color.R * brightness // 100,
@@ -113,29 +105,21 @@ class LedControl:
             color.B * brightness // 100,
         )
 
-        LedControl.set_aya_pixel(AyaJoystick.ALL, AyaLedPosition.Right, color)
-        LedControl.set_aya_pixel(AyaJoystick.ALL, AyaLedPosition.Bottom, color)
-        LedControl.set_aya_pixel(AyaJoystick.ALL, AyaLedPosition.Left, color)
-        LedControl.set_aya_pixel(AyaJoystick.ALL, AyaLedPosition.Top, color)
+        self.set_aya_pixel(AyaJoystick.ALL, AyaLedPosition.Right, color)
+        self.set_aya_pixel(AyaJoystick.ALL, AyaLedPosition.Bottom, color)
+        self.set_aya_pixel(AyaJoystick.ALL, AyaLedPosition.Left, color)
+        self.set_aya_pixel(AyaJoystick.ALL, AyaLedPosition.Top, color)
 
-        # AyaLed.set_pixel(Joystick.Right, LedPosition.Right, color)
-        # AyaLed.set_pixel(Joystick.Right, LedPosition.Bottom, color)
-        # AyaLed.set_pixel(Joystick.Right, LedPosition.Left, color)
-        # AyaLed.set_pixel(Joystick.Right, LedPosition.Top, color)
+    def set_aya_pixel(self, js, led, color: Color):
+        self.set_aya_subpixel(js, led * 3, color.R)
+        self.set_aya_subpixel(js, led * 3 + 1, color.G)
+        self.set_aya_subpixel(js, led * 3 + 2, color.B)
 
-    @staticmethod
-    def set_aya_pixel(js, led, color: Color):
-        LedControl.set_aya_subpixel(js, led * 3, color.R)
-        LedControl.set_aya_subpixel(js, led * 3 + 1, color.G)
-        LedControl.set_aya_subpixel(js, led * 3 + 2, color.B)
-
-    @staticmethod
-    def set_aya_subpixel(js, subpixel_idx, brightness):
+    def set_aya_subpixel(self, js, subpixel_idx, brightness):
         logger.debug(f"js={js} subpixel_idx={subpixel_idx},brightness={brightness}")
-        LedControl.aya_ec_cmd(js, subpixel_idx, brightness)
+        self.aya_ec_cmd(js, subpixel_idx, brightness)
 
-    @staticmethod
-    def aya_ec_cmd(cmd, p1, p2):
+    def aya_ec_cmd(self, cmd, p1, p2):
         for x in range(2):
             EC.Write(0x6D, cmd)
             EC.Write(0xB1, p1)
