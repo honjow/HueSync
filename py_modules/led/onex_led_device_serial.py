@@ -44,7 +44,7 @@ class OneXLEDDeviceSerial:
 
         fillData = list(repeat([0x00], 54))
 
-        brightness_data = list(chain(prefix, dataPrefix, data, fillData, suffix))
+        brightness_data = list(chain(prefix, dataPrefix, data, chain(*fillData), suffix))
         bytes_data = bytes(bytearray(brightness_data))
 
         hex_data = " ".join([f"{x:02X}" for x in brightness_data])
@@ -85,9 +85,9 @@ class OneXLEDDeviceSerial:
         else:
             return False
 
-        left_msg = list(chain(prefix, leftLed, LEDOption, dataPrefix, rgbData, suffix))
+        left_msg = list(chain(prefix, leftLed, LEDOption, dataPrefix, chain(*rgbData), suffix))
         right_msg = list(
-            chain(prefix, rightLed, LEDOption, dataPrefix, rgbData, suffix)
+            chain(prefix, rightLed, LEDOption, dataPrefix, chain(*rgbData), suffix)
         )
 
         left_msg_hex = " ".join([f"{x:02X}" for x in left_msg])
