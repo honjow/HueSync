@@ -78,7 +78,7 @@ class LedControl:
             ledDevice.set_led_color(color, color, LEDLevel.SolidColor)
 
     def set_onex_color(self, color: Color, brightness: int = 100):
-        if "ONE-NETBOOK ONEXPLAYER X1" in PRODUCT_NAME:
+        if "ONEXPLAYER X1" in PRODUCT_NAME:
             self.set_onex_color_serial(color, brightness)
         else:
             self.set_onex_color_hid(color, brightness)
