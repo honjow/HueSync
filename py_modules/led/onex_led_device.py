@@ -47,9 +47,7 @@ class OneXLEDDevice:
     def set_led_color(
         self,
         main_color: Color,
-        secondary_color: Color,
         level: LEDLevel,
-        speed: int = 100,
     ) -> bool:
         if not self.is_ready():
             return False

@@ -68,14 +68,17 @@ class LedControl:
         if ledDevice.is_ready():
             logger.info(f"set_onex_color: color={color}, brightness={brightness}")
             ledDevice.set_led_brightness(brightness)
-            ledDevice.set_led_color(color, color, LEDLevel.SolidColor)
+            ledDevice.set_led_color(color, LEDLevel.SolidColor)
 
     def set_onex_color_serial(self, color: Color, brightness: int = 100):
-        ledDevice = OneXLEDDeviceSerial()
-        if ledDevice.is_ready():
-            logger.info(f"set_onex_color_serial: color={color}")
-            ledDevice.set_led_brightness(brightness)
-            ledDevice.set_led_color(color, color, LEDLevel.SolidColor)
+        try:
+            ledDevice = OneXLEDDeviceSerial()
+            if ledDevice.is_ready():
+                logger.info(f"set_onex_color_serial: color={color}")
+                ledDevice.set_led_brightness(brightness)
+                ledDevice.set_led_color(color, LEDLevel.SolidColor)
+        except Exception as e:
+            logger.error(e, exc_info=True)
 
     def set_onex_color(self, color: Color, brightness: int = 100):
         if "ONEXPLAYER X1" in PRODUCT_NAME:

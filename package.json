@@ -1,6 +1,6 @@
 {
   "name": "huesync",
-  "version": "1.4.6.pre4",
+  "version": "1.4.6.pre5",
   "description": "LED controller for handheld devices.",
   "scripts": {
     "build": "shx rm -rf dist && rollup -c",
