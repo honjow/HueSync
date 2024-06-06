@@ -95,9 +95,8 @@ class OneXLEDDeviceSerial:
             led_color = main_color
             LEDOption = [0xFE]
 
-            rgbData = list(repeat([led_color.R, led_color.G, led_color.B], 20)).pop(
-                rgbDataLen
-            )
+            _rgbData = list(repeat([led_color.R, led_color.G, led_color.B], 20))
+            rgbData = list(chain(*_rgbData))[:rgbDataLen]
 
         elif level == LEDLevel.Rainbow:
             LEDOption = [0x03]

@@ -15,14 +15,14 @@ class AyaLedPosition:
 
 
 class Color:
-    def __init__(self, r, g, b):
+    def __init__(self, r: int, g: int, b: int):
         self.R = r
         self.G = g
         self.B = b
 
     def hex(self):
         return f"{self.R:02x}{self.G:02x}{self.B:02x}"
-    
+
     def __str__(self):
         return f"Color(R={self.R}, G={self.G}, B={self.B})"
 
