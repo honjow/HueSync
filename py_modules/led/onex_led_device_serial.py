@@ -106,10 +106,10 @@ class OneXLEDDeviceSerial:
             return False
 
         left_msg = list(
-            chain(prefix, leftLed, LEDOption, dataPrefix, chain(*rgbData), suffix)
+            chain(prefix, leftLed, LEDOption, dataPrefix, rgbData, suffix)
         )
         right_msg = list(
-            chain(prefix, rightLed, LEDOption, dataPrefix, chain(*rgbData), suffix)
+            chain(prefix, rightLed, LEDOption, dataPrefix, rgbData, suffix)
         )
 
         left_msg_hex = " ".join([f"{x:02X}" for x in left_msg])
