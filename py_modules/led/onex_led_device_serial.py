@@ -59,6 +59,7 @@ class OneXLEDDeviceSerial:
         logger.info(f"brightness len={len(brightness_data)} hex_data={hex_data}")
 
         self.ser.write(bytes_data)
+        time.sleep(0.1)
         return True
 
     def set_led_color(self, main_color: Color, level: LEDLevel) -> bool:
@@ -67,10 +68,11 @@ class OneXLEDDeviceSerial:
         rightLed = 0x04
 
         self.set_one_led_color(main_color, level, controlerLed)
-        time.sleep(0.3)
+        time.sleep(0.2)
         self.set_one_led_color(main_color, level, leftLed)
-        time.sleep(0.3)
+        time.sleep(0.2)
         self.set_one_led_color(main_color, level, rightLed)
+        time.sleep(0.1)
         return True
 
     def set_one_led_color(
