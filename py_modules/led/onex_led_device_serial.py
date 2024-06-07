@@ -61,10 +61,23 @@ class OneXLEDDeviceSerial:
         self.ser.write(bytes_data)
         return True
 
-    def set_led_color(
+    def set_led_color(self, main_color: Color, level: LEDLevel) -> bool:
+        controlerLed = 0x00
+        leftLed = 0x03
+        rightLed = 0x04
+
+        self.set_one_led_color(main_color, level, controlerLed)
+        time.sleep(0.3)
+        self.set_one_led_color(main_color, level, leftLed)
+        time.sleep(0.3)
+        self.set_one_led_color(main_color, level, rightLed)
+        return True
+
+    def set_one_led_color(
         self,
         main_color: Color,
         level: LEDLevel,
+        ledPosition: int,
     ) -> bool:
         if not self.is_ready():
             return False
@@ -72,9 +85,6 @@ class OneXLEDDeviceSerial:
         dataLength = 64
 
         prefix = [0xFD, 0x3F]
-
-        leftLed = [0x03]
-        rightLed = [0x04]
 
         LEDOption = [0xFE]
         dataPrefix = [0x00, 0x00]
@@ -85,7 +95,7 @@ class OneXLEDDeviceSerial:
         rgbDataLen = (
             dataLength
             - len(prefix)
-            - len(leftLed)
+            - 1
             - len(LEDOption)
             - len(dataPrefix)
             - len(suffix)
@@ -101,28 +111,17 @@ class OneXLEDDeviceSerial:
         elif level == LEDLevel.Rainbow:
             LEDOption = [0x03]
             rgbData = list(repeat(0x00, rgbDataLen))
-
         else:
             return False
 
-        left_msg = list(
-            chain(prefix, leftLed, LEDOption, dataPrefix, rgbData, suffix)
-        )
-        right_msg = list(
-            chain(prefix, rightLed, LEDOption, dataPrefix, rgbData, suffix)
-        )
+        msg = list(chain(prefix, [ledPosition], LEDOption, dataPrefix, rgbData, suffix))
 
-        left_msg_hex = " ".join([f"{x:02X}" for x in left_msg])
-        right_msg_hex = " ".join([f"{x:02X}" for x in right_msg])
+        msg_hex = " ".join([f"{x:02X}" for x in msg])
+        
+        msg_bytes = bytes(bytearray(msg))
 
-        logger.info(f"left_msg len={len(left_msg)} hex_data={left_msg_hex}")
-        logger.info(f"right_msg len={len(right_msg)} hex_data={right_msg_hex}")
-
-        l_bytes = bytes(bytearray(left_msg))
-        r_bytes = bytes(bytearray(right_msg))
-
-        self.ser.write(l_bytes)
-        time.sleep(0.2)
-        self.ser.write(r_bytes)
+        logger.info(f"write msg, len={len(msg)} hex_data={msg_hex}")
+        self.ser.write(msg_bytes)
+        
 
         return True
