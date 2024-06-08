@@ -24,6 +24,8 @@ LED controller for handheld devices
 - Aokzoe
   - A1
   - A2
+- ROG
+  - Ally
 
 ### Additional Support
 Support for more Ayaneo devices through [ayaneo-platform](https://github.com/ShadowBlip/ayaneo-platform), can be obtained by installing the dkms module through [AUR](https://aur.archlinux.org/packages/ayaneo-platform-dkms-git). The latest ChimeraOS comes with it.

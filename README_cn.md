@@ -28,6 +28,8 @@
 - Aokzoe
   - A1
   - A2
+- ROG
+  - Ally
 
 ### 额外支持
 
