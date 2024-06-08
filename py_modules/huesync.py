@@ -11,6 +11,7 @@ from config import (
     LED_SUSPEND_MODE_PATH,
 )
 from ec import EC
+from led.ausu_led_device import AsusLEDDevice
 from led.onex_led_device import OneXLEDDevice
 from led.onex_led_device_serial import OneXLEDDeviceSerial
 from utils import AyaJoystick, AyaLedPosition, Color, LEDLevel
@@ -44,6 +45,9 @@ class LedControl:
         ):
             logger.info(f"onxplayer color={color}")
             self.set_onex_color(color, brightness)
+        elif SYS_VENDOR == "ASUSTeK COMPUTER INC.":
+            if "ROG Ally RC71L" in PRODUCT_NAME:
+                self.set_asus_color(color, brightness)
 
     def set_gpd_color(self, color: Color, brightness: int = 100):
         try:
@@ -86,6 +90,14 @@ class LedControl:
             self.set_onex_color_serial(color, brightness)
         else:
             self.set_onex_color_hid(color, brightness)
+
+    def set_asus_color(self, color: Color, brightness: int = 100):
+        ASUS_VID = 0x0B05
+        ASUS_KBD_PID = 0x1ABE
+        ledDevice = AsusLEDDevice(ASUS_VID, ASUS_KBD_PID, [0xFF31], [0x0080])
+        if ledDevice.is_ready():
+            logger.info(f"set_asus_color: color={color}, brightness={brightness}")
+            ledDevice.set_led_color(color, brightness, LEDLevel.SolidColor)
 
     def get_suspend_mode(self):
         if IS_LED_SUPPORTED:
