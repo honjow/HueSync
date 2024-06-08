@@ -23,9 +23,11 @@
 - GPD
   - Win 4 (由 [pyWinControls](https://github.com/pelrun/pyWinControls) 提供支持)
 - OneXPlayer
-  - 飞行家 (实验性)
+  - 飞行家
+  - X1
 - Aokzoe
-  - A2 (实验性)
+  - A1
+  - A2
 
 ### 额外支持
 
