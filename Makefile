@@ -72,8 +72,10 @@ deploy-steamdeck: ## Deploy plugin build to steamdeck
 
 restart-decky: ## Restart Decky on remote steamdeck
 	@echo "+ $@"
+	# @ssh -t $(DECK_USER)@$(DECK_HOST) -p $(DECK_PORT) -i $(DECK_KEY) \
+ 	# 	'sudo systemctl restart plugin_loader.service'
 	@ssh -t $(DECK_USER)@$(DECK_HOST) -p $(DECK_PORT) -i $(DECK_KEY) \
- 		'sudo systemctl restart plugin_loader.service'
+ 		'sudo pkill -HUP PluginLoader'
 	@echo -e '\033[0;32m+ all is good, restarting Decky...\033[0m'
 
 deploy: ## Deploy code to steamdeck and restart Decky

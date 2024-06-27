@@ -60,9 +60,12 @@ export default definePlugin((serverApi: ServerAPI) => {
   init();
 
   SteamClient.System.RegisterForOnResumeFromSuspend(async () => {
-    Backend.applySettings();
-    console.log("结束休眠");
+    setTimeout(() => {
+      Backend.applySettings();
+      console.log("结束休眠");
+    }, 3000);
   });
+
   SteamClient.System.RegisterForOnSuspendRequest(async () => {
     Backend.throwSuspendEvt();
     console.log("开始休眠");
