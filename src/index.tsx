@@ -2,11 +2,10 @@ import {
   definePlugin,
   PanelSection,
   PanelSectionRow,
-  ServerAPI,
   staticClasses,
   ToggleField,
-} from "decky-frontend-lib";
-import { VFC, useState, useEffect } from "react";
+} from "@decky/ui";
+import { FC, useState, useEffect } from "react";
 import { FaLightbulb } from "react-icons/fa";
 
 import { localizeStrEnum, localizationManager } from "./i18n";
@@ -15,7 +14,7 @@ import { Backend } from "./util";
 import { Setting } from "./hooks";
 import { MoreComponent } from "./components/more";
 
-const Content: VFC = () => {
+const Content: FC = () => {
   const [enableControl, setEnableControl] = useState<boolean>(
     Setting.getEnableControl()
   );
@@ -48,11 +47,11 @@ const Content: VFC = () => {
   );
 };
 
-export default definePlugin((serverApi: ServerAPI) => {
+export default definePlugin(() => {
   const init = async () => {
     Setting.loadSettingsFromLocalStorage();
     localizationManager.init();
-    Backend.init(serverApi);
+    Backend.init();
     await Setting.init();
     Backend.applySettings();
   }

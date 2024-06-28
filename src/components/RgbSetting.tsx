@@ -2,13 +2,13 @@ import {
   PanelSectionRow,
   ToggleField,
   gamepadSliderClasses,
-} from "decky-frontend-lib";
-import { VFC, useEffect, useState } from "react";
+} from "@decky/ui";
+import { FC, useEffect, useState } from "react";
 import { localizationManager, localizeStrEnum } from "../i18n";
 import { Setting } from "../hooks";
 import { SlowSliderField } from ".";
 
-export const RGBComponent: VFC = () => {
+export const RGBComponent: FC = () => {
 
   const [hue, setHue] = useState<number>(Setting.getHue());
   const [saturation, setSaturation] = useState<number>(Setting.getSaturation());

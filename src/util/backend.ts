@@ -1,31 +1,24 @@
-import { ServerAPI } from "decky-frontend-lib";
 import { Setting } from "../hooks";
+import { call } from "@decky/api";
 
 export class BackendData {
-  private serverAPI: ServerAPI | undefined;
   private current_version = "";
   private latest_version = "";
 
-  public async init(serverAPI: ServerAPI) {
-    this.serverAPI = serverAPI;
+  public async init() {
 
-    await this.serverAPI!.callPluginMethod<{}, string>("get_version", {}).then(
-      (res) => {
-        if (res.success) {
-          console.info("current_version = " + res.result);
-          this.current_version = res.result;
-        }
+    await call<[], string>("get_version").then(
+      (result) => {
+        console.info("current_version = " + result);
+        this.current_version = result;
       }
     );
 
-    await this.serverAPI!.callPluginMethod<{}, string>(
+    await call<[], string>(
       "get_latest_version",
-      {}
-    ).then((res) => {
-      if (res.success) {
-        console.info("latest_version = " + res.result);
-        this.latest_version = res.result;
-      }
+    ).then((result) => {
+      console.info("latest_version = " + result);
+      this.latest_version = result;
     });
   }
 
@@ -47,27 +40,25 @@ export class BackendData {
 }
 
 export class Backend {
-  private static serverAPI: ServerAPI;
   public static data: BackendData;
 
-  public static async init(serverAPI: ServerAPI) {
-    this.serverAPI = serverAPI;
+  public static async init() {
     this.data = new BackendData();
-    await this.data.init(serverAPI);
+    await this.data.init();
   }
 
   private static applyRGB(red: number, green: number, blue: number) {
     console.log(`Applying ledOn ${red} ${green} ${blue}`);
-    Backend.serverAPI!.callPluginMethod("setRGB", {
-      r: red,
-      g: green,
-      b: blue,
-    });
+    call<[r: number, g: number, b: number], void>("setRGB",
+      red,
+      green,
+      blue,
+    );
   }
 
   private static applyLedOff() {
     console.log("Applying ledOff ");
-    Backend.serverAPI!.callPluginMethod("setOff", {});
+    call("setOff");
   }
 
   public static throwSuspendEvt() {
@@ -80,29 +71,26 @@ export class Backend {
 
   // get_suspend_mode
   public static async getSuspendMode(): Promise<string> {
-    return (await this.serverAPI!.callPluginMethod("get_suspend_mode", {}))
-      .result as string;
+    return (await call("get_suspend_mode")) as string;
   }
 
   // set_suspend_mode
   public static async setSuspendMode(mode: string) {
-    await this.serverAPI!.callPluginMethod("set_suspend_mode", { mode });
+    await call("set_suspend_mode", mode);
   }
 
   public static async getLatestVersion(): Promise<string> {
-    return (await this.serverAPI!.callPluginMethod("get_latest_version", {}))
-      .result as string;
+    return (await call("get_latest_version")) as string;
   }
 
   // updateLatest
   public static async updateLatest() {
-    await this.serverAPI!.callPluginMethod("update_latest", {});
+    await call("update_latest");
   }
 
   // is_support_suspend_mode
   public static async isSupportSuspendMode(): Promise<boolean> {
-    return (await this.serverAPI!.callPluginMethod("is_support_suspend_mode", {}))
-      .result as boolean;
+    return (await call("is_support_suspend_mode")) as boolean;
   }
 
   public static applySettings = () => {

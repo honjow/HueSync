@@ -1,5 +1,5 @@
-import { NotchLabel, SliderField } from "decky-frontend-lib";
-import { ItemProps } from "decky-frontend-lib/dist/deck-components/Item";
+import { NotchLabel, SliderField } from "@decky/ui";
+import { ItemProps } from "@decky/ui/dist/components/Item";
 import { useEffect, useRef, useState, FC } from "react";
 
 export interface SlowSliderFieldProps extends ItemProps {

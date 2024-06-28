@@ -1,4 +1,4 @@
-import { Field, PanelSection, PanelSectionRow } from "decky-frontend-lib";
+import { Field, PanelSection, PanelSectionRow } from "@decky/ui";
 import { VFC, useEffect, useState } from "react";
 import { localizationManager, localizeStrEnum } from "../i18n";
 import { Backend } from "../util";

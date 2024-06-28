@@ -2,6 +2,7 @@
   "name": "HueSync",
   "author": "honjow",
   "flags": ["root"],
+  "api_version": 1,
   "publish": {
     "tags": ["root"],
     "description": "LED plugin.",

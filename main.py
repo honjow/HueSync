@@ -1,5 +1,5 @@
 import os
-import decky_plugin
+import decky
 
 try:
     from config import logger, IS_LED_SUSPEND_MODE_SUPPORTED
@@ -30,7 +30,7 @@ class Plugin:
     async def setOff(self):
         try:
             self.ledControl.set_Color(Color(0, 0, 0), brightness=0)
-            logger.info(f"set_ledoff")
+            logger.info("set_ledoff")
         except Exception as e:
             logger.error(e)
             return False
@@ -79,35 +79,35 @@ class Plugin:
 
     # Function called first during the unload process, utilize this to handle your plugin being removed
     async def _unload(self):
-        decky_plugin.logger.info("Goodbye World!")
+        decky.logger.info("Goodbye World!")
         pass
 
     # Migrations that should be performed before entering `_main()`.
     async def _migration(self):
-        decky_plugin.logger.info("Migrating")
+        decky.logger.info("Migrating")
         # Here's a migration example for logs:
-        # - `~/.config/decky-template/template.log` will be migrated to `decky_plugin.DECKY_PLUGIN_LOG_DIR/template.log`
-        decky_plugin.migrate_logs(
+        # - `~/.config/decky-template/template.log` will be migrated to `decky.DECKY_PLUGIN_LOG_DIR/template.log`
+        decky.migrate_logs(
             os.path.join(
-                decky_plugin.DECKY_USER_HOME,
+                decky.DECKY_USER_HOME,
                 ".config",
                 "decky-template",
                 "template.log",
             )
         )
         # Here's a migration example for settings:
-        # - `~/homebrew/settings/template.json` is migrated to `decky_plugin.DECKY_PLUGIN_SETTINGS_DIR/template.json`
-        # - `~/.config/decky-template/` all files and directories under this root are migrated to `decky_plugin.DECKY_PLUGIN_SETTINGS_DIR/`
-        decky_plugin.migrate_settings(
-            os.path.join(decky_plugin.DECKY_HOME, "settings", "template.json"),
-            os.path.join(decky_plugin.DECKY_USER_HOME, ".config", "decky-template"),
+        # - `~/homebrew/settings/template.json` is migrated to `decky.DECKY_PLUGIN_SETTINGS_DIR/template.json`
+        # - `~/.config/decky-template/` all files and directories under this root are migrated to `decky.DECKY_PLUGIN_SETTINGS_DIR/`
+        decky.migrate_settings(
+            os.path.join(decky.DECKY_HOME, "settings", "template.json"),
+            os.path.join(decky.DECKY_USER_HOME, ".config", "decky-template"),
         )
         # Here's a migration example for runtime data:
-        # - `~/homebrew/template/` all files and directories under this root are migrated to `decky_plugin.DECKY_PLUGIN_RUNTIME_DIR/`
-        # - `~/.local/share/decky-template/` all files and directories under this root are migrated to `decky_plugin.DECKY_PLUGIN_RUNTIME_DIR/`
-        decky_plugin.migrate_runtime(
-            os.path.join(decky_plugin.DECKY_HOME, "template"),
+        # - `~/homebrew/template/` all files and directories under this root are migrated to `decky.DECKY_PLUGIN_RUNTIME_DIR/`
+        # - `~/.local/share/decky-template/` all files and directories under this root are migrated to `decky.DECKY_PLUGIN_RUNTIME_DIR/`
+        decky.migrate_runtime(
+            os.path.join(decky.DECKY_HOME, "template"),
             os.path.join(
-                decky_plugin.DECKY_USER_HOME, ".local", "share", "decky-template"
+                decky.DECKY_USER_HOME, ".local", "share", "decky-template"
             ),
         )

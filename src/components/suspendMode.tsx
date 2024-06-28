@@ -1,7 +1,7 @@
 import {
     NotchLabel,
     PanelSectionRow,
-} from "decky-frontend-lib";
+} from "@decky/ui";
 
 import { VFC, useEffect, useState } from "react";
 
