@@ -3,17 +3,20 @@ import hid
 from utils import Color, LEDLevel
 from config import logger
 
-'''
+"""
 code from https://github.com/hhd-dev/hhd/blob/master/src/hhd/device/rog_ally/hid.py 
-'''
+"""
+
 
 def buf(x):
     return bytes(x) + bytes(64 - len(x))
+
 
 Zone = Literal["all", "left_left", "left_right", "right_left", "right_right"]
 RgbMode = Literal["solid", "pulse", "dynamic", "spiral"]
 GamepadMode = Literal["default", "mouse", "macro"]
 Brightness = Literal["off", "low", "medium", "high"]
+
 
 def rgb_set_brightness(brightness: Brightness):
     match brightness:
@@ -26,6 +29,7 @@ def rgb_set_brightness(brightness: Brightness):
         case _:
             c = 0x00
     return buf([0x5A, 0xBA, 0xC5, 0xC4, c])
+
 
 def rgb_command(zone: Zone, mode: RgbMode, red: int, green: int, blue: int):
     match mode:
@@ -80,6 +84,7 @@ def rgb_command(zone: Zone, mode: RgbMode, red: int, green: int, blue: int):
         ]
     )
 
+
 def rgb_set(
     side: Literal["main", "left", "right"],
     mode: RgbMode,
@@ -103,6 +108,7 @@ def rgb_set(
                 rgb_command("all", mode, red, green, blue),
             ]
 
+
 class AsusLEDDevice:
     def __init__(self, vid, pid, usage_page, usage):
         self._vid = vid
@@ -117,7 +123,10 @@ class AsusLEDDevice:
 
         # Check every HID device to find LED device
         for device in hid_device_list:
-            if device["usage_page"] in self._usage_page and device["usage"] in self._usage:
+            if (
+                device["usage_page"] in self._usage_page
+                and device["usage"] in self._usage
+            ):
                 self.hid_device = hid.Device(path=device["path"])
                 return True
 

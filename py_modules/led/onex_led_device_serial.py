@@ -32,14 +32,13 @@ class OneXLEDDeviceSerial:
                 return False
 
     def set_led_brightness(self, brightness: int) -> bool:
-
         if not self.is_ready():
             return False
 
         dataLength = 64
 
         prefix = [0xFD, 0x3F, 0x00]
-        dataPrefix = [0xfd, 0x03, 0x00, 0x01, 0x05]
+        dataPrefix = [0xFD, 0x03, 0x00, 0x01, 0x05]
         # brightness level 0,1,3,4 (0x00, 0x01, 0x03, 0x04)
         data = [0x04]
         suffix = [0x3F, 0xFD]
@@ -119,11 +118,10 @@ class OneXLEDDeviceSerial:
         msg = list(chain(prefix, [ledPosition], LEDOption, dataPrefix, rgbData, suffix))
 
         msg_hex = " ".join([f"{x:02X}" for x in msg])
-        
+
         msg_bytes = bytes(bytearray(msg))
 
         logger.info(f"write msg, len={len(msg)} hex_data={msg_hex}")
         self.ser.write(msg_bytes)
-        
 
         return True

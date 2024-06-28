@@ -114,7 +114,6 @@ class LedControl:
                     f.write(f"{mode}")
 
     def set_aya_all_pixels(self, color: Color, brightness: int = 100):
-
         color = Color(
             color.R * brightness // 100,
             color.G * brightness // 100,
