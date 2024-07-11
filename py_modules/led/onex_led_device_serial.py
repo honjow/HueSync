@@ -1,8 +1,8 @@
 from itertools import repeat, chain
 from utils import Color, LEDLevel
 from config import logger
-import serial
 import time
+import serial as serial
 
 
 class OneXLEDDeviceSerial:
