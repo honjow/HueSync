@@ -1,5 +1,5 @@
 from typing import Literal
-import hid
+import lib_hid as hid
 from utils import Color, LEDLevel
 from config import logger
 

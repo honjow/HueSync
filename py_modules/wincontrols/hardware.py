@@ -4,7 +4,7 @@ import struct
 
 from wincontrols.config import *
 
-import hid as hid
+import lib_hid as hid
 
 class WinControls():
     """Class for reading and writing configuration to the GPD Win controller hardware."""

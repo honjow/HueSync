@@ -1,6 +1,6 @@
 from math import sqrt
 from itertools import repeat, chain
-import hid
+import lib_hid as hid
 from utils import Color, LEDLevel
 from config import logger
 
