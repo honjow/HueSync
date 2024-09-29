@@ -30,7 +30,7 @@ jobs:
 
       - name: build plugin
         run: |
-          npm i -g pnpm@8.5.1
+          npm i -g pnpm
           pnpm install --no-frozen-lockfile
           pnpm update @decky/ui --latest
           pnpm update @decky/api --latest
@@ -46,7 +46,7 @@ jobs:
           tar -tzvf huesync.tar.gz
       
       - name: Publish Artifacts
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: huesync
           path: huesync.tar.gz
