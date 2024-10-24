@@ -1,6 +1,8 @@
 import os
 import time
 from config import (
+    ALLY_LED_PATH,
+    IS_ALLY_LED_SUPPORTED,
     logger,
     LED_PATH,
     IS_LED_SUPPORTED,
@@ -35,6 +37,34 @@ class LedControl:
                 with open(os.path.join(LED_PATH, "multi_intensity"), "w") as f:
                     f.write(f"{color.R} {color.G} {color.B}")
                 # time.sleep(0.01)
+        elif IS_ALLY_LED_SUPPORTED:
+            # read /sys/class/leds/ally:rgb:joystick_rings/multi_index
+            multi_index = ""
+            if os.path.exists(os.path.join(ALLY_LED_PATH, "multi_index")):
+                with open(os.path.join(ALLY_LED_PATH, "multi_index"), "r") as f:
+                    multi_index = f.read().strip()
+                    logger.debug(f"ally multi_index={multi_index}")
+
+            count = len(multi_index.split(" "))
+            if count == 12:
+                # set /sys/class/leds/ally:rgb:joystick_rings/multi_intensity
+                with open(os.path.join(ALLY_LED_PATH, "multi_intensity"), "w") as f:
+                    f.write(
+                        f"{color.R} {color.G} {color.B} {color.R} {color.G} {color.B} {color.R} {color.G} {color.B} {color.R} {color.G} {color.B}"
+                    )
+            elif count == 4:
+                color_hex = color.hex()
+                # set /sys/class/leds/ally:rgb:joystick_rings/multi_intensity
+                with open(os.path.join(ALLY_LED_PATH, "multi_intensity"), "w") as f:
+                    f.write(f"0x{color_hex} 0x{color_hex} 0x{color_hex} 0x{color_hex}")
+
+            if os.path.exists(os.path.join(ALLY_LED_PATH, "brightness")):
+                with open(os.path.join(ALLY_LED_PATH, "brightness"), "w") as f:
+                    _brightness: int = brightness * 255 // 100
+                    logger.debug(f"ally brightness={_brightness}")
+                    f.write(str(_brightness))
+
+            pass
         elif IS_AYANEO_EC_SUPPORTED:
             self.set_aya_all_pixels(color, brightness)
         elif SYS_VENDOR == "GPD" and PRODUCT_NAME == "G1618-04":

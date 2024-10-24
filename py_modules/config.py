@@ -42,6 +42,8 @@ LED_MODE_PATH = os.path.join(LED_PATH, "device", "led_mode")
 # Value: oem, off, keep. Default: oem
 LED_SUSPEND_MODE_PATH = os.path.join(LED_PATH, "suspend_mode")
 
+ALLY_LED_PATH = "/sys/class/leds/ally:rgb:joystick_rings"
+
 def is_led_supported():
     return os.path.exists(LED_PATH)
 
@@ -50,6 +52,8 @@ def is_led_suspend_mode_supported():
 
 IS_LED_SUPPORTED = is_led_supported()
 IS_LED_SUSPEND_MODE_SUPPORTED = is_led_suspend_mode_supported()
+
+IS_ALLY_LED_SUPPORTED = os.path.exists(ALLY_LED_PATH)
 
 
 AYANEO_EC_SUPPORT_LIST = [
