@@ -36,7 +36,17 @@ try:
 except Exception as e:
     logging.error(f"设备信息配置异常{e}",exc_info=True)
 
-LED_PATH = "/sys/class/leds/multicolor:chassis/"
+LED_PATH_LIST = [
+    "/sys/class/leds/ayaneo:rgb:joystick_rings",
+    "/sys/class/leds/ayn:rgb:joystick_rings",
+    "/sys/class/leds/multicolor:chassis",
+]
+
+# LED_PATH = "/sys/class/leds/multicolor:chassis/"
+for led_path in LED_PATH_LIST:
+    if os.path.exists(led_path):
+        LED_PATH = led_path
+        break
 LED_MODE_PATH = os.path.join(LED_PATH, "device", "led_mode")
 
 # Value: oem, off, keep. Default: oem
