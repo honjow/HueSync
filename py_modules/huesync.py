@@ -286,7 +286,6 @@ class OneXLEDDevice(LEDDevice):
         self, color: Color, brightness: int = DEFAULT_BRIGHTNESS
     ) -> None:
         ledDevice = OneXLEDDeviceHID(0x1A2C, 0xB001)
-        # ledDevice = OneXLEDDevice(0x2f24, 0x135)
         # _brightness: int = int(
         #     round((299 * color.R + 587 * color.G + 114 * color.B) / 1000 / 255.0 * 100)
         # )
