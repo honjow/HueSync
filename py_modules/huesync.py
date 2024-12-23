@@ -1,4 +1,5 @@
 import os
+import time
 
 from config import (
     ALLY_LED_PATH,
@@ -18,7 +19,7 @@ from led.ausu_led_device import AsusLEDDeviceHID
 from led.onex_led_device import OneXLEDDeviceHID
 from led.onex_led_device_serial import OneXLEDDeviceSerial
 from led_device import LEDDevice
-from utils import AyaJoystick, AyaLedPosition, Color, LEDLevel
+from utils import AyaJoystickGroup, AyaLedZone, Color, LEDLevel
 from wincontrols.hardware import WinControls
 
 
@@ -229,40 +230,40 @@ class AyaNeoLEDDevice(LEDDevice):
                 _brightness: int = brightness * 255 // 100
                 logger.debug(f"brightness={_brightness}")
                 f.write(str(_brightness))
-        self.set_aya_all_pixels(color, brightness)
+        self.set_color_all(color, brightness)
 
-    def set_aya_pixel(self, js: int, led: int, color: Color) -> None:
-        self.set_aya_subpixel(js, led * 3, color.R)
-        self.set_aya_subpixel(js, led * 3 + 1, color.G)
-        self.set_aya_subpixel(js, led * 3 + 2, color.B)
+    def set_color_one(self, group: int, ledZone: int, color: Color) -> None:
+        self.set_aya_subpixel(group, ledZone * 3, color.R)
+        self.set_aya_subpixel(group, ledZone * 3 + 1, color.G)
+        self.set_aya_subpixel(group, ledZone * 3 + 2, color.B)
 
-    def set_aya_subpixel(self, js: int, subpixel_idx: int, brightness: int) -> None:
-        logger.debug(f"js={js} subpixel_idx={subpixel_idx},brightness={brightness}")
-        self.aya_ec_cmd(js, subpixel_idx, brightness)
+    def set_aya_subpixel(self, group: int, subpixel_idx: int, brightness: int) -> None:
+        logger.debug(
+            f"group={group} subpixel_idx={subpixel_idx},brightness={brightness}"
+        )
+        self.aya_ec_cmd(group, subpixel_idx, brightness)
 
-    def aya_ec_cmd(self, cmd: int, p1: int, p2: int) -> None:
+    def aya_ec_cmd(self, group: int, command: int, argument: int) -> None:
         for x in range(2):
-            EC.Write(0x6D, cmd)
-            EC.Write(0xB1, p1)
-            EC.Write(0xB2, p2)
+            EC.Write(0x6D, group)
+            EC.Write(0xB1, command)
+            EC.Write(0xB2, argument)
             EC.Write(0xBF, 0x10)
-            # time.sleep(0.01)
-            EC.Write(0xBF, 0xFF)
-            # time.sleep(0.01)
+            time.sleep(0.005)
+            # EC.Write(0xBF, 0xFF)
+            EC.Write(0xBF, 0xFE)
 
-    def set_aya_all_pixels(
-        self, color: Color, brightness: int = DEFAULT_BRIGHTNESS
-    ) -> None:
+    def set_color_all(self, color: Color, brightness: int = DEFAULT_BRIGHTNESS) -> None:
         color = Color(
             color.R * brightness // 100,
             color.G * brightness // 100,
             color.B * brightness // 100,
         )
 
-        self.set_aya_pixel(AyaJoystick.ALL, AyaLedPosition.Right, color)
-        self.set_aya_pixel(AyaJoystick.ALL, AyaLedPosition.Bottom, color)
-        self.set_aya_pixel(AyaJoystick.ALL, AyaLedPosition.Left, color)
-        self.set_aya_pixel(AyaJoystick.ALL, AyaLedPosition.Top, color)
+        self.set_color_one(AyaJoystickGroup.ALL, AyaLedZone.Right, color)
+        self.set_color_one(AyaJoystickGroup.ALL, AyaLedZone.Bottom, color)
+        self.set_color_one(AyaJoystickGroup.ALL, AyaLedZone.Left, color)
+        self.set_color_one(AyaJoystickGroup.ALL, AyaLedZone.Top, color)
 
     def set_mode(self, mode: str):
         pass

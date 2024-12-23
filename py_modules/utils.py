@@ -1,13 +1,13 @@
 from enum import Enum
 
 
-class AyaJoystick(Enum):
+class AyaJoystickGroup(Enum):
     Left = 1
     Right = 2
     ALL = 3
 
 
-class AyaLedPosition(Enum):
+class AyaLedZone(Enum):
     Right = 1
     Bottom = 2
     Left = 3
