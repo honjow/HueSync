@@ -1,5 +1,4 @@
 import os
-from typing import Any
 
 from config import (
     ALLY_LED_PATH,
@@ -232,12 +231,12 @@ class AyaNeoLEDDevice(LEDDevice):
                 f.write(str(_brightness))
         self.set_aya_all_pixels(color, brightness)
 
-    def set_aya_pixel(self, js: Any, led: int, color: Color) -> None:
+    def set_aya_pixel(self, js: int, led: int, color: Color) -> None:
         self.set_aya_subpixel(js, led * 3, color.R)
         self.set_aya_subpixel(js, led * 3 + 1, color.G)
         self.set_aya_subpixel(js, led * 3 + 2, color.B)
 
-    def set_aya_subpixel(self, js: Any, subpixel_idx: int, brightness: int) -> None:
+    def set_aya_subpixel(self, js: int, subpixel_idx: int, brightness: int) -> None:
         logger.debug(f"js={js} subpixel_idx={subpixel_idx},brightness={brightness}")
         self.aya_ec_cmd(js, subpixel_idx, brightness)
 
