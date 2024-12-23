@@ -24,10 +24,36 @@ from wincontrols.hardware import WinControls
 
 
 class LedControl:
+    """
+    LedControl is responsible for managing LED device operations such as setting color, mode, and suspend mode.
+    It selects the appropriate device based on system vendor and product information.
+
+    LedControl负责管理LED设备的操作，例如设置颜色、模式和挂起模式。
+    它根据系统供应商和产品信息选择合适的设备。
+    """
+
     def __init__(self):
+        """
+        Initializes the LedControl by selecting the appropriate LED device.
+
+        通过选择合适的LED设备来初始化LedControl。
+        """
         self.device = self._get_device()
 
     def _get_device(self) -> LEDDevice:
+        """
+        Determines and returns the appropriate LEDDevice instance based on system configuration.
+
+        根据系统配置确定并返回合适的LEDDevice实例。
+
+        Returns:
+            LEDDevice: An instance of a specific LED device class.
+            LEDDevice: 特定LED设备类的实例。
+
+        Raises:
+            ValueError: If the device is unsupported.
+            ValueError: 如果设备不受支持。
+        """
         if IS_LED_SUPPORTED:
             return GenericLEDDevice()
         elif IS_ALLY_LED_SUPPORTED:
@@ -47,12 +73,41 @@ class LedControl:
         raise ValueError("Unsupported device")
 
     def set_Color(self, color: Color, brightness: int = DEFAULT_BRIGHTNESS) -> None:
+        """
+        Sets the color and brightness of the LED device.
+
+        设置LED设备的颜色和亮度。
+
+        Args:
+            color (Color): The color to set on the LED device.
+            color (Color): 要在LED设备上设置的颜色。
+            brightness (int): The brightness level, default is DEFAULT_BRIGHTNESS.
+            brightness (int): 亮度级别，默认值为DEFAULT_BRIGHTNESS。
+        """
         self.device.set_color(color, brightness)
 
     def set_mode(self, mode: str):
+        """
+        Sets the mode of the LED device.
+
+        设置LED设备的模式。
+
+        Args:
+            mode (str): The mode to set on the LED device.
+            mode (str): 要在LED设备上设置的模式。
+        """
         self.device.set_mode(mode)
 
     def get_suspend_mode(self) -> str:
+        """
+        Retrieves the current suspend mode from the LED device if supported.
+
+        如果支持，从LED设备检索当前的挂起模式。
+
+        Returns:
+            str: The current suspend mode, or an empty string if not supported.
+            str: 当前的挂起模式，如果不支持则为空字符串。
+        """
         if IS_LED_SUPPORTED:
             if os.path.exists(LED_SUSPEND_MODE_PATH):
                 with open(LED_SUSPEND_MODE_PATH, "r") as f:
@@ -61,6 +116,15 @@ class LedControl:
         return ""
 
     def set_suspend_mode(self, mode: str) -> None:
+        """
+        Sets the suspend mode for the LED device if supported.
+
+        如果支持，为LED设备设置挂起模式。
+
+        Args:
+            mode (str): The suspend mode to set.
+            mode (str): 要设置的挂起模式。
+        """
         if IS_LED_SUPPORTED:
             if os.path.exists(LED_SUSPEND_MODE_PATH):
                 with open(LED_SUSPEND_MODE_PATH, "w") as f:
@@ -68,6 +132,13 @@ class LedControl:
 
 
 class GenericLEDDevice(LEDDevice):
+    """
+    GenericLEDDevice serves as a base class for LED devices, providing basic functionality
+    for setting color and brightness.
+
+    GenericLEDDevice作为LED设备的基类，提供设置颜色和亮度的基本功能。
+    """
+
     def set_color(self, color: Color, brightness: int = DEFAULT_BRIGHTNESS) -> None:
         if os.path.exists(LED_PATH):
             with open(os.path.join(LED_PATH, "brightness"), "w") as f:
@@ -79,6 +150,13 @@ class GenericLEDDevice(LEDDevice):
 
 
 class GPDLEDDevice(LEDDevice):
+    """
+    GPDLEDDevice is tailored for GPD devices, allowing specific control over
+    color and mode settings.
+
+    GPDLEDDevice专为GPD设备设计，允许对颜色和模式设置进行特定控制。
+    """
+
     def set_color(self, color: Color, brightness: int = DEFAULT_BRIGHTNESS) -> None:
         logger.info(f"SYS_VENDOR={SYS_VENDOR}, PRODUCT_NAME={PRODUCT_NAME}")
         try:
@@ -100,6 +178,13 @@ class GPDLEDDevice(LEDDevice):
 
 
 class AllyLEDDevice(LEDDevice):
+    """
+    AllyLEDDevice provides control functionalities specific to Ally LED devices,
+    including color and mode adjustments.
+
+    AllyLEDDevice提供Ally LED设备特有的控制功能，包括颜色和模式调整。
+    """
+
     def set_color(self, color: Color, brightness: int = DEFAULT_BRIGHTNESS) -> None:
         # read /sys/class/leds/ally:rgb:joystick_rings/multi_index
         multi_index = ""
@@ -132,6 +217,13 @@ class AllyLEDDevice(LEDDevice):
 
 
 class AyaNeoLEDDevice(LEDDevice):
+    """
+    AyaNeoLEDDevice offers advanced control for AyaNeo devices, supporting pixel-level
+    adjustments and various modes.
+
+    AyaNeoLEDDevice为AyaNeo设备提供高级控制，支持像素级调整和各种模式。
+    """
+
     def set_color(self, color: Color, brightness: int = DEFAULT_BRIGHTNESS) -> None:
         if os.path.exists(os.path.join(LED_PATH, "brightness")):
             with open(os.path.join(LED_PATH, "brightness"), "w") as f:
@@ -178,6 +270,13 @@ class AyaNeoLEDDevice(LEDDevice):
 
 
 class OneXLEDDevice(LEDDevice):
+    """
+    OneXLEDDevice is designed for OneX devices, enabling HID and serial communication
+    for color and mode settings.
+
+    OneXLEDDevice专为OneX设备设计，支持HID和串行通信以进行颜色和模式设置。
+    """
+
     def set_color(self, color: Color, brightness: int = DEFAULT_BRIGHTNESS) -> None:
         if "ONEXPLAYER X1" in PRODUCT_NAME:
             self.set_onex_color_serial(color, brightness)
@@ -214,6 +313,13 @@ class OneXLEDDevice(LEDDevice):
 
 
 class AsusLEDDevice(LEDDevice):
+    """
+    AsusLEDDevice provides control for Asus devices, integrating with specific
+    product IDs for tailored settings.
+
+    AsusLEDDevice为Asus设备提供控制，集成特定产品ID以进行定制设置。
+    """
+
     def __init__(self):
         for product_name, id_info in ID_MAP.items():
             if product_name in PRODUCT_NAME:
