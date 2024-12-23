@@ -34,7 +34,7 @@ except Exception as e:
 try:
     SYS_VENDOR = open("/sys/devices/virtual/dmi/id/sys_vendor", "r").read().strip()
 except Exception as e:
-    logging.error(f"设备信息配置异常{e}",exc_info=True)
+    logging.error(f"设备信息配置异常{e}", exc_info=True)
 
 LED_PATH_LIST = [
     "/sys/class/leds/ayaneo:rgb:joystick_rings",
@@ -42,7 +42,7 @@ LED_PATH_LIST = [
     "/sys/class/leds/multicolor:chassis",
 ]
 
-# LED_PATH = "/sys/class/leds/multicolor:chassis/"
+LED_PATH = ""
 for led_path in LED_PATH_LIST:
     if os.path.exists(led_path):
         LED_PATH = led_path
@@ -54,11 +54,14 @@ LED_SUSPEND_MODE_PATH = os.path.join(LED_PATH, "suspend_mode")
 
 ALLY_LED_PATH = "/sys/class/leds/ally:rgb:joystick_rings"
 
+
 def is_led_supported():
     return os.path.exists(LED_PATH)
 
+
 def is_led_suspend_mode_supported():
     return os.path.exists(LED_SUSPEND_MODE_PATH)
+
 
 IS_LED_SUPPORTED = is_led_supported()
 IS_LED_SUSPEND_MODE_SUPPORTED = is_led_suspend_mode_supported()
@@ -80,3 +83,6 @@ AYANEO_EC_SUPPORT_LIST = [
 IS_AYANEO_EC_SUPPORTED = PRODUCT_NAME in AYANEO_EC_SUPPORT_LIST
 
 API_URL = "https://api.github.com/repos/honjow/HueSync/releases/latest"
+
+
+DEFAULT_BRIGHTNESS = 100

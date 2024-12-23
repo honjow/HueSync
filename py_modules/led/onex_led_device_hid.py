@@ -1,15 +1,16 @@
+from itertools import chain, repeat
 from math import sqrt
-from itertools import repeat, chain
+
 import lib_hid as hid
-from utils import Color, LEDLevel
 from config import logger
+from utils import Color, LEDLevel
 
 """
 convert from https://github.com/Valkirie/HandheldCompanion/blob/main/HandheldCompanion/Devices/OneXPlayer/OneXPlayerOneXFly.cs 
 """
 
 
-class OneXLEDDevice:
+class OneXLEDDeviceHID:
     def __init__(self, vid, pid):
         self._vid = vid
         self._pid = pid
@@ -96,11 +97,13 @@ class OneXLEDDevice:
         ]
 
         closest_color = predefined_colors[0]
-        min_distance = OneXLEDDevice.calculate_distance(input_color, closest_color)
+        min_distance = OneXLEDDeviceHID.calculate_distance(input_color, closest_color)
 
         # Iterate through predefined colors to find the closest one
         for predefined_color in predefined_colors:
-            distance = OneXLEDDevice.calculate_distance(input_color, predefined_color)
+            distance = OneXLEDDeviceHID.calculate_distance(
+                input_color, predefined_color
+            )
             if distance < min_distance:
                 min_distance = distance
                 closest_color = predefined_color

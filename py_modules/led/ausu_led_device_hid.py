@@ -1,7 +1,7 @@
 from typing import Literal
+
 import lib_hid as hid
 from utils import Color, LEDLevel
-from config import logger
 
 """
 code from https://github.com/hhd-dev/hhd/blob/master/src/hhd/device/rog_ally/hid.py 
@@ -109,7 +109,7 @@ def rgb_set(
             ]
 
 
-class AsusLEDDevice:
+class AsusLEDHIDDevice:
     def __init__(self, vid, pid, usage_page, usage):
         self._vid = vid
         self._pid = pid

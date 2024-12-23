@@ -1,89 +1,86 @@
 import os
-import time
+from typing import Any
+
 from config import (
     ALLY_LED_PATH,
+    DEFAULT_BRIGHTNESS,
     IS_ALLY_LED_SUPPORTED,
-    logger,
-    LED_PATH,
-    IS_LED_SUPPORTED,
     IS_AYANEO_EC_SUPPORTED,
-    SYS_VENDOR,
-    PRODUCT_NAME,
-    LED_MODE_PATH,
+    IS_LED_SUPPORTED,
+    LED_PATH,
     LED_SUSPEND_MODE_PATH,
+    PRODUCT_NAME,
+    SYS_VENDOR,
+    logger,
 )
 from ec import EC
-from id_info import ID_MAP, IdInfo
-from led.ausu_led_device import AsusLEDDevice
-from led.onex_led_device import OneXLEDDevice
+from id_info import ID_MAP
+from led.ausu_led_device import AsusLEDDeviceHID
+from led.onex_led_device import OneXLEDDeviceHID
 from led.onex_led_device_serial import OneXLEDDeviceSerial
+from led_device import LEDDevice
 from utils import AyaJoystick, AyaLedPosition, Color, LEDLevel
 from wincontrols.hardware import WinControls
 
 
 class LedControl:
-    def set_Color(self, color: Color, brightness: int = 100):
-        logger.info(f"SYS_VENDOR={SYS_VENDOR}, PRODUCT_NAME={PRODUCT_NAME}")
+    def __init__(self):
+        self.device = self._get_device()
+
+    def _get_device(self) -> LEDDevice:
         if IS_LED_SUPPORTED:
-            if os.path.exists(LED_MODE_PATH):
-                with open(LED_MODE_PATH, "w") as f:
-                    f.write("1")
-
-            for x in range(2):
-                with open(os.path.join(LED_PATH, "brightness"), "w") as f:
-                    _brightness: int = brightness * 255 // 100
-                    logger.debug(f"brightness={_brightness}")
-                    f.write(str(_brightness))
-                with open(os.path.join(LED_PATH, "multi_intensity"), "w") as f:
-                    f.write(f"{color.R} {color.G} {color.B}")
-                # time.sleep(0.01)
+            return GenericLEDDevice()
         elif IS_ALLY_LED_SUPPORTED:
-            # read /sys/class/leds/ally:rgb:joystick_rings/multi_index
-            multi_index = ""
-            if os.path.exists(os.path.join(ALLY_LED_PATH, "multi_index")):
-                with open(os.path.join(ALLY_LED_PATH, "multi_index"), "r") as f:
-                    multi_index = f.read().strip()
-                    logger.debug(f"ally multi_index={multi_index}")
-
-            count = len(multi_index.split(" "))
-            if count == 12:
-                # set /sys/class/leds/ally:rgb:joystick_rings/multi_intensity
-                with open(os.path.join(ALLY_LED_PATH, "multi_intensity"), "w") as f:
-                    f.write(
-                        f"{color.R} {color.G} {color.B} {color.R} {color.G} {color.B} {color.R} {color.G} {color.B} {color.R} {color.G} {color.B}"
-                    )
-            elif count == 4:
-                color_hex = color.hex()
-                # set /sys/class/leds/ally:rgb:joystick_rings/multi_intensity
-                with open(os.path.join(ALLY_LED_PATH, "multi_intensity"), "w") as f:
-                    f.write(f"0x{color_hex} 0x{color_hex} 0x{color_hex} 0x{color_hex}")
-
-            if os.path.exists(os.path.join(ALLY_LED_PATH, "brightness")):
-                with open(os.path.join(ALLY_LED_PATH, "brightness"), "w") as f:
-                    _brightness: int = brightness * 255 // 100
-                    logger.debug(f"ally brightness={_brightness}")
-                    f.write(str(_brightness))
-
-            pass
+            return AllyLEDDevice()
         elif IS_AYANEO_EC_SUPPORTED:
-            self.set_aya_all_pixels(color, brightness)
+            return AyaNeoLEDDevice()
         elif SYS_VENDOR == "GPD" and PRODUCT_NAME == "G1618-04":
-            self.set_gpd_color(color, brightness)
+            return GPDLEDDevice()
         elif (
             SYS_VENDOR == "ONE-NETBOOK"
             or SYS_VENDOR == "ONE-NETBOOK TECHNOLOGY CO., LTD."
             or SYS_VENDOR == "AOKZOE"
         ):
-            logger.info(f"onxplayer color={color}")
-            self.set_onex_color(color, brightness)
+            return OneXLEDDevice()
         elif SYS_VENDOR == "ASUSTeK COMPUTER INC.":
-            # 遍历 ID_MAP
-            for product_name, id_info in ID_MAP.items():
-                if product_name in PRODUCT_NAME:
-                    self.set_asus_color(id_info, color, brightness)
-                    break
+            return AsusLEDDevice()
+        raise ValueError("Unsupported device")
 
-    def set_gpd_color(self, color: Color, brightness: int = 100):
+    def set_Color(self, color: Color, brightness: int = DEFAULT_BRIGHTNESS) -> None:
+        self.device.set_color(color, brightness)
+
+    def set_mode(self, mode: str):
+        self.device.set_mode(mode)
+
+    def get_suspend_mode(self) -> str:
+        if IS_LED_SUPPORTED:
+            if os.path.exists(LED_SUSPEND_MODE_PATH):
+                with open(LED_SUSPEND_MODE_PATH, "r") as f:
+                    # eg: [oem] keep off, read the part between []
+                    return f.read().split("[")[1].split("]")[0]
+        return ""
+
+    def set_suspend_mode(self, mode: str) -> None:
+        if IS_LED_SUPPORTED:
+            if os.path.exists(LED_SUSPEND_MODE_PATH):
+                with open(LED_SUSPEND_MODE_PATH, "w") as f:
+                    f.write(f"{mode}")
+
+
+class GenericLEDDevice(LEDDevice):
+    def set_color(self, color: Color, brightness: int = DEFAULT_BRIGHTNESS) -> None:
+        if os.path.exists(LED_PATH):
+            with open(os.path.join(LED_PATH, "brightness"), "w") as f:
+                _brightness: int = brightness * 255 // 100
+                logger.debug(f"brightness={_brightness}")
+                f.write(str(_brightness))
+            with open(os.path.join(LED_PATH, "multi_intensity"), "w") as f:
+                f.write(f"{color.R} {color.G} {color.B}")
+
+
+class GPDLEDDevice(LEDDevice):
+    def set_color(self, color: Color, brightness: int = DEFAULT_BRIGHTNESS) -> None:
+        logger.info(f"SYS_VENDOR={SYS_VENDOR}, PRODUCT_NAME={PRODUCT_NAME}")
         try:
             wc = WinControls(disableFwCheck=True)
             color = Color(
@@ -98,54 +95,73 @@ class LedControl:
         except Exception as e:
             logger.error(e, exc_info=True)
 
-    def set_onex_color_hid(self, color: Color, brightness: int = 100):
-        ledDevice = OneXLEDDevice(0x1A2C, 0xB001)
-        # ledDevice = OneXLEDDevice(0x2f24, 0x135)
-        # _brightness: int = int(
-        #     round((299 * color.R + 587 * color.G + 114 * color.B) / 1000 / 255.0 * 100)
-        # )
-        if ledDevice.is_ready():
-            logger.info(f"set_onex_color: color={color}, brightness={brightness}")
-            ledDevice.set_led_brightness(brightness)
-            ledDevice.set_led_color(color, LEDLevel.SolidColor)
+    def set_mode(self, mode: str):
+        pass
 
-    def set_onex_color_serial(self, color: Color, brightness: int = 100):
-        try:
-            ledDevice = OneXLEDDeviceSerial()
-            if ledDevice.is_ready():
-                logger.info(f"set_onex_color_serial: color={color}")
-                ledDevice.set_led_brightness(brightness)
-                ledDevice.set_led_color(color, LEDLevel.SolidColor)
-        except Exception as e:
-            logger.error(e, exc_info=True)
 
-    def set_onex_color(self, color: Color, brightness: int = 100):
-        if "ONEXPLAYER X1" in PRODUCT_NAME:
-            self.set_onex_color_serial(color, brightness)
-        else:
-            self.set_onex_color_hid(color, brightness)
+class AllyLEDDevice(LEDDevice):
+    def set_color(self, color: Color, brightness: int = DEFAULT_BRIGHTNESS) -> None:
+        # read /sys/class/leds/ally:rgb:joystick_rings/multi_index
+        multi_index = ""
+        if os.path.exists(os.path.join(ALLY_LED_PATH, "multi_index")):
+            with open(os.path.join(ALLY_LED_PATH, "multi_index"), "r") as f:
+                multi_index = f.read().strip()
+                logger.debug(f"ally multi_index={multi_index}")
 
-    def set_asus_color(self, idInfo: IdInfo, color: Color, brightness: int = 100):
-        ledDevice = AsusLEDDevice(idInfo.vid, idInfo.pid, [0xFF31], [0x0080])
-        if ledDevice.is_ready():
-            logger.info(f"set_asus_color: color={color}, brightness={brightness}")
-            ledDevice.set_led_color(color, brightness, LEDLevel.SolidColor)
+        count = len(multi_index.split(" "))
+        if count == 12:
+            # set /sys/class/leds/ally:rgb:joystick_rings/multi_intensity
+            with open(os.path.join(ALLY_LED_PATH, "multi_intensity"), "w") as f:
+                f.write(
+                    f"{color.R} {color.G} {color.B} {color.R} {color.G} {color.B} {color.R} {color.G} {color.B} {color.R} {color.G} {color.B}"
+                )
+        elif count == 4:
+            color_hex = color.hex()
+            # set /sys/class/leds/ally:rgb:joystick_rings/multi_intensity
+            with open(os.path.join(ALLY_LED_PATH, "multi_intensity"), "w") as f:
+                f.write(f"0x{color_hex} 0x{color_hex} 0x{color_hex} 0x{color_hex}")
 
-    def get_suspend_mode(self):
-        if IS_LED_SUPPORTED:
-            if os.path.exists(LED_SUSPEND_MODE_PATH):
-                with open(LED_SUSPEND_MODE_PATH, "r") as f:
-                    # eg: [oem] keep off, read the part between []
-                    return f.read().split("[")[1].split("]")[0]
-        return ""
+        if os.path.exists(os.path.join(ALLY_LED_PATH, "brightness")):
+            with open(os.path.join(ALLY_LED_PATH, "brightness"), "w") as f:
+                _brightness: int = brightness * 255 // 100
+                logger.debug(f"ally brightness={_brightness}")
+                f.write(str(_brightness))
 
-    def set_suspend_mode(self, mode: str):
-        if IS_LED_SUPPORTED:
-            if os.path.exists(LED_SUSPEND_MODE_PATH):
-                with open(LED_SUSPEND_MODE_PATH, "w") as f:
-                    f.write(f"{mode}")
+    def set_mode(self, mode: str):
+        pass
 
-    def set_aya_all_pixels(self, color: Color, brightness: int = 100):
+
+class AyaNeoLEDDevice(LEDDevice):
+    def set_color(self, color: Color, brightness: int = DEFAULT_BRIGHTNESS) -> None:
+        if os.path.exists(os.path.join(LED_PATH, "brightness")):
+            with open(os.path.join(LED_PATH, "brightness"), "w") as f:
+                _brightness: int = brightness * 255 // 100
+                logger.debug(f"brightness={_brightness}")
+                f.write(str(_brightness))
+        self.set_aya_all_pixels(color, brightness)
+
+    def set_aya_pixel(self, js: Any, led: int, color: Color) -> None:
+        self.set_aya_subpixel(js, led * 3, color.R)
+        self.set_aya_subpixel(js, led * 3 + 1, color.G)
+        self.set_aya_subpixel(js, led * 3 + 2, color.B)
+
+    def set_aya_subpixel(self, js: Any, subpixel_idx: int, brightness: int) -> None:
+        logger.debug(f"js={js} subpixel_idx={subpixel_idx},brightness={brightness}")
+        self.aya_ec_cmd(js, subpixel_idx, brightness)
+
+    def aya_ec_cmd(self, cmd: int, p1: int, p2: int) -> None:
+        for x in range(2):
+            EC.Write(0x6D, cmd)
+            EC.Write(0xB1, p1)
+            EC.Write(0xB2, p2)
+            EC.Write(0xBF, 0x10)
+            # time.sleep(0.01)
+            EC.Write(0xBF, 0xFF)
+            # time.sleep(0.01)
+
+    def set_aya_all_pixels(
+        self, color: Color, brightness: int = DEFAULT_BRIGHTNESS
+    ) -> None:
         color = Color(
             color.R * brightness // 100,
             color.G * brightness // 100,
@@ -157,21 +173,59 @@ class LedControl:
         self.set_aya_pixel(AyaJoystick.ALL, AyaLedPosition.Left, color)
         self.set_aya_pixel(AyaJoystick.ALL, AyaLedPosition.Top, color)
 
-    def set_aya_pixel(self, js, led, color: Color):
-        self.set_aya_subpixel(js, led * 3, color.R)
-        self.set_aya_subpixel(js, led * 3 + 1, color.G)
-        self.set_aya_subpixel(js, led * 3 + 2, color.B)
+    def set_mode(self, mode: str):
+        pass
 
-    def set_aya_subpixel(self, js, subpixel_idx, brightness):
-        logger.debug(f"js={js} subpixel_idx={subpixel_idx},brightness={brightness}")
-        self.aya_ec_cmd(js, subpixel_idx, brightness)
 
-    def aya_ec_cmd(self, cmd, p1, p2):
-        for x in range(2):
-            EC.Write(0x6D, cmd)
-            EC.Write(0xB1, p1)
-            EC.Write(0xB2, p2)
-            EC.Write(0xBF, 0x10)
-            # time.sleep(0.01)
-            EC.Write(0xBF, 0xFF)
-            # time.sleep(0.01)
+class OneXLEDDevice(LEDDevice):
+    def set_color(self, color: Color, brightness: int = DEFAULT_BRIGHTNESS) -> None:
+        if "ONEXPLAYER X1" in PRODUCT_NAME:
+            self.set_onex_color_serial(color, brightness)
+        else:
+            self.set_onex_color_hid(color, brightness)
+
+    def set_onex_color_hid(
+        self, color: Color, brightness: int = DEFAULT_BRIGHTNESS
+    ) -> None:
+        ledDevice = OneXLEDDeviceHID(0x1A2C, 0xB001)
+        # ledDevice = OneXLEDDevice(0x2f24, 0x135)
+        # _brightness: int = int(
+        #     round((299 * color.R + 587 * color.G + 114 * color.B) / 1000 / 255.0 * 100)
+        # )
+        if ledDevice.is_ready():
+            logger.info(f"set_onex_color: color={color}, brightness={brightness}")
+            ledDevice.set_led_brightness(brightness)
+            ledDevice.set_led_color(color, LEDLevel.SolidColor)
+
+    def set_onex_color_serial(
+        self, color: Color, brightness: int = DEFAULT_BRIGHTNESS
+    ) -> None:
+        try:
+            ledDevice = OneXLEDDeviceSerial()
+            if ledDevice.is_ready():
+                logger.info(f"set_onex_color_serial: color={color}")
+                ledDevice.set_led_brightness(brightness)
+                ledDevice.set_led_color(color, LEDLevel.SolidColor)
+        except Exception as e:
+            logger.error(e, exc_info=True)
+
+    def set_mode(self, mode: str):
+        pass
+
+
+class AsusLEDDevice(LEDDevice):
+    def __init__(self):
+        for product_name, id_info in ID_MAP.items():
+            if product_name in PRODUCT_NAME:
+                self.id_info = id_info
+
+    def set_color(self, color: Color, brightness: int = DEFAULT_BRIGHTNESS) -> None:
+        ledDevice = AsusLEDDeviceHID(
+            self.id_info.vid, self.id_info.pid, [0xFF31], [0x0080]
+        )
+        if ledDevice.is_ready():
+            logger.info(f"set_asus_color: color={color}, brightness={brightness}")
+            ledDevice.set_led_color(color, brightness, LEDLevel.SolidColor)
+
+    def set_mode(self, mode: str):
+        pass
