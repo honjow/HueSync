@@ -15,10 +15,10 @@ from config import (
 )
 from ec import EC
 from id_info import ID_MAP
-from led.ausu_led_device import AsusLEDDeviceHID
-from led.onex_led_device import OneXLEDDeviceHID
 from led.onex_led_device_serial import OneXLEDDeviceSerial
 from led_device import LEDDevice
+from led.ausu_led_device_hid import AsusLEDDeviceHID
+from led.onex_led_device_hid import OneXLEDDeviceHID
 from utils import AyaJoystickGroup, AyaLedZone, Color, LEDLevel
 from wincontrols.hardware import WinControls
 

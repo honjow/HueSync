@@ -109,7 +109,7 @@ def rgb_set(
             ]
 
 
-class AsusLEDHIDDevice:
+class AsusLEDDeviceHID:
     def __init__(self, vid, pid, usage_page, usage):
         self._vid = vid
         self._pid = pid

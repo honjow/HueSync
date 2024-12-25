@@ -42,7 +42,7 @@ LED_PATH_LIST = [
     "/sys/class/leds/multicolor:chassis",
 ]
 
-LED_PATH = ""
+LED_PATH = "/sys/class/leds/multicolor:chassis"
 for led_path in LED_PATH_LIST:
     if os.path.exists(led_path):
         LED_PATH = led_path

@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from py_modules.utils import Color
+from utils import Color
 
 
 class LEDDevice(ABC):

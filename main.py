@@ -7,9 +7,9 @@ try:
     from utils import Color
     import update
 
-    logger.info("HueSync main.py")
+    decky.logger.info("HueSync main.py")
 except Exception as e:
-    logger.error(e, exc_info=True)
+    decky.logger.error(e, exc_info=True)
 
 
 class Plugin:
@@ -107,7 +107,5 @@ class Plugin:
         # - `~/.local/share/decky-template/` all files and directories under this root are migrated to `decky.DECKY_PLUGIN_RUNTIME_DIR/`
         decky.migrate_runtime(
             os.path.join(decky.DECKY_HOME, "template"),
-            os.path.join(
-                decky.DECKY_USER_HOME, ".local", "share", "decky-template"
-            ),
+            os.path.join(decky.DECKY_USER_HOME, ".local", "share", "decky-template"),
         )
