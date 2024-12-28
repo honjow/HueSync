@@ -148,6 +148,9 @@ class GenericLEDDevice(LEDDevice):
             with open(os.path.join(LED_PATH, "multi_intensity"), "w") as f:
                 f.write(f"{color.R} {color.G} {color.B}")
 
+    def set_mode(self, mode: str):
+        pass
+
 
 class GPDLEDDevice(LEDDevice):
     """

@@ -1,6 +1,6 @@
 {
   "name": "huesync",
-  "version": "1.7.2",
+  "version": "1.7.3",
   "description": "LED controller for handheld devices.",
   "type": "module",
   "scripts": {
