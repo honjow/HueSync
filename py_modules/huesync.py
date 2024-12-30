@@ -15,11 +15,11 @@ from config import (
 )
 from ec import EC
 from id_info import ID_MAP
-from led.onex_led_device_serial import OneXLEDDeviceSerial
-from led_device import LEDDevice
 from led.ausu_led_device_hid import AsusLEDDeviceHID
 from led.onex_led_device_hid import OneXLEDDeviceHID
-from utils import AyaJoystickGroup, AyaLedZone, Color, LEDLevel
+from led.onex_led_device_serial import OneXLEDDeviceSerial
+from led_device import LEDDevice
+from utils import AyaJoystickGroup, AyaLedZone, Color, RGBMode
 from wincontrols.hardware import WinControls
 
 
@@ -296,7 +296,7 @@ class OneXLEDDevice(LEDDevice):
         if ledDevice.is_ready():
             logger.info(f"set_onex_color: color={color}, brightness={brightness}")
             ledDevice.set_led_brightness(brightness)
-            ledDevice.set_led_color(color, LEDLevel.SolidColor)
+            ledDevice.set_led_color(color, RGBMode.Solid)
 
     def set_onex_color_serial(
         self, color: Color, brightness: int = DEFAULT_BRIGHTNESS
@@ -306,7 +306,7 @@ class OneXLEDDevice(LEDDevice):
             if ledDevice.is_ready():
                 logger.info(f"set_onex_color_serial: color={color}")
                 ledDevice.set_led_brightness(brightness)
-                ledDevice.set_led_color(color, LEDLevel.SolidColor)
+                ledDevice.set_led_color(color, RGBMode.Solid)
         except Exception as e:
             logger.error(e, exc_info=True)
 
@@ -333,7 +333,7 @@ class AsusLEDDevice(LEDDevice):
         )
         if ledDevice.is_ready():
             logger.info(f"set_asus_color: color={color}, brightness={brightness}")
-            ledDevice.set_led_color(color, brightness, LEDLevel.SolidColor)
+            ledDevice.set_led_color(color, brightness, RGBMode.Solid)
 
     def set_mode(self, mode: str):
         pass

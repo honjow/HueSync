@@ -1,9 +1,8 @@
 from itertools import chain, repeat
-from math import sqrt
 
 import lib_hid as hid
 from config import logger
-from utils import Color, LEDLevel
+from utils import Color, RGBMode
 
 """
 convert from https://github.com/Valkirie/HandheldCompanion/blob/main/HandheldCompanion/Devices/OneXPlayer/OneXPlayerOneXFly.cs 
@@ -48,7 +47,7 @@ class OneXLEDDeviceHID:
     def set_led_color(
         self,
         main_color: Color,
-        level: LEDLevel,
+        mode: RGBMode,
     ) -> bool:
         if not self.is_ready():
             return False
@@ -58,12 +57,12 @@ class OneXLEDDeviceHID:
         rgbData = [0x00]
         suffix = [0x00]
 
-        if level == LEDLevel.SolidColor:
+        if mode == RGBMode.Solid:
             led_color = main_color
             LEDOption = [0xFE]
             rgbData = list(repeat([led_color.R, led_color.G, led_color.B], 20))
 
-        elif level == LEDLevel.Rainbow:
+        elif mode == RGBMode.Rainbow:
             LEDOption = [0x03]
             rgbData = list(repeat(0x00, 60))
 
@@ -78,42 +77,3 @@ class OneXLEDDeviceHID:
         self.hid_device.write(bytes(result))
 
         return True
-
-    @staticmethod
-    def find_closest_color(input_color: Color) -> Color:
-        predefined_colors = [
-            Color(255, 0, 0),
-            Color(255, 82, 0),
-            Color(255, 255, 0),
-            Color(130, 255, 0),
-            Color(0, 255, 0),
-            Color(0, 255, 110),
-            Color(0, 255, 255),
-            Color(130, 255, 255),
-            Color(0, 0, 255),
-            Color(122, 0, 255),
-            Color(255, 0, 255),
-            Color(255, 0, 129),
-        ]
-
-        closest_color = predefined_colors[0]
-        min_distance = OneXLEDDeviceHID.calculate_distance(input_color, closest_color)
-
-        # Iterate through predefined colors to find the closest one
-        for predefined_color in predefined_colors:
-            distance = OneXLEDDeviceHID.calculate_distance(
-                input_color, predefined_color
-            )
-            if distance < min_distance:
-                min_distance = distance
-                closest_color = predefined_color
-
-        return closest_color
-
-    @staticmethod
-    def calculate_distance(color1: Color, color2: Color) -> float:
-        deltaR = color2.R - color1.R
-        deltaG = color2.G - color1.G
-        deltaB = color2.B - color1.B
-
-        return sqrt(deltaR * deltaR + deltaG * deltaG + deltaB * deltaB)

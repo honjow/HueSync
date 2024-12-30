@@ -38,8 +38,3 @@ class Color:
 
     def __str__(self):
         return f"Color(R={self.R}, G={self.G}, B={self.B})"
-
-
-class LEDLevel(Enum):
-    SolidColor = 1
-    Rainbow = 2

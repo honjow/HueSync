@@ -1,8 +1,9 @@
-from itertools import repeat, chain
-from utils import Color, LEDLevel
-from config import logger
 import time
+from itertools import chain, repeat
+
 import serial as serial
+from config import logger
+from utils import Color, RGBMode
 
 
 class OneXLEDDeviceSerial:
@@ -61,23 +62,23 @@ class OneXLEDDeviceSerial:
         time.sleep(0.1)
         return True
 
-    def set_led_color(self, main_color: Color, level: LEDLevel) -> bool:
+    def set_led_color(self, main_color: Color, mode: RGBMode) -> bool:
         controlerLed = 0x00
         leftLed = 0x03
         rightLed = 0x04
 
-        self.set_one_led_color(main_color, level, controlerLed)
+        self.set_one_led_color(main_color, mode, controlerLed)
         time.sleep(0.2)
-        self.set_one_led_color(main_color, level, leftLed)
+        self.set_one_led_color(main_color, mode, leftLed)
         time.sleep(0.2)
-        self.set_one_led_color(main_color, level, rightLed)
+        self.set_one_led_color(main_color, mode, rightLed)
         time.sleep(0.1)
         return True
 
     def set_one_led_color(
         self,
         main_color: Color,
-        level: LEDLevel,
+        mode: RGBMode,
         ledPosition: int,
     ) -> bool:
         if not self.is_ready():
@@ -102,14 +103,14 @@ class OneXLEDDeviceSerial:
             - len(suffix)
         )
 
-        if level == LEDLevel.SolidColor:
+        if mode == RGBMode.SolidColor:
             led_color = main_color
             LEDOption = [0xFE]
 
             _rgbData = list(repeat([led_color.R, led_color.G, led_color.B], 20))
             rgbData = list(chain(*_rgbData))[:rgbDataLen]
 
-        elif level == LEDLevel.Rainbow:
+        elif mode == RGBMode.Rainbow:
             LEDOption = [0x03]
             rgbData = list(repeat(0x00, rgbDataLen))
         else:

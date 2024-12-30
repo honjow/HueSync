@@ -1,7 +1,7 @@
 from typing import Literal
 
 import lib_hid as hid
-from utils import Color, LEDLevel
+from utils import Color, RGBMode
 
 from .hhd_hid_base import RGB_APPLY, RGB_INIT, RGB_SET, RgbMode, buf
 
@@ -228,7 +228,7 @@ class AsusLEDDeviceHID:
         self,
         main_color: Color,
         brightness: int,
-        level: LEDLevel,
+        mode: RGBMode,
         init: bool = False,
         global_init: bool = False,
     ) -> bool:
@@ -241,7 +241,7 @@ class AsusLEDDeviceHID:
 
         # solid
         msg = rgb_set(
-            "main",
+            "all",
             "solid",
             k_direction,
             k_speed,
