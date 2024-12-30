@@ -14,6 +14,14 @@ class AyaLedZone(Enum):
     Top = 4
 
 
+class RGBMode(Enum):
+    Solid = 1
+    Rainbow = 2
+    Pulse = 3
+    Spiral = 4
+    Duality = 5
+
+
 class Color:
     def __init__(self, r: int, g: int, b: int):
         self.R = self._validate_color_value(r)
