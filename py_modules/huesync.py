@@ -18,7 +18,7 @@ from id_info import ID_MAP
 from led.ausu_led_device_hid import AsusLEDDeviceHID
 from led.onex_led_device_hid import OneXLEDDeviceHID
 from led.onex_led_device_serial import OneXLEDDeviceSerial
-from led_device import LEDDevice
+from led_device import BaseLEDDevice, LEDDevice
 from utils import AyaJoystickGroup, AyaLedZone, Color, RGBMode
 from wincontrols.hardware import WinControls
 
@@ -131,7 +131,7 @@ class LedControl:
                     f.write(f"{mode}")
 
 
-class GenericLEDDevice(LEDDevice):
+class GenericLEDDevice(BaseLEDDevice):
     """
     GenericLEDDevice serves as a base class for LED devices, providing basic functionality
     for setting color and brightness.
@@ -152,7 +152,7 @@ class GenericLEDDevice(LEDDevice):
         pass
 
 
-class GPDLEDDevice(LEDDevice):
+class GPDLEDDevice(BaseLEDDevice):
     """
     GPDLEDDevice is tailored for GPD devices, allowing specific control over
     color and mode settings.
@@ -176,11 +176,16 @@ class GPDLEDDevice(LEDDevice):
         except Exception as e:
             logger.error(e, exc_info=True)
 
-    def set_mode(self, mode: str):
-        pass
+    def get_supported_modes(self) -> list[RGBMode]:
+        return [
+            RGBMode.Disabled,
+            RGBMode.Solid,
+            RGBMode.Pulse,
+            RGBMode.Spiral,
+        ]
 
 
-class AllyLEDDevice(LEDDevice):
+class AllyLEDDevice(BaseLEDDevice):
     """
     AllyLEDDevice provides control functionalities specific to Ally LED devices,
     including color and mode adjustments.
@@ -219,7 +224,7 @@ class AllyLEDDevice(LEDDevice):
         pass
 
 
-class AyaNeoLEDDevice(LEDDevice):
+class AyaNeoLEDDevice(BaseLEDDevice):
     """
     AyaNeoLEDDevice offers advanced control for AyaNeo devices, supporting pixel-level
     adjustments and various modes.
@@ -272,7 +277,7 @@ class AyaNeoLEDDevice(LEDDevice):
         pass
 
 
-class OneXLEDDevice(LEDDevice):
+class OneXLEDDevice(BaseLEDDevice):
     """
     OneXLEDDevice is designed for OneX devices, enabling HID and serial communication
     for color and mode settings.
@@ -314,7 +319,7 @@ class OneXLEDDevice(LEDDevice):
         pass
 
 
-class AsusLEDDevice(LEDDevice):
+class AsusLEDDevice(BaseLEDDevice):
     """
     AsusLEDDevice provides control for Asus devices, integrating with specific
     product IDs for tailored settings.
@@ -335,5 +340,12 @@ class AsusLEDDevice(LEDDevice):
             logger.info(f"set_asus_color: color={color}, brightness={brightness}")
             ledDevice.set_led_color(color, brightness, RGBMode.Solid)
 
-    def set_mode(self, mode: str):
-        pass
+    def get_supported_modes(self) -> list[RGBMode]:
+        return [
+            RGBMode.Disabled,
+            RGBMode.Solid,
+            RGBMode.Rainbow,
+            RGBMode.Pulse,
+            RGBMode.Spiral,
+            RGBMode.Duality,
+        ]

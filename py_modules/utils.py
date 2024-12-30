@@ -15,11 +15,12 @@ class AyaLedZone(Enum):
 
 
 class RGBMode(Enum):
-    Solid = 1
-    Rainbow = 2
-    Pulse = 3
-    Spiral = 4
-    Duality = 5
+    Disabled = "disabled"
+    Solid = "solid"
+    Rainbow = "rainbow"
+    Pulse = "pulse"  # Breathing effect
+    Spiral = "spiral"  # Rotating effect
+    Duality = "duality"
 
 
 class Color:
