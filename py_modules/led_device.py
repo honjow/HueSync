@@ -7,7 +7,13 @@ class LEDDevice(ABC):
     """Base abstract class for all LED devices"""
 
     @abstractmethod
-    def set_color(self, color: Color, brightness: int):
+    def set_color(
+        self,
+        mode: str | None = None,
+        color: Color | None = None,
+        color2: Color | None = None,
+        brightness: int = 100,
+    ):
         pass
 
     @abstractmethod
@@ -39,15 +45,35 @@ class BaseLEDDevice(LEDDevice):
         return self._current_brightness
 
     @property
-    def current_mode(self) -> RGBMode:
-        return self._current_mode
+    def current_mode(self) -> str:
+        return self._current_mode.value
 
-    def set_color(self, color: Color, brightness: int):
+    def set_color(
+        self,
+        mode: str | None = None,
+        color: Color | None = None,
+        color2: Color | None = None,
+        brightness: int = 100,
+    ):
         """
         Default implementation for setting color and brightness.
         Subclasses should override this method if they need specific behavior.
+
+        Args:
+            mode: RGB mode to set
+            color: The primary color to set
+            color2: Optional secondary color for modes that support it
+            brightness: The brightness level (0-100)
         """
-        self._current_color = color
+        if color:
+            self._current_color = color
+        if mode:
+            try:
+                rgb_mode = next((m for m in RGBMode if m.value == mode.lower()), None)
+                if rgb_mode and rgb_mode in self.get_supported_modes():
+                    self._current_mode = rgb_mode
+            except Exception:
+                pass  # Invalid mode name
         self._current_brightness = max(
             0, min(100, brightness)
         )  # Ensure brightness is between 0-100
@@ -59,10 +85,7 @@ class BaseLEDDevice(LEDDevice):
         """
         try:
             # 尝试直接从字符串获取模式
-            rgb_mode = next(
-                (m for m in RGBMode if m.value == mode.lower()),
-                None
-            )
+            rgb_mode = next((m for m in RGBMode if m.value == mode.lower()), None)
             if rgb_mode and rgb_mode in self.get_supported_modes():
                 self._current_mode = rgb_mode
         except Exception:

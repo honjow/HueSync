@@ -72,7 +72,13 @@ class LedControl:
             return AsusLEDDevice()
         raise ValueError("Unsupported device")
 
-    def set_Color(self, color: Color, brightness: int = DEFAULT_BRIGHTNESS) -> None:
+    def set_Color(
+        self,
+        color: Color | None = None,
+        brightness: int = DEFAULT_BRIGHTNESS,
+        mode: str | None = None,
+        color2: Color | None = None,
+    ) -> None:
         """
         Sets the color and brightness of the LED device.
 
@@ -83,8 +89,14 @@ class LedControl:
             color (Color): 要在LED设备上设置的颜色。
             brightness (int): The brightness level, default is DEFAULT_BRIGHTNESS.
             brightness (int): 亮度级别，默认值为DEFAULT_BRIGHTNESS。
+            mode (str): Optional RGB mode to set.
+            mode (str): 可选的RGB模式设置。
+            color2 (Color): Optional secondary color for modes that support it.
+            color2 (Color): 支持双色模式时的第二种颜色。
         """
-        self.device.set_color(color, brightness)
+        self.device.set_color(
+            mode=mode, color=color, color2=color2, brightness=brightness
+        )
 
     def set_mode(self, mode: str):
         """
@@ -139,7 +151,15 @@ class GenericLEDDevice(BaseLEDDevice):
     GenericLEDDevice作为LED设备的基类，提供设置颜色和亮度的基本功能。
     """
 
-    def set_color(self, color: Color, brightness: int = DEFAULT_BRIGHTNESS) -> None:
+    def set_color(
+        self,
+        mode: str | None = None,
+        color: Color | None = None,
+        color2: Color | None = None,
+        brightness: int = DEFAULT_BRIGHTNESS,
+    ) -> None:
+        if not color:
+            return
         if os.path.exists(LED_PATH):
             with open(os.path.join(LED_PATH, "brightness"), "w") as f:
                 _brightness: int = brightness * 255 // 100
@@ -160,16 +180,24 @@ class GPDLEDDevice(BaseLEDDevice):
     GPDLEDDevice专为GPD设备设计，允许对颜色和模式设置进行特定控制。
     """
 
-    def set_color(self, color: Color, brightness: int = DEFAULT_BRIGHTNESS) -> None:
+    def set_color(
+        self,
+        mode: str | None = None,
+        color: Color | None = None,
+        color2: Color | None = None,
+        brightness: int = DEFAULT_BRIGHTNESS,
+    ) -> None:
+        if not color:
+            return
         logger.info(f"SYS_VENDOR={SYS_VENDOR}, PRODUCT_NAME={PRODUCT_NAME}")
         try:
             wc = WinControls(disableFwCheck=True)
-            color = Color(
+            _color = Color(
                 color.R * brightness // 100,
                 color.G * brightness // 100,
                 color.B * brightness // 100,
             )
-            conf = ["ledmode=solid", f"colour={color.hex()}"]
+            conf = ["ledmode=solid", f"colour={_color.hex()}"]
             logger.info(f"conf={conf}")
             if wc.loaded and wc.setConfig(conf):
                 wc.writeConfig()
@@ -193,7 +221,15 @@ class AllyLEDDevice(BaseLEDDevice):
     AllyLEDDevice提供Ally LED设备特有的控制功能，包括颜色和模式调整。
     """
 
-    def set_color(self, color: Color, brightness: int = DEFAULT_BRIGHTNESS) -> None:
+    def set_color(
+        self,
+        mode: str | None = None,
+        color: Color | None = None,
+        color2: Color | None = None,
+        brightness: int = DEFAULT_BRIGHTNESS,
+    ) -> None:
+        if not color:
+            return
         # read /sys/class/leds/ally:rgb:joystick_rings/multi_index
         multi_index = ""
         if os.path.exists(os.path.join(ALLY_LED_PATH, "multi_index")):
@@ -232,12 +268,17 @@ class AyaNeoLEDDevice(BaseLEDDevice):
     AyaNeoLEDDevice为AyaNeo设备提供高级控制，支持像素级调整和各种模式。
     """
 
-    def set_color(self, color: Color, brightness: int = DEFAULT_BRIGHTNESS) -> None:
-        if os.path.exists(os.path.join(LED_PATH, "brightness")):
-            with open(os.path.join(LED_PATH, "brightness"), "w") as f:
-                _brightness: int = brightness * 255 // 100
-                logger.debug(f"brightness={_brightness}")
-                f.write(str(_brightness))
+    def set_color(
+        self,
+        mode: str | None = None,
+        color: Color | None = None,
+        color2: Color | None = None,
+        brightness: int = DEFAULT_BRIGHTNESS,
+    ) -> None:
+        if not color:
+            return
+        if not IS_AYANEO_EC_SUPPORTED:
+            return
         self.set_color_all(color, brightness)
 
     def set_color_one(self, group: int, ledZone: int, color: Color) -> None:
@@ -285,7 +326,15 @@ class OneXLEDDevice(BaseLEDDevice):
     OneXLEDDevice专为OneX设备设计，支持HID和串行通信以进行颜色和模式设置。
     """
 
-    def set_color(self, color: Color, brightness: int = DEFAULT_BRIGHTNESS) -> None:
+    def set_color(
+        self,
+        mode: str | None = None,
+        color: Color | None = None,
+        color2: Color | None = None,
+        brightness: int = DEFAULT_BRIGHTNESS,
+    ) -> None:
+        if not color:
+            return
         if "ONEXPLAYER X1" in PRODUCT_NAME:
             self.set_onex_color_serial(color, brightness)
         else:
@@ -332,7 +381,15 @@ class AsusLEDDevice(BaseLEDDevice):
             if product_name in PRODUCT_NAME:
                 self.id_info = id_info
 
-    def set_color(self, color: Color, brightness: int = DEFAULT_BRIGHTNESS) -> None:
+    def set_color(
+        self,
+        mode: str | None = None,
+        color: Color | None = None,
+        color2: Color | None = None,
+        brightness: int = DEFAULT_BRIGHTNESS,
+    ) -> None:
+        if not color:
+            return
         ledDevice = AsusLEDDeviceHID(
             self.id_info.vid, self.id_info.pid, [0xFF31], [0x0080]
         )
