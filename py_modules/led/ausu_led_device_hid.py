@@ -236,7 +236,7 @@ class AsusLEDDeviceHID:
 
         k_direction = "left"
         k_speed = "low"
-        k_brightness = "medium"
+        k_brightness = "high"
 
         # solid
         msg = rgb_set(

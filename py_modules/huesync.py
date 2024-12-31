@@ -206,49 +206,6 @@ class GPDLEDDevice(BaseLEDDevice):
         ]
 
 
-class AllyLEDDevice(BaseLEDDevice):
-    """
-    AllyLEDDevice provides control functionalities specific to Ally LED devices,
-    including color and mode adjustments.
-
-    AllyLEDDevice提供Ally LED设备特有的控制功能，包括颜色和模式调整。
-    """
-
-    def set_color(
-        self,
-        color: Color,
-        color2: Color | None = None,
-        mode: str = RGBMode.Solid.value,
-    ) -> None:
-        if not color:
-            return
-        # read /sys/class/leds/ally:rgb:joystick_rings/multi_index
-        multi_index = ""
-        if os.path.exists(os.path.join(ALLY_LED_PATH, "multi_index")):
-            with open(os.path.join(ALLY_LED_PATH, "multi_index"), "r") as f:
-                multi_index = f.read().strip()
-                logger.debug(f"ally multi_index={multi_index}")
-
-        count = len(multi_index.split(" "))
-        if count == 12:
-            # set /sys/class/leds/ally:rgb:joystick_rings/multi_intensity
-            with open(os.path.join(ALLY_LED_PATH, "multi_intensity"), "w") as f:
-                f.write(
-                    f"{color.R} {color.G} {color.B} {color.R} {color.G} {color.B} {color.R} {color.G} {color.B} {color.R} {color.G} {color.B}"
-                )
-        elif count == 4:
-            color_hex = color.hex()
-            # set /sys/class/leds/ally:rgb:joystick_rings/multi_intensity
-            with open(os.path.join(ALLY_LED_PATH, "multi_intensity"), "w") as f:
-                f.write(f"0x{color_hex} 0x{color_hex} 0x{color_hex} 0x{color_hex}")
-
-        if os.path.exists(os.path.join(ALLY_LED_PATH, "brightness")):
-            with open(os.path.join(ALLY_LED_PATH, "brightness"), "w") as f:
-                _brightness: int = DEFAULT_BRIGHTNESS * 255 // 100
-                logger.debug(f"ally brightness={_brightness}")
-                f.write(str(_brightness))
-
-
 class AyaNeoLEDDevice(BaseLEDDevice):
     """
     AyaNeoLEDDevice offers advanced control for AyaNeo devices, supporting pixel-level
@@ -448,3 +405,59 @@ class AsusLEDDevice(BaseLEDDevice):
                 supports_speed=True,
             ),
         }
+
+
+class AllyLEDDevice(AsusLEDDevice):
+    """
+    AllyLEDDevice provides control functionalities specific to Ally LED devices,
+    including color and mode adjustments.
+
+    AllyLEDDevice提供Ally LED设备特有的控制功能，包括颜色和模式调整。
+    """
+
+    def set_color(
+        self,
+        color: Color,
+        color2: Color | None = None,
+        mode: str = RGBMode.Solid.value,
+    ) -> None:
+        if not color:
+            return
+        if mode == RGBMode.Solid.value:
+            self._set_color_by_sysfs(color)
+        else:
+            super().set_color(color, color2, mode)
+
+    def _set_color_by_sysfs(
+        self,
+        color: Color,
+        color2: Color | None = None,
+        mode: str = RGBMode.Solid.value,
+    ) -> None:
+        if not color:
+            return
+        # read /sys/class/leds/ally:rgb:joystick_rings/multi_index
+        multi_index = ""
+        if os.path.exists(os.path.join(ALLY_LED_PATH, "multi_index")):
+            with open(os.path.join(ALLY_LED_PATH, "multi_index"), "r") as f:
+                multi_index = f.read().strip()
+                logger.debug(f"ally multi_index={multi_index}")
+
+        count = len(multi_index.split(" "))
+        if count == 12:
+            # set /sys/class/leds/ally:rgb:joystick_rings/multi_intensity
+            with open(os.path.join(ALLY_LED_PATH, "multi_intensity"), "w") as f:
+                f.write(
+                    f"{color.R} {color.G} {color.B} {color.R} {color.G} {color.B} {color.R} {color.G} {color.B} {color.R} {color.G} {color.B}"
+                )
+        elif count == 4:
+            color_hex = color.hex()
+            # set /sys/class/leds/ally:rgb:joystick_rings/multi_intensity
+            with open(os.path.join(ALLY_LED_PATH, "multi_intensity"), "w") as f:
+                f.write(f"0x{color_hex} 0x{color_hex} 0x{color_hex} 0x{color_hex}")
+
+        if os.path.exists(os.path.join(ALLY_LED_PATH, "brightness")):
+            with open(os.path.join(ALLY_LED_PATH, "brightness"), "w") as f:
+                _brightness: int = DEFAULT_BRIGHTNESS * 255 // 100
+                logger.debug(f"ally brightness={_brightness}")
+                f.write(str(_brightness))
