@@ -3,23 +3,54 @@ import { Backend, hsvToRgb, RGBMode } from "../util";
 export class SettingsData {
   public enableControl = false;
   public mode = "disabled";
-  public red = 0;
-  public green = 0;
-  public blue = 0;
   public hue = 0;
   public saturation = 100;
   public brightness = 100;
+  public hue2 = 0;
+  public saturation2 = 100;
+  public brightness2 = 100;
   public suspendMode = "";
+
+  // RGB getters
+  get red(): number {
+    const [r] = hsvToRgb(this.hue, this.saturation, this.brightness);
+    return r;
+  }
+
+  get green(): number {
+    const [, g] = hsvToRgb(this.hue, this.saturation, this.brightness);
+    return g;
+  }
+
+  get blue(): number {
+    const [, , b] = hsvToRgb(this.hue, this.saturation, this.brightness);
+    return b;
+  }
+
+  get red2(): number {
+    const [r] = hsvToRgb(this.hue2, this.saturation2, this.brightness2);
+    return r;
+  }
+
+  get green2(): number {
+    const [, g] = hsvToRgb(this.hue2, this.saturation2, this.brightness2);
+    return g;
+  }
+
+  get blue2(): number {
+    const [, , b] = hsvToRgb(this.hue2, this.saturation2, this.brightness2);
+    return b;
+  }
 
   public deepCopy(source: SettingsData) {
     this.enableControl = source.enableControl;
     this.mode = source.mode;
-    this.red = source.red;
-    this.green = source.green;
-    this.blue = source.blue;
     this.hue = source.hue;
     this.saturation = source.saturation;
     this.brightness = source.brightness;
+    this.hue2 = source.hue2;
+    this.saturation2 = source.saturation2;
+    this.brightness2 = source.brightness2;
     this.suspendMode = source.suspendMode;
   }
 
@@ -40,25 +71,20 @@ export class SettingsData {
 
 export class Setting {
   private static _instance: Setting = new Setting();
-
   private _settingsData: SettingsData;
+  isSupportSuspendMode: boolean = false;
 
   private constructor() {
     this._settingsData = new SettingsData();
   }
 
-  isSupportSuspendMode: boolean = false;
+  private static get settingsData(): SettingsData {
+    return this._instance._settingsData;
+  }
 
   public static async init() {
     await this.loadSettingsData();
-
-    Backend.isSupportSuspendMode().then((isSupportSuspendMode) => {
-      this._instance.isSupportSuspendMode = isSupportSuspendMode;
-    });
-  }
-
-  private static get settingsData(): SettingsData {
-    return this._instance._settingsData;
+    this._instance.isSupportSuspendMode = await Backend.isSupportSuspendMode();
   }
 
   public static async loadSettingsData() {
@@ -70,112 +96,112 @@ export class Setting {
     await Backend.setSettings(this.settingsData);
   }
 
-  public static get enableControl() {
-    return this.settingsData.enableControl;
+  private static createGetter<T>(
+    key: keyof SettingsData,
+    defaultValueFn?: () => T
+  ): () => T {
+    return () => {
+      const value = this.settingsData[key] as T;
+      return defaultValueFn && value === undefined ? defaultValueFn() : value;
+    };
   }
 
-  public static set enableControl(enableControl: boolean) {
-    if (this.settingsData.enableControl != enableControl) {
-      this.settingsData.enableControl = enableControl;
-      this.saveSettingsData();
-      Backend.applySettings();
+  private static createSetter<T>(
+    key: keyof SettingsData,
+    preProcess?: (value: T) => T,
+    postProcess?: (oldValue: T, newValue: T) => void
+  ): (value: T) => void {
+    return (value: T) => {
+      const processedValue = preProcess ? preProcess(value) : value;
+      if (this.settingsData[key] !== processedValue) {
+        (this.settingsData[key] as T) = processedValue;
+        postProcess?.(this.settingsData[key] as T, processedValue);
+        this.saveSettingsData();
+        Backend.applySettings();
+      }
+    };
+  }
+
+  private static settingProperty<T>(
+    key: keyof SettingsData,
+    preProcess?: (value: T) => T,
+    postProcess?: (oldValue: T, newValue: T) => void
+  ) {
+    const getter = Setting.createGetter<T>(key);
+    const setter = Setting.createSetter<T>(key, preProcess, postProcess);
+    
+    return function (target: any, propertyKey: string) {
+      Object.defineProperty(target, propertyKey, {
+        get: getter,
+        set: setter,
+        enumerable: true,
+        configurable: true,
+      });
+    };
+  }
+
+  private static readonlyProperty<T>(key: keyof SettingsData) {
+    const getter = Setting.createGetter<T>(key);
+    
+    return function (target: any, propertyKey: string) {
+      Object.defineProperty(target, propertyKey, {
+        get: getter,
+        enumerable: true,
+        configurable: true,
+      });
+    };
+  }
+
+  @Setting.settingProperty<number>("hue", (hue) => hue === 360 ? 0 : hue)
+  public static hue: number;
+
+  @Setting.settingProperty<number>("saturation")
+  public static saturation: number;
+
+  @Setting.settingProperty<number>("brightness")
+  public static brightness: number;
+
+  @Setting.settingProperty<number>("hue2", (hue) => hue === 360 ? 0 : hue)
+  public static hue2: number;
+
+  @Setting.settingProperty<number>("saturation2")
+  public static saturation2: number;
+
+  @Setting.settingProperty<number>("brightness2")
+  public static brightness2: number;
+
+  @Setting.readonlyProperty<number>("red")
+  public static red: number;
+
+  @Setting.readonlyProperty<number>("green")
+  public static green: number;
+
+  @Setting.readonlyProperty<number>("blue")
+  public static blue: number;
+
+  @Setting.readonlyProperty<number>("red2")
+  public static red2: number;
+
+  @Setting.readonlyProperty<number>("green2")
+  public static green2: number;
+
+  @Setting.readonlyProperty<number>("blue2")
+  public static blue2: number;
+
+  @Setting.settingProperty<string>("suspendMode")
+  public static suspendMode: string;
+
+  @Setting.settingProperty<RGBMode>("mode", undefined, 
+    (oldValue, newValue) => {
+      console.log(">>> Updating mode from", oldValue, "to", newValue);
     }
-  }
+  )
+  public static mode: RGBMode;
 
-  static isSupportSuspendMode() {
+  @Setting.settingProperty<boolean>("enableControl")
+  public static enableControl: boolean;
+
+  public static isSupportSuspendMode(): boolean {
     return this._instance.isSupportSuspendMode;
   }
-
-  static setHue(hue: number) {
-    if (hue == 360) {
-      hue = 0;
-    }
-    if (this.settingsData.hue != hue) {
-      this.settingsData.hue = hue;
-      this.initRGB();
-      this.saveSettingsData();
-      Backend.applySettings();
-    }
-  }
-
-  static setSaturation(saturation: number) {
-    if (this.settingsData.saturation != saturation) {
-      this.settingsData.saturation = saturation;
-      this.initRGB();
-      this.saveSettingsData();
-      Backend.applySettings();
-    }
-  }
-
-  static setBrightness(brightness: number) {
-    if (this.settingsData.brightness != brightness) {
-      this.settingsData.brightness = brightness;
-      this.initRGB();
-      this.saveSettingsData();
-      Backend.applySettings();
-    }
-  }
-
-  static setSuspendMode(suspendMode: string) {
-    if (this.settingsData.suspendMode != suspendMode) {
-      this.settingsData.suspendMode = suspendMode;
-      this.saveSettingsData();
-      Backend.applySettings();
-    }
-  }
-
-  static getSuspendMode() {
-    return this.settingsData.suspendMode ?? "";
-  }
-
-  public static getMode(): RGBMode {
-    return this.settingsData.mode as RGBMode || RGBMode.disabled;
-  }
-
-  static setMode(mode: RGBMode) {
-    if (this.settingsData.mode !== mode) {
-      console.log(">>> Updating mode from", this.settingsData.mode, "to", mode);
-      this.settingsData.mode = mode;
-      this.saveSettingsData();
-      Backend.applySettings();
-    } else {
-      console.log(">>> Mode unchanged, skipping update");
-    }
-  }
-
-  private static initRGB() {
-    const [r, g, b] = hsvToRgb(
-      this.settingsData.hue!!,
-      this.settingsData.saturation!!,
-      this.settingsData.brightness!!
-    );
-    this.settingsData.red = r;
-    this.settingsData.green = g;
-    this.settingsData.blue = b;
-  }
-
-  static getSaturation() {
-    return this.settingsData.saturation!!;
-  }
-
-  static getBrightness() {
-    return this.settingsData.brightness!!;
-  }
-
-  static getRed() {
-    return this.settingsData.red!!;
-  }
-
-  static getGreen() {
-    return this.settingsData.green!!;
-  }
-
-  static getBlue() {
-    return this.settingsData.blue!!;
-  }
-
-  static getHue() {
-    return this.settingsData.hue!!;
-  }
-
 }

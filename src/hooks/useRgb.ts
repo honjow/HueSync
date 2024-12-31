@@ -3,11 +3,11 @@ import { Setting } from ".";
 import { Backend, RGBMode } from "../util";
 
 export const useRgb = () => {
-  const [hue, setHue] = useState<number>(Setting.getHue());
-  const [saturation, setSaturation] = useState<number>(Setting.getSaturation());
-  const [brightness, setBrightness] = useState<number>(Setting.getBrightness());
+  const [hue, setHue] = useState<number>(Setting.hue);
+  const [saturation, setSaturation] = useState<number>(Setting.saturation);
+  const [brightness, setBrightness] = useState<number>(Setting.brightness);
 
-  const [rgbMode, setRgbMode] = useState<RGBMode>(Setting.getMode());
+  const [rgbMode, setRgbMode] = useState<RGBMode>(Setting.mode);
 
   const [enableControl, setEnableControl] = useState<boolean>(
     Setting.enableControl
@@ -16,10 +16,10 @@ export const useRgb = () => {
   useEffect(() => {
     const getData = async () => {
       // await Setting.loadSettingsData();
-      // setHue(Setting.getHue());
-      // setSaturation(Setting.getSaturation());
-      // setBrightness(Setting.getBrightness());
-      // setRgbMode(Setting.getMode());
+      // setHue(Setting.hue);
+      // setSaturation(Setting.saturation);
+      // setBrightness(Setting.brightness);
+      // setRgbMode(Setting.mode);
       // setEnableControl(Setting.enableControl);
     };
     getData();
@@ -37,9 +37,9 @@ export const useRgb = () => {
     setHue(h);
     setSaturation(s);
     setBrightness(v);
-    Setting.setHue(h);
-    Setting.setSaturation(s);
-    Setting.setBrightness(v);
+    Setting.hue = h;
+    Setting.saturation = s;
+    Setting.brightness = v;
     if (apply) {
       await Backend.applySettings();
     }
@@ -47,7 +47,7 @@ export const useRgb = () => {
 
   const updateRgbMode = async (mode: RGBMode) => {
     setRgbMode(mode);
-    Setting.setMode(mode);
+    Setting.mode = mode;
     await Backend.applySettings();
   };
 

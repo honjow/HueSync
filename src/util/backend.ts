@@ -7,17 +7,12 @@ export class BackendData {
   private latest_version = "";
 
   public async init() {
+    await call<[], string>("get_version").then((result) => {
+      console.info("current_version = " + result);
+      this.current_version = result;
+    });
 
-    await call<[], string>("get_version").then(
-      (result) => {
-        console.info("current_version = " + result);
-        this.current_version = result;
-      }
-    );
-
-    await call<[], string>(
-      "get_latest_version",
-    ).then((result) => {
+    await call<[], string>("get_latest_version").then((result) => {
       console.info("latest_version = " + result);
       this.latest_version = result;
     });
@@ -48,13 +43,32 @@ export class Backend {
     await this.data.init();
   }
 
-  private static applyRGB(red: number, green: number, blue: number) {
-    console.log(`Applying RGB ${red} ${green} ${blue}`);
-    call<[r: number, g: number, b: number], void>("setRGB",
-      red,
-      green,
-      blue,
+  private static applyColor(
+    mode: string,
+    red: number,
+    green: number,
+    blue: number,
+    red2: number,
+    green2: number,
+    blue2: number,
+    brightness: number
+  ) {
+    console.log(
+      `Applying color: ${mode} ${red} ${green} ${blue} ${red2} ${green2} ${blue2} ${brightness}`
     );
+    call<
+      [
+        mode: string,
+        r: number,
+        g: number,
+        b: number,
+        r2: number,
+        g2: number,
+        b2: number,
+        brightness: number
+      ],
+      void
+    >("set_color", mode, red, green, blue, red2, green2, blue2, brightness);
   }
 
   public static throwSuspendEvt() {
@@ -95,11 +109,20 @@ export class Backend {
     }
 
     if (Setting.isSupportSuspendMode()) {
-      console.log(`HueSync: set suspend mode [${Setting.getSuspendMode()}]`);
-      Backend.setSuspendMode(Setting.getSuspendMode());
+      console.log(`HueSync: set suspend mode [${Setting.suspendMode}]`);
+      Backend.setSuspendMode(Setting.suspendMode);
     }
 
-    Backend.applyRGB(Setting.getRed(), Setting.getGreen(), Setting.getBlue());
+    Backend.applyColor(
+      Setting.mode,
+      Setting.red,
+      Setting.green,
+      Setting.blue,
+      Setting.red2,
+      Setting.green2,
+      Setting.blue2,
+      100,
+    );
   };
 
   // 使用防抖，延迟 300ms
@@ -107,7 +130,7 @@ export class Backend {
 
   // get_settings
   public static async getSettings(): Promise<SettingsData> {
-    const res = await call("get_settings") as Record<string, unknown>;
+    const res = (await call("get_settings")) as Record<string, unknown>;
     if (!res) {
       return new SettingsData();
     }

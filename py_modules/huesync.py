@@ -1,3 +1,5 @@
+from getopt import gnu_getopt
+from math import log
 import os
 import time
 
@@ -74,10 +76,10 @@ class LedControl:
 
     def set_Color(
         self,
-        color: Color | None = None,
-        brightness: int = DEFAULT_BRIGHTNESS,
         mode: str | None = None,
+        color: Color | None = None,
         color2: Color | None = None,
+        brightness: int = DEFAULT_BRIGHTNESS,
     ) -> None:
         """
         Sets the color and brightness of the LED device.
@@ -85,18 +87,31 @@ class LedControl:
         设置LED设备的颜色和亮度。
 
         Args:
-            color (Color): The color to set on the LED device.
-            color (Color): 要在LED设备上设置的颜色。
-            brightness (int): The brightness level, default is DEFAULT_BRIGHTNESS.
-            brightness (int): 亮度级别，默认值为DEFAULT_BRIGHTNESS。
             mode (str): Optional RGB mode to set.
             mode (str): 可选的RGB模式设置。
+            color (Color): The color to set on the LED device.
+            color (Color): 要在LED设备上设置的颜色。
             color2 (Color): Optional secondary color for modes that support it.
             color2 (Color): 支持双色模式时的第二种颜色。
+            brightness (int): The brightness level, default is DEFAULT_BRIGHTNESS.
+            brightness (int): 亮度级别，默认值为DEFAULT_BRIGHTNESS。
+
         """
-        self.device.set_color(
-            mode=mode, color=color, color2=color2, brightness=brightness
+        # self.device.set_color(
+        #     mode=mode, color=color, color2=color2, brightness=brightness
+        # )
+        logger.info(
+            f"color: {color}, brightness: {brightness}, mode: {mode}, color2: {color2}"
         )
+        if mode == RGBMode.Disabled.value:
+            black = Color(0, 0, 0)
+            self.device.set_color(
+                color=black, color2=black, brightness=brightness, mode=RGBMode.Solid.value
+            )
+        else:
+            self.device.set_color(
+                mode=mode, color=color, color2=color2, brightness=brightness
+            )
 
     def get_suspend_mode(self) -> str:
         """

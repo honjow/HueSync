@@ -12,7 +12,7 @@ import { SuspendMode } from "../util";
 
 export const SuspendModeComponent: FC = () => {
 
-    const [suspendMode, setSuspendMode] = useState<string>(Setting.getSuspendMode());
+    const [suspendMode, setSuspendMode] = useState<string>(Setting.suspendMode);
 
     const [isSupportSuspendMode, _] = useState<boolean>(Setting.isSupportSuspendMode());
 
@@ -43,7 +43,7 @@ export const SuspendModeComponent: FC = () => {
     }
 
     useEffect(() => {
-        Setting.setSuspendMode(suspendMode);
+        Setting.suspendMode = suspendMode;
     }, [suspendMode]);
 
     return (

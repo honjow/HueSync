@@ -29,23 +29,30 @@ class Plugin:
 
     async def set_settings(self, settings):
         self.settings.setSetting(CONFIG_KEY, settings)
-        logger.info(f"save Settings: {settings}")
+        logger.debug(f"save Settings: {settings}")
         return True
 
-    async def setRGB(self, r: int, g: int, b: int, brightness: int = 100):
+    async def set_color(
+        self,
+        mode: str | None = None,
+        r: int | None = None,
+        g: int | None = None,
+        b: int | None = None,
+        r2: int | None = None,
+        g2: int | None = None,
+        b2: int | None = None,
+        brightness: int | None = 100,
+    ):
         try:
-            logger.info(f"set_ledOn:{r},{g},{b}, brightness={brightness}")
-            self.ledControl.set_Color(Color(r, g, b), brightness=100)
+            self.ledControl.set_Color(
+                mode=mode,
+                color=Color(r, g, b),
+                color2=Color(r2, g2, b2),
+                brightness=brightness,
+            )
+            return True
         except Exception as e:
             logger.error(e, exc_info=True)
-            return False
-
-    async def setOff(self):
-        try:
-            self.ledControl.set_Color(Color(0, 0, 0), brightness=0)
-            logger.info("set_ledoff")
-        except Exception as e:
-            logger.error(e)
             return False
 
     async def get_suspend_mode(self):
