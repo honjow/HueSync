@@ -4,6 +4,8 @@ import traceback
 
 from logging_handler import SystemdHandler
 
+CONFIG_KEY = "huesync_config"
+
 # 日志配置
 LOG_LOCATION = "/tmp/huesync_py.log"
 try:

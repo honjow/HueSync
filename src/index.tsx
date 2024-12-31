@@ -16,11 +16,11 @@ import { MoreComponent } from "./components/more";
 
 const Content: FC = () => {
   const [enableControl, setEnableControl] = useState<boolean>(
-    Setting.getEnableControl()
+    Setting.enableControl
   );
 
   useEffect(() => {
-    Setting.setEnableControl(enableControl);
+    Setting.enableControl = enableControl;
   }, [enableControl]);
 
   return (
@@ -49,7 +49,6 @@ const Content: FC = () => {
 
 export default definePlugin(() => {
   const init = async () => {
-    Setting.loadSettingsFromLocalStorage();
     localizationManager.init();
     Backend.init();
     await Setting.init();

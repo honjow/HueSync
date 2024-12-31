@@ -1,10 +1,11 @@
 import os
 
 import decky
+from settings import SettingsManager
 
 try:
     import update
-    from config import IS_LED_SUSPEND_MODE_SUPPORTED, logger
+    from config import CONFIG_KEY, IS_LED_SUSPEND_MODE_SUPPORTED, logger
     from huesync import LedControl
     from utils import Color
 
@@ -15,10 +16,21 @@ except Exception as e:
 
 class Plugin:
     async def _main(self):
+        self.settings = SettingsManager(
+            name="config", settings_directory=decky.DECKY_PLUGIN_SETTINGS_DIR
+        )
         try:
             self.ledControl = LedControl()
         except Exception as e:
             logger.error(e, exc_info=True)
+
+    async def get_settings(self):
+        return self.settings.getSetting(CONFIG_KEY)
+
+    async def set_settings(self, settings):
+        self.settings.setSetting(CONFIG_KEY, settings)
+        logger.info(f"save Settings: {settings}")
+        return True
 
     async def setRGB(self, r: int, g: int, b: int, brightness: int = 100):
         try:

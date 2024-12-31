@@ -1,63 +1,55 @@
-import {
-  JsonObject,
-  JsonProperty,
-  JsonSerializer,
-} from "typescript-json-serializer";
 import { Backend, hsvToRgb } from "../util";
 
-const SETTINGS_KEY = "HueSync";
-const serializer = new JsonSerializer();
+export class SettingsData {
+  public enableControl = false;
+  public mode = "disabled";
+  public red = 0;
+  public green = 0;
+  public blue = 0;
+  public hue = 0;
+  public saturation = 100;
+  public brightness = 100;
+  public suspendMode = "";
 
-@JsonObject()
-// @ts-ignore
+  public deepCopy(source: SettingsData) {
+    this.enableControl = source.enableControl;
+    this.mode = source.mode;
+    this.red = source.red;
+    this.green = source.green;
+    this.blue = source.blue;
+    this.hue = source.hue;
+    this.saturation = source.saturation;
+    this.brightness = source.brightness;
+    this.suspendMode = source.suspendMode;
+  }
+
+  public fromDict(dict: { [key: string]: any }) {
+    for (const key of Object.keys(dict)) {
+      if (this.hasOwnProperty(key)) {
+        const typedKey = key as keyof SettingsData;
+        // 确保类型安全的赋值
+        const value = dict[key];
+        if (typeof value === typeof this[typedKey]) {
+          (this[typedKey] as any) = value;
+        }
+      }
+    }
+  }
+}
+
 export class Setting {
   private static _instance: Setting = new Setting();
-  @JsonProperty()
-  // @ts-ignore
-  enableControl?: boolean;
-  @JsonProperty()
-  // @ts-ignore
-  ledOn?: boolean;
-  @JsonProperty()
-  // @ts-ignore
-  red?: number;
-  @JsonProperty()
-  // @ts-ignore
-  green?: number;
-  @JsonProperty()
-  // @ts-ignore
-  blue?: number;
-  @JsonProperty()
-  // @ts-ignore
-  brightness?: number;
-  @JsonProperty()
-  // @ts-ignore
-  hue?: number;
-  @JsonProperty()
-  // @ts-ignore
-  saturation?: number;
 
-  @JsonProperty()
-  suspendMode?: string;
+  private _settingsData: SettingsData;
+
+  private constructor() {
+    this._settingsData = new SettingsData();
+  }
 
   isSupportSuspendMode: boolean = false;
 
-  constructor() {
-    this.enableControl = false;
-    this.ledOn = true;
-    this.red = 255;
-    this.green = 255;
-    this.blue = 255;
-    this.hue = 0;
-    this.saturation = 100;
-    this.brightness = 100;
-  }
-
-  static async init() {
-    // Backend.getSuspendMode().then((suspendMode) => {
-    //   console.log(`HueSync: suspendMode: [${suspendMode}]`);
-    //   this._instance.suspendMode = suspendMode;
-    // });
+  public static async init() {
+    await this.loadSettingsData();
 
     Backend.isSupportSuspendMode().then((isSupportSuspendMode) => {
       console.log(`HueSync: isSupportSuspendMode: [${isSupportSuspendMode}]`);
@@ -65,35 +57,27 @@ export class Setting {
     });
   }
 
-  static getEnableControl() {
-    return this._instance.enableControl!!;
+  private static get settingsData(): SettingsData {
+    return this._instance._settingsData;
   }
 
-  static setEnableControl(enableControl: boolean) {
-    if (this._instance.enableControl != enableControl) {
-      this._instance.enableControl = enableControl;
-      Setting.saveSettingsToLocalStorage();
-      Backend.applySettings();
-    }
+  public static async loadSettingsData() {
+    const _settingsData = await Backend.getSettings();
+    this.settingsData.deepCopy(_settingsData);
   }
 
-  static getLedOn() {
-    return this._instance.ledOn!!;
+  public static async saveSettingsData() {
+    await Backend.setSettings(this.settingsData);
   }
 
-  static setOff() {
-    if (this._instance.ledOn != false) {
-      this._instance.ledOn = false;
-      Setting.saveSettingsToLocalStorage();
-      Backend.applySettings();
-    }
+  public static get enableControl() {
+    return this.settingsData.enableControl;
   }
 
-  static toggleLed(enable: boolean) {
-    if (this._instance.ledOn != enable) {
-      this._instance.ledOn = enable;
-      this.initRGB();
-      Setting.saveSettingsToLocalStorage();
+  public static set enableControl(enableControl: boolean) {
+    if (this.settingsData.enableControl != enableControl) {
+      this.settingsData.enableControl = enableControl;
+      this.saveSettingsData();
       Backend.applySettings();
     }
   }
@@ -102,104 +86,101 @@ export class Setting {
     return this._instance.isSupportSuspendMode;
   }
 
-  // static applyRGB(red: number, green: number, blue: number) {
-  //   if (this._instance.ledOn != true) {
-  //     this._instance.ledOn = true;
-  //     this._instance.red = red;
-  //     this._instance.blue = blue;
-  //     this._instance.green = green;
-  //     Setting.saveSettingsToLocalStorage();
-  //     Backend.applySettings();
-  //   }
-  // }
-
   static setHue(hue: number) {
     if (hue == 360) {
       hue = 0;
     }
-    if (this._instance.hue != hue) {
-      this._instance.hue = hue;
+    if (this.settingsData.hue != hue) {
+      this.settingsData.hue = hue;
       this.initRGB();
-      Setting.saveSettingsToLocalStorage();
+      this.saveSettingsData();
       Backend.applySettings();
     }
   }
 
   static setSaturation(saturation: number) {
-    if (this._instance.saturation != saturation) {
-      this._instance.saturation = saturation;
+    if (this.settingsData.saturation != saturation) {
+      this.settingsData.saturation = saturation;
       this.initRGB();
-      Setting.saveSettingsToLocalStorage();
+      this.saveSettingsData();
       Backend.applySettings();
     }
   }
 
   static setBrightness(brightness: number) {
-    if (this._instance.brightness != brightness) {
-      this._instance.brightness = brightness;
+    if (this.settingsData.brightness != brightness) {
+      this.settingsData.brightness = brightness;
       this.initRGB();
-      Setting.saveSettingsToLocalStorage();
+      this.saveSettingsData();
       Backend.applySettings();
     }
   }
 
   static setSuspendMode(suspendMode: string) {
-    if (this._instance.suspendMode != suspendMode) {
-      this._instance.suspendMode = suspendMode;
-      Setting.saveSettingsToLocalStorage();
+    if (this.settingsData.suspendMode != suspendMode) {
+      this.settingsData.suspendMode = suspendMode;
+      this.saveSettingsData();
       Backend.applySettings();
     }
   }
 
   static getSuspendMode() {
-    return this._instance.suspendMode ?? "";
+    return this.settingsData.suspendMode ?? "";
+  }
+
+  static getMode() {
+    return this.settingsData.mode || "disabled";
+  }
+
+  static setMode(mode: string) {
+    console.log(">>> Setting.setMode called with:", mode);
+    console.log(">>> Current mode:", this.settingsData.mode);
+    if (this.settingsData.mode !== mode) {
+      console.log(">>> Updating mode from", this.settingsData.mode, "to", mode);
+      this.settingsData.mode = mode;
+      this.saveSettingsData();
+      Backend.applySettings();
+      console.log(">>> Mode updated, new state:", {
+        mode: this.settingsData.mode,
+      });
+    } else {
+      console.log(">>> Mode unchanged, skipping update");
+    }
   }
 
   private static initRGB() {
     const [r, g, b] = hsvToRgb(
-      this._instance.hue!!,
-      this._instance.saturation!!,
-      this._instance.brightness!!
+      this.settingsData.hue!!,
+      this.settingsData.saturation!!,
+      this.settingsData.brightness!!
     );
-    this._instance.red = r;
-    this._instance.green = g;
-    this._instance.blue = b;
+    this.settingsData.red = r;
+    this.settingsData.green = g;
+    this.settingsData.blue = b;
   }
 
   static getSaturation() {
-    return this._instance.saturation!!;
+    return this.settingsData.saturation!!;
   }
 
   static getBrightness() {
-    return this._instance.brightness!!;
+    return this.settingsData.brightness!!;
   }
 
   static getRed() {
-    return this._instance.red!!;
+    return this.settingsData.red!!;
   }
 
   static getGreen() {
-    return this._instance.green!!;
+    return this.settingsData.green!!;
   }
 
   static getBlue() {
-    return this._instance.blue!!;
+    return this.settingsData.blue!!;
   }
 
   static getHue() {
-    return this._instance.hue!!;
+    return this.settingsData.hue!!;
   }
 
-  static loadSettingsFromLocalStorage() {
-    const settingsString = localStorage.getItem(SETTINGS_KEY) || "{}";
-    const settingsJson = JSON.parse(settingsString);
-    const loadSetting = serializer.deserializeObject(settingsJson, Setting);
-    this._instance = loadSetting ? loadSetting : new Setting();
-  }
-
-  static saveSettingsToLocalStorage() {
-    const settingsJson = serializer.serializeObject(this._instance);
-    const settingsString = JSON.stringify(settingsJson);
-    localStorage.setItem(SETTINGS_KEY, settingsString);
-  }
 }

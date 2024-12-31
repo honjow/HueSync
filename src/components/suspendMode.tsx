@@ -3,14 +3,14 @@ import {
     PanelSectionRow,
 } from "@decky/ui";
 
-import { VFC, useEffect, useState } from "react";
+import { FC, useEffect, useState } from "react";
 
 import { localizationManager, localizeStrEnum } from "../i18n";
 import { Setting } from "../hooks";
 import { SlowSliderField } from ".";
 import { SuspendMode } from "../util";
 
-export const SuspendModeComponent: VFC = () => {
+export const SuspendModeComponent: FC = () => {
 
     const [suspendMode, setSuspendMode] = useState<string>(Setting.getSuspendMode());
 

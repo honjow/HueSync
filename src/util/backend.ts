@@ -1,4 +1,4 @@
-import { Setting } from "../hooks";
+import { Setting, SettingsData } from "../hooks";
 import { call } from "@decky/api";
 
 export class BackendData {
@@ -48,7 +48,7 @@ export class Backend {
   }
 
   private static applyRGB(red: number, green: number, blue: number) {
-    console.log(`Applying ledOn ${red} ${green} ${blue}`);
+    console.log(`Applying RGB ${red} ${green} ${blue}`);
     call<[r: number, g: number, b: number], void>("setRGB",
       red,
       green,
@@ -56,13 +56,8 @@ export class Backend {
     );
   }
 
-  private static applyLedOff() {
-    console.log("Applying ledOff ");
-    call("setOff");
-  }
-
   public static throwSuspendEvt() {
-    if (!Setting.getEnableControl()) {
+    if (!Setting.enableControl) {
       return;
     }
     console.log("throwSuspendEvt");
@@ -94,17 +89,29 @@ export class Backend {
   }
 
   public static applySettings = () => {
-    if (!Setting.getEnableControl()) {
+    if (!Setting.enableControl) {
       return;
     }
 
-    console.log(`HusSync: set suspend mode ${Setting.getSuspendMode()}`)
+    console.log(`HueSync: set suspend mode ${Setting.getSuspendMode()}`)
     Backend.setSuspendMode(Setting.getSuspendMode());
 
-    if (Setting.getLedOn()) {
-      Backend.applyRGB(Setting.getRed(), Setting.getGreen(), Setting.getBlue());
-    } else {
-      Backend.applyLedOff();
-    }
+    Backend.applyRGB(Setting.getRed(), Setting.getGreen(), Setting.getBlue());
   };
+
+  // get_settings
+  public static async getSettings(): Promise<SettingsData> {
+    const res = await call("get_settings") as { result: Record<string, unknown> };
+    if (!res) {
+      return new SettingsData();
+    }
+    let data = new SettingsData();
+    data.fromDict(res.result as Record<string, unknown>);
+    return data;
+  }
+
+  // set_settings
+  public static async setSettings(settings: SettingsData) {
+    return await call("set_settings", settings);
+  }
 }
