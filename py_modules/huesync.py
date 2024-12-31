@@ -19,7 +19,7 @@ from led.ausu_led_device_hid import AsusLEDDeviceHID
 from led.onex_led_device_hid import OneXLEDDeviceHID
 from led.onex_led_device_serial import OneXLEDDeviceSerial
 from led_device import BaseLEDDevice, LEDDevice
-from utils import AyaJoystickGroup, AyaLedZone, Color, RGBMode
+from utils import AyaJoystickGroup, AyaLedZone, Color, RGBMode, RGBModeCapabilities
 from wincontrols.hardware import WinControls
 
 
@@ -129,6 +129,19 @@ class LedControl:
             if os.path.exists(LED_SUSPEND_MODE_PATH):
                 with open(LED_SUSPEND_MODE_PATH, "w") as f:
                     f.write(f"{mode}")
+
+    def get_mode_capabilities(self) -> dict[str, RGBModeCapabilities]:
+        """
+        Get the capabilities of each supported RGB mode.
+        获取每个支持的 RGB 模式的功能支持情况。
+
+        Returns:
+            dict[str, RGBModeCapabilities]: A dictionary mapping mode names to their capabilities.
+                Each capability describes what features (color, brightness, etc.) are supported by the mode.
+            dict[str, RGBModeCapabilities]: 模式名称到其功能支持情况的映射字典。
+                每个功能支持情况描述该模式支持的特性（颜色、亮度等）。
+        """
+        return self.device.get_mode_capabilities()
 
 
 class GenericLEDDevice(BaseLEDDevice):
@@ -353,6 +366,7 @@ class AsusLEDDevice(BaseLEDDevice):
     """
 
     def __init__(self):
+        super().__init__()
         for product_name, id_info in ID_MAP.items():
             if product_name in PRODUCT_NAME:
                 self.id_info = id_info
@@ -382,3 +396,57 @@ class AsusLEDDevice(BaseLEDDevice):
             RGBMode.Spiral,
             RGBMode.Duality,
         ]
+
+    def get_mode_capabilities(self) -> dict[str, RGBModeCapabilities]:
+        """
+        Get the capabilities of each supported RGB mode for Asus devices.
+        获取 Asus 设备每个支持的 RGB 模式的功能支持情况。
+
+        Returns:
+            dict[str, RGBModeCapabilities]: A dictionary mapping mode names to their capabilities.
+            dict[str, RGBModeCapabilities]: 模式名称到其功能支持情况的映射字典。
+        """
+        return {
+            RGBMode.Disabled.value: RGBModeCapabilities(
+                mode=RGBMode.Disabled,
+                supports_color=False,
+                supports_color2=False,
+                supports_brightness=False,
+                supports_speed=False,
+            ),
+            RGBMode.Solid.value: RGBModeCapabilities(
+                mode=RGBMode.Solid,
+                supports_color=True,
+                supports_color2=False,
+                supports_brightness=True,
+                supports_speed=False,
+            ),
+            RGBMode.Rainbow.value: RGBModeCapabilities(
+                mode=RGBMode.Rainbow,
+                supports_color=False,
+                supports_color2=False,
+                supports_brightness=True,
+                supports_speed=True,
+            ),
+            RGBMode.Pulse.value: RGBModeCapabilities(
+                mode=RGBMode.Pulse,
+                supports_color=True,
+                supports_color2=False,
+                supports_brightness=True,
+                supports_speed=True,
+            ),
+            RGBMode.Spiral.value: RGBModeCapabilities(
+                mode=RGBMode.Spiral,
+                supports_color=False,
+                supports_color2=False,
+                supports_brightness=True,
+                supports_speed=True,
+            ),
+            RGBMode.Duality.value: RGBModeCapabilities(
+                mode=RGBMode.Duality,
+                supports_color=True,
+                supports_color2=True,
+                supports_brightness=True,
+                supports_speed=True,
+            ),
+        }

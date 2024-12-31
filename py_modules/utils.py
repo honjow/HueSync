@@ -1,4 +1,5 @@
 from enum import Enum
+from dataclasses import dataclass
 
 
 class AyaJoystickGroup(Enum):
@@ -21,6 +22,19 @@ class RGBMode(Enum):
     Pulse = "pulse"  # Breathing effect
     Spiral = "spiral"  # Rotating effect
     Duality = "duality"
+
+
+@dataclass
+class RGBModeCapabilities:
+    """
+    Describes the capabilities of an RGB mode.
+    描述 RGB 模式的功能支持情况。
+    """
+    mode: RGBMode
+    supports_color: bool = False  # Whether the mode supports setting a primary color
+    supports_color2: bool = False  # Whether the mode supports setting a secondary color
+    supports_brightness: bool = False  # Whether the mode supports adjusting brightness
+    supports_speed: bool = False  # Whether the mode supports adjusting animation speed
 
 
 class Color:

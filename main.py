@@ -1,11 +1,12 @@
 import os
+
 import decky
 
 try:
-    from config import logger, IS_LED_SUSPEND_MODE_SUPPORTED
+    import update
+    from config import IS_LED_SUSPEND_MODE_SUPPORTED, logger
     from huesync import LedControl
     from utils import Color
-    import update
 
     decky.logger.info("HueSync main.py")
 except Exception as e:
@@ -76,6 +77,36 @@ class Plugin:
             return update.get_latest_version()
         except Exception as e:
             logger.error(e, exc_info=True)
+
+    async def get_mode_capabilities(self) -> dict[str, dict]:
+        """
+        Get the capabilities of each supported RGB mode.
+        获取每个支持的 RGB 模式的功能支持情况。
+
+        Returns:
+            dict[str, dict]: A dictionary mapping mode names to their capabilities.
+                Each capability describes what features (color, brightness, etc.) are supported by the mode.
+                The capabilities are converted to a dictionary for JSON serialization.
+            dict[str, dict]: 模式名称到其功能支持情况的映射字典。
+                每个功能支持情况描述该模式支持的特性（颜色、亮度等）。
+                功能支持情况会被转换为字典以便进行 JSON 序列化。
+        """
+        try:
+            capabilities = self.ledControl.get_mode_capabilities()
+            # Convert RGBModeCapabilities objects to dictionaries for JSON serialization
+            return {
+                mode: {
+                    "mode": cap.mode.value,
+                    "supports_color": cap.supports_color,
+                    "supports_color2": cap.supports_color2,
+                    "supports_brightness": cap.supports_brightness,
+                    "supports_speed": cap.supports_speed,
+                }
+                for mode, cap in capabilities.items()
+            }
+        except Exception as e:
+            logger.error(e, exc_info=True)
+            return {}
 
     # Function called first during the unload process, utilize this to handle your plugin being removed
     async def _unload(self):

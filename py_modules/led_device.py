@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from utils import Color, RGBMode
+from utils import Color, RGBMode, RGBModeCapabilities
 
 
 class LEDDevice(ABC):
@@ -18,6 +18,18 @@ class LEDDevice(ABC):
 
     @abstractmethod
     def get_supported_modes(self) -> list[RGBMode]:
+        pass
+
+    @abstractmethod
+    def get_mode_capabilities(self) -> dict[str, RGBModeCapabilities]:
+        """
+        Get the capabilities of each supported mode.
+        获取每个支持的模式的功能支持情况。
+
+        Returns:
+            dict[str, RGBModeCapabilities]: A dictionary mapping mode names to their capabilities.
+            dict[str, RGBModeCapabilities]: 模式名称到其功能支持情况的映射字典。
+        """
         pass
 
 
@@ -80,3 +92,43 @@ class BaseLEDDevice(LEDDevice):
         Subclasses should override this to provide their specific supported modes.
         """
         return [RGBMode.Disabled, RGBMode.Solid]
+
+    def get_mode_capabilities(self) -> dict[str, RGBModeCapabilities]:
+        """
+        Default mode capabilities.
+        默认模式功能支持情况。
+
+        Returns:
+            dict[str, RGBModeCapabilities]: A dictionary mapping mode names to their capabilities.
+            dict[str, RGBModeCapabilities]: 模式名称到其功能支持情况的映射字典。
+        """
+        return {
+            RGBMode.Disabled.value: RGBModeCapabilities(
+                mode=RGBMode.Disabled,
+                supports_color=False,
+                supports_color2=False,
+                supports_brightness=False,
+                supports_speed=False,
+            ),
+            RGBMode.Solid.value: RGBModeCapabilities(
+                mode=RGBMode.Solid,
+                supports_color=True,
+                supports_color2=False,
+                supports_brightness=True,
+                supports_speed=False,
+            ),
+            RGBMode.Rainbow.value: RGBModeCapabilities(
+                mode=RGBMode.Rainbow,
+                supports_color=False,
+                supports_color2=False,
+                supports_brightness=True,
+                supports_speed=True,
+            ),
+            RGBMode.Pulse.value: RGBModeCapabilities(
+                mode=RGBMode.Pulse,
+                supports_color=True,
+                supports_color2=False,
+                supports_brightness=True,
+                supports_speed=True,
+            ),
+        }
