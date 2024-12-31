@@ -33,7 +33,6 @@ class RGBModeCapabilities:
     mode: RGBMode
     supports_color: bool = False  # Whether the mode supports setting a primary color
     supports_color2: bool = False  # Whether the mode supports setting a secondary color
-    supports_brightness: bool = False  # Whether the mode supports adjusting brightness
     supports_speed: bool = False  # Whether the mode supports adjusting animation speed
 
 

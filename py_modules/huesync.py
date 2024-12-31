@@ -72,46 +72,27 @@ class LedControl:
             return AsusLEDDevice()
         raise ValueError("Unsupported device")
 
-    def set_Color(
+    def set_color(
         self,
-        mode: str | None = None,
-        color: Color | None = None,
+        color: Color,
         color2: Color | None = None,
-        brightness: int = DEFAULT_BRIGHTNESS,
+        mode: str = RGBMode.Solid.value,
     ) -> None:
         """
-        Sets the color and brightness of the LED device.
-
-        设置LED设备的颜色和亮度。
-
-        Args:
-            mode (str): Optional RGB mode to set.
-            mode (str): 可选的RGB模式设置。
-            color (Color): The color to set on the LED device.
-            color (Color): 要在LED设备上设置的颜色。
-            color2 (Color): Optional secondary color for modes that support it.
-            color2 (Color): 支持双色模式时的第二种颜色。
-            brightness (int): The brightness level, default is DEFAULT_BRIGHTNESS.
-            brightness (int): 亮度级别，默认值为DEFAULT_BRIGHTNESS。
-
+        Set the color of the LED
         """
-        # self.device.set_color(
-        #     mode=mode, color=color, color2=color2, brightness=brightness
-        # )
-        logger.info(
-            f"color: {color}, brightness: {brightness}, mode: {mode}, color2: {color2}"
-        )
         if mode == RGBMode.Disabled.value:
             black = Color(0, 0, 0)
             self.device.set_color(
+                mode=RGBMode.Solid.value,
                 color=black,
                 color2=black,
-                brightness=brightness,
-                mode=RGBMode.Solid.value,
             )
         else:
             self.device.set_color(
-                mode=mode, color=color, color2=color2, brightness=brightness
+                mode=mode or RGBMode.Solid.value,
+                color=color,
+                color2=color2,
             )
 
     def get_suspend_mode(self) -> str:
@@ -170,16 +151,15 @@ class GenericLEDDevice(BaseLEDDevice):
 
     def set_color(
         self,
-        mode: str | None = None,
-        color: Color | None = None,
+        color: Color,
         color2: Color | None = None,
-        brightness: int = DEFAULT_BRIGHTNESS,
+        mode: str = RGBMode.Solid.value,
     ) -> None:
         if not color:
             return
         if os.path.exists(LED_PATH):
             with open(os.path.join(LED_PATH, "brightness"), "w") as f:
-                _brightness: int = brightness * 255 // 100
+                _brightness: int = DEFAULT_BRIGHTNESS * 255 // 100
                 logger.debug(f"brightness={_brightness}")
                 f.write(str(_brightness))
             with open(os.path.join(LED_PATH, "multi_intensity"), "w") as f:
@@ -196,10 +176,9 @@ class GPDLEDDevice(BaseLEDDevice):
 
     def set_color(
         self,
-        mode: str | None = None,
-        color: Color | None = None,
+        color: Color,
         color2: Color | None = None,
-        brightness: int = DEFAULT_BRIGHTNESS,
+        mode: str = RGBMode.Solid.value,
     ) -> None:
         if not color:
             return
@@ -207,9 +186,9 @@ class GPDLEDDevice(BaseLEDDevice):
         try:
             wc = WinControls(disableFwCheck=True)
             _color = Color(
-                color.R * brightness // 100,
-                color.G * brightness // 100,
-                color.B * brightness // 100,
+                color.R * DEFAULT_BRIGHTNESS // 100,
+                color.G * DEFAULT_BRIGHTNESS // 100,
+                color.B * DEFAULT_BRIGHTNESS // 100,
             )
             conf = ["ledmode=solid", f"colour={_color.hex()}"]
             logger.info(f"conf={conf}")
@@ -237,10 +216,9 @@ class AllyLEDDevice(BaseLEDDevice):
 
     def set_color(
         self,
-        mode: str | None = None,
-        color: Color | None = None,
+        color: Color,
         color2: Color | None = None,
-        brightness: int = DEFAULT_BRIGHTNESS,
+        mode: str = RGBMode.Solid.value,
     ) -> None:
         if not color:
             return
@@ -266,7 +244,7 @@ class AllyLEDDevice(BaseLEDDevice):
 
         if os.path.exists(os.path.join(ALLY_LED_PATH, "brightness")):
             with open(os.path.join(ALLY_LED_PATH, "brightness"), "w") as f:
-                _brightness: int = brightness * 255 // 100
+                _brightness: int = DEFAULT_BRIGHTNESS * 255 // 100
                 logger.debug(f"ally brightness={_brightness}")
                 f.write(str(_brightness))
 
@@ -281,16 +259,15 @@ class AyaNeoLEDDevice(BaseLEDDevice):
 
     def set_color(
         self,
-        mode: str | None = None,
-        color: Color | None = None,
+        color: Color,
         color2: Color | None = None,
-        brightness: int = DEFAULT_BRIGHTNESS,
+        mode: str = RGBMode.Solid.value,
     ) -> None:
         if not color:
             return
         if not IS_AYANEO_EC_SUPPORTED:
             return
-        self.set_color_all(color, brightness)
+        self.set_color_all(color)
 
     def set_color_one(self, group: int, ledZone: int, color: Color) -> None:
         self.set_aya_subpixel(group, ledZone * 3, color.R)
@@ -313,11 +290,11 @@ class AyaNeoLEDDevice(BaseLEDDevice):
             # EC.Write(0xBF, 0xFF)
             EC.Write(0xBF, 0xFE)
 
-    def set_color_all(self, color: Color, brightness: int = DEFAULT_BRIGHTNESS) -> None:
+    def set_color_all(self, color: Color) -> None:
         color = Color(
-            color.R * brightness // 100,
-            color.G * brightness // 100,
-            color.B * brightness // 100,
+            color.R * DEFAULT_BRIGHTNESS // 100,
+            color.G * DEFAULT_BRIGHTNESS // 100,
+            color.B * DEFAULT_BRIGHTNESS // 100,
         )
 
         self.set_color_one(AyaJoystickGroup.ALL, AyaLedZone.Right, color)
@@ -336,21 +313,18 @@ class OneXLEDDevice(BaseLEDDevice):
 
     def set_color(
         self,
-        mode: str | None = None,
-        color: Color | None = None,
+        color: Color,
         color2: Color | None = None,
-        brightness: int = DEFAULT_BRIGHTNESS,
+        mode: str = RGBMode.Solid.value,
     ) -> None:
         if not color:
             return
         if "ONEXPLAYER X1" in PRODUCT_NAME:
-            self.set_onex_color_serial(color, brightness)
+            self.set_onex_color_serial(color)
         else:
-            self.set_onex_color_hid(color, brightness)
+            self.set_onex_color_hid(color)
 
-    def set_onex_color_hid(
-        self, color: Color, brightness: int = DEFAULT_BRIGHTNESS
-    ) -> None:
+    def set_onex_color_hid(self, color: Color) -> None:
         max_retries = 3
         retry_delay = 1  # seconds
         for retry in range(max_retries + 1):
@@ -361,22 +335,18 @@ class OneXLEDDevice(BaseLEDDevice):
 
             ledDevice = OneXLEDDeviceHID(0x1A2C, 0xB001)
             if ledDevice.is_ready():
-                logger.info(f"set_onex_color: color={color}, brightness={brightness}")
-                ledDevice.set_led_brightness(brightness)
+                logger.info(f"set_onex_color: color={color}")
                 ledDevice.set_led_color(color, RGBMode.Solid)
                 return
             logger.info("set_onex_color_hid: device not ready")
 
         logger.warning("Failed to set color after all retries")
 
-    def set_onex_color_serial(
-        self, color: Color, brightness: int = DEFAULT_BRIGHTNESS
-    ) -> None:
+    def set_onex_color_serial(self, color: Color) -> None:
         try:
             ledDevice = OneXLEDDeviceSerial()
             if ledDevice.is_ready():
-                logger.info(f"set_onex_color_serial: color={color}")
-                ledDevice.set_led_brightness(brightness)
+                logger.info(f"set_onex_color: color={color}")
                 ledDevice.set_led_color(color, RGBMode.Solid)
         except Exception as e:
             logger.error(e, exc_info=True)
@@ -398,10 +368,9 @@ class AsusLEDDevice(BaseLEDDevice):
 
     def set_color(
         self,
-        mode: str | None = None,
-        color: Color | None = None,
+        color: Color,
         color2: Color | None = None,
-        brightness: int = DEFAULT_BRIGHTNESS,
+        mode: str = RGBMode.Solid.value,
     ) -> None:
         max_retries = 3
         retry_delay = 1  # seconds
@@ -415,8 +384,8 @@ class AsusLEDDevice(BaseLEDDevice):
                 self.id_info.vid, self.id_info.pid, [0xFF31], [0x0080]
             )
             if ledDevice.is_ready():
-                logger.info(f"set_asus_color: color={color}, brightness={brightness}")
-                ledDevice.set_led_color(color, brightness, RGBMode.Solid)
+                logger.info(f"set_asus_color: color={color}")
+                ledDevice.set_led_color(color, RGBMode.Solid)
                 return
             logger.info("set_asus_color: device not ready")
 
@@ -446,42 +415,36 @@ class AsusLEDDevice(BaseLEDDevice):
                 mode=RGBMode.Disabled,
                 supports_color=False,
                 supports_color2=False,
-                supports_brightness=False,
                 supports_speed=False,
             ),
             RGBMode.Solid.value: RGBModeCapabilities(
                 mode=RGBMode.Solid,
                 supports_color=True,
                 supports_color2=False,
-                supports_brightness=True,
                 supports_speed=False,
             ),
             RGBMode.Rainbow.value: RGBModeCapabilities(
                 mode=RGBMode.Rainbow,
                 supports_color=False,
                 supports_color2=False,
-                supports_brightness=True,
                 supports_speed=True,
             ),
             RGBMode.Pulse.value: RGBModeCapabilities(
                 mode=RGBMode.Pulse,
                 supports_color=True,
                 supports_color2=False,
-                supports_brightness=True,
                 supports_speed=True,
             ),
             RGBMode.Spiral.value: RGBModeCapabilities(
                 mode=RGBMode.Spiral,
                 supports_color=False,
                 supports_color2=False,
-                supports_brightness=True,
                 supports_speed=True,
             ),
             RGBMode.Duality.value: RGBModeCapabilities(
                 mode=RGBMode.Duality,
                 supports_color=True,
                 supports_color2=True,
-                supports_brightness=True,
                 supports_speed=True,
             ),
         }

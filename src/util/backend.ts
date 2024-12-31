@@ -51,11 +51,10 @@ export class Backend {
     blue: number,
     red2: number,
     green2: number,
-    blue2: number,
-    brightness: number
+    blue2: number
   ) {
     console.log(
-      `Applying color: ${mode} ${red} ${green} ${blue} ${red2} ${green2} ${blue2} ${brightness}`
+      `Applying color: ${mode} ${red} ${green} ${blue} ${red2} ${green2} ${blue2}`
     );
     call<
       [
@@ -65,11 +64,10 @@ export class Backend {
         b: number,
         r2: number,
         g2: number,
-        b2: number,
-        brightness: number
+        b2: number
       ],
       void
-    >("set_color", mode, red, green, blue, red2, green2, blue2, brightness);
+    >("set_color", mode, red, green, blue, red2, green2, blue2);
   }
 
   public static throwSuspendEvt() {
@@ -121,8 +119,7 @@ export class Backend {
       Setting.blue,
       Setting.red2,
       Setting.green2,
-      Setting.blue2,
-      100
+      Setting.blue2
     );
   };
 

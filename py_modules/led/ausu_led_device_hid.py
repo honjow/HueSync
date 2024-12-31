@@ -227,7 +227,6 @@ class AsusLEDDeviceHID:
     def set_led_color(
         self,
         main_color: Color,
-        brightness: int,
         mode: RGBMode,
         init: bool = False,
         global_init: bool = False,

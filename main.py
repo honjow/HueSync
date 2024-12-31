@@ -41,14 +41,12 @@ class Plugin:
         r2: int | None = None,
         g2: int | None = None,
         b2: int | None = None,
-        brightness: int | None = 100,
     ):
         try:
-            self.ledControl.set_Color(
+            self.ledControl.set_color(
                 mode=mode,
                 color=Color(r, g, b),
                 color2=Color(r2, g2, b2),
-                brightness=brightness,
             )
             return True
         except Exception as e:
@@ -118,7 +116,6 @@ class Plugin:
                     "mode": cap.mode.value,
                     "supports_color": cap.supports_color,
                     "supports_color2": cap.supports_color2,
-                    "supports_brightness": cap.supports_brightness,
                     "supports_speed": cap.supports_speed,
                 }
                 for mode, cap in capabilities.items()

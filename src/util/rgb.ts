@@ -2,7 +2,6 @@ export interface RGBModeCapabilities {
   mode: string;
   supports_color: boolean;
   supports_color2: boolean;
-  supports_brightness: boolean;
   supports_speed: boolean;
 }
 

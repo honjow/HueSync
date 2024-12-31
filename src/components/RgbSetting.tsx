@@ -8,30 +8,16 @@ import { FC, useMemo } from "react";
 import { localizationManager, localizeStrEnum } from "../i18n";
 import { useRgb } from "../hooks";
 import { SlowSliderField } from ".";
-import { RGBMode } from "../util";
 import { Setting } from "../hooks/settings";
 
-export const RGBComponent: FC = () => {
-  const {
-    hue,
-    saturation,
-    brightness,
-    setHsv,
-    rgbMode,
-    updateRgbMode,
-    enableControl,
-    updateEnableControl,
-  } = useRgb();
+interface ColorControlsProps {
+  hue: number;
+  saturation: number;
+  brightness: number;
+  setHsv: (h: number, s: number, v: number, immediate?: boolean) => void;
+}
 
-  const modes = useMemo(() => {
-    return Object.entries(Setting.modeCapabilities).map(([mode]) => ({
-      label: localizationManager.getString(
-        localizeStrEnum[`LED_MODE_${mode.toUpperCase()}` as keyof typeof localizeStrEnum]
-      ),
-      data: mode,
-    }));
-  }, []);
-
+const ColorControls: FC<ColorControlsProps> = ({ hue, saturation, brightness, setHsv }) => {
   // 调用更新 RGB 颜色, 放在 onChangeEnd 事件中，避免频繁更新
   const _setHue = (value: number) => {
     setHsv(value, saturation, brightness);
@@ -56,6 +42,122 @@ export const RGBComponent: FC = () => {
   const setBrightness = (value: number) => {
     setHsv(hue, saturation, value, false);
   }
+
+  return (
+    <>
+      <PanelSectionRow>
+        <SlowSliderField
+          showValue
+          label={localizationManager.getString(localizeStrEnum.HUE)}
+          value={hue}
+          min={0}
+          max={360}
+          validValues="range"
+          bottomSeparator="thick"
+          onChangeEnd={_setHue}
+          onChange={setHue}
+          className="ColorPicker_HSlider"
+          valueSuffix="°"
+        />
+      </PanelSectionRow>
+      <PanelSectionRow>
+        <SlowSliderField
+          showValue
+          label={localizationManager.getString(localizeStrEnum.SATURATION)}
+          value={saturation}
+          min={0}
+          max={100}
+          validValues="range"
+          bottomSeparator="thick"
+          onChangeEnd={_setSaturation}
+          onChange={setSaturation}
+          valueSuffix="%"
+          className="ColorPicker_SSlider"
+        />
+      </PanelSectionRow>
+      <PanelSectionRow>
+        <SlowSliderField
+          showValue
+          label={localizationManager.getString(localizeStrEnum.BRIGHTNESS)}
+          value={brightness}
+          min={0}
+          max={100}
+          onChangeEnd={_setBrightness}
+          onChange={setBrightness}
+          valueSuffix="%"
+          className="ColorPicker_VSlider"
+        />
+      </PanelSectionRow>
+      <style>
+        {`
+        .ColorPicker_HSlider .${gamepadSliderClasses.SliderTrack} {
+          background: linear-gradient(
+            to right,
+            hsl(0, 100%, 50%),
+            hsl(60, 100%, 50%),
+            hsl(120, 100%, 50%),
+            hsl(180, 100%, 50%),
+            hsl(240, 100%, 50%),
+            hsl(300, 100%, 50%),
+            hsl(360, 100%, 50%)
+          ) !important;
+          --left-track-color: #0000 !important;
+          --colored-toggles-main-color: #0000 !important;
+        }
+        .ColorPicker_SSlider .${gamepadSliderClasses.SliderTrack} {
+          background: linear-gradient(
+            to right,
+            hsl(0, 100%, 100%),
+            hsl(${hue}, 100%, 50%)
+          ) !important;
+          --left-track-color: #0000 !important;
+          --colored-toggles-main-color: #0000 !important;
+        }
+        .ColorPicker_VSlider .${gamepadSliderClasses.SliderTrack} {
+          background: linear-gradient(
+            to right,
+            hsl(0, 100%, 0%),
+            hsl(${hue}, ${saturation}%, 50%)
+          ) !important;
+          --left-track-color: #0000 !important;
+          --colored-toggles-main-color: #0000 !important;
+        }
+      `}
+      </style>
+    </>
+  );
+};
+
+export const RGBComponent: FC = () => {
+  const {
+    hue,
+    saturation,
+    brightness,
+    setHsv,
+    rgbMode,
+    updateRgbMode,
+    enableControl,
+    updateEnableControl,
+  } = useRgb();
+
+  const modes = useMemo(() => {
+    return Object.entries(Setting.modeCapabilities).map(([mode]) => ({
+      label: localizationManager.getString(
+        localizeStrEnum[`LED_MODE_${mode.toUpperCase()}` as keyof typeof localizeStrEnum]
+      ),
+      data: mode,
+    }));
+  }, []);
+
+  // 获取当前模式的能力
+  const currentModeCapabilities = useMemo(() => {
+    return Setting.modeCapabilities[rgbMode] || {
+      mode: rgbMode,
+      supports_color: false,
+      supports_color2: false,
+      supports_speed: false,
+    };
+  }, [rgbMode]);
 
   return (
     <>
@@ -87,90 +189,16 @@ export const RGBComponent: FC = () => {
               }}
             />
           </PanelSectionRow>
-          {rgbMode == RGBMode.solid && (
-            <>
-              <PanelSectionRow>
-                <SlowSliderField
-                  showValue
-                  label={localizationManager.getString(localizeStrEnum.HUE)}
-                  value={hue}
-                  min={0}
-                  max={360}
-                  validValues="range"
-                  bottomSeparator="thick"
-                  onChangeEnd={_setHue}
-                  onChange={setHue}
-                  className="ColorPicker_HSlider"
-                  valueSuffix="°"
-                />
-              </PanelSectionRow>
-              <PanelSectionRow>
-                <SlowSliderField
-                  showValue
-                  label={localizationManager.getString(localizeStrEnum.SATURATION)}
-                  value={saturation}
-                  min={0}
-                  max={100}
-                  validValues="range"
-                  bottomSeparator="thick"
-                  onChangeEnd={_setSaturation}
-                  onChange={setSaturation}
-                  valueSuffix="%"
-                  className="ColorPicker_SSlider"
-                />
-              </PanelSectionRow>
-              <PanelSectionRow>
-                <SlowSliderField
-                  showValue
-                  label={localizationManager.getString(localizeStrEnum.BRIGHTNESS)}
-                  value={brightness}
-                  min={0}
-                  max={100}
-                  onChangeEnd={_setBrightness}
-                  onChange={setBrightness}
-                  valueSuffix="%"
-                  className="ColorPicker_VSlider"
-                />
-              </PanelSectionRow>
-              <style>
-                {`
-                .ColorPicker_HSlider .${gamepadSliderClasses.SliderTrack} {
-                  background: linear-gradient(
-                    to right,
-                    hsl(0, 100%, 50%),
-                    hsl(60, 100%, 50%),
-                    hsl(120, 100%, 50%),
-                    hsl(180, 100%, 50%),
-                    hsl(240, 100%, 50%),
-                    hsl(300, 100%, 50%),
-                    hsl(360, 100%, 50%)
-                  ) !important;
-                  --left-track-color: #0000 !important;
-                  --colored-toggles-main-color: #0000 !important;
-                }
-                .ColorPicker_SSlider .${gamepadSliderClasses.SliderTrack} {
-                  background: linear-gradient(
-                    to right,
-                    hsl(0, 100%, 100%),
-                    hsl(${hue}, 100%, 50%)
-                  ) !important;
-                  --left-track-color: #0000 !important;
-                  --colored-toggles-main-color: #0000 !important;
-                }
-                .ColorPicker_VSlider .${gamepadSliderClasses.SliderTrack} {
-                  background: linear-gradient(
-                    to right,
-                    hsl(0, 100%, 0%),
-                    hsl(${hue}, ${saturation}%, 50%)
-                  ) !important;
-                  --left-track-color: #0000 !important;
-                  --colored-toggles-main-color: #0000 !important;
-                }
-              `}
-              </style>
-            </>
+          {currentModeCapabilities.supports_color && (
+            <ColorControls
+              hue={hue}
+              saturation={saturation}
+              brightness={brightness}
+              setHsv={setHsv}
+            />
           )}
-        </>)}
+        </>
+      )}
     </>
   );
 };

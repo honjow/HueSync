@@ -159,7 +159,7 @@ export class Setting {
     };
   }
 
-  @Setting.settingProperty<number>("hue", (hue) => (hue === 360 ? 0 : hue))
+  @Setting.settingProperty<number>("hue", (hue) => (hue >= 360 ? 0 : hue))
   public static hue: number;
 
   @Setting.settingProperty<number>("saturation")
@@ -168,7 +168,7 @@ export class Setting {
   @Setting.settingProperty<number>("brightness")
   public static brightness: number;
 
-  @Setting.settingProperty<number>("hue2", (hue) => (hue === 360 ? 0 : hue))
+  @Setting.settingProperty<number>("hue2", (hue) => (hue >= 360 ? 0 : hue))
   public static hue2: number;
 
   @Setting.settingProperty<number>("saturation2")

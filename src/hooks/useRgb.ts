@@ -31,12 +31,12 @@ export const useRgb = () => {
     v: number,
     apply: boolean = true
   ) => {
-    if (h >= 360) {
-      h = 0;
-    }
     setHue(h);
     setSaturation(s);
     setBrightness(v);
+    // if (h >= 360) {
+    //   h = 0;
+    // }
     Setting.hue = h;
     Setting.saturation = s;
     Setting.brightness = v;
@@ -65,6 +65,6 @@ export const useRgb = () => {
     rgbMode,
     updateRgbMode,
     enableControl,
-    updateEnableControl
+    updateEnableControl,
   };
 };
