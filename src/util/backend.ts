@@ -93,20 +93,23 @@ export class Backend {
       return;
     }
 
-    console.log(`HueSync: set suspend mode ${Setting.getSuspendMode()}`)
-    Backend.setSuspendMode(Setting.getSuspendMode());
+    if (Setting.isSupportSuspendMode()) {
+      console.log(`HueSync: set suspend mode [${Setting.getSuspendMode()}]`);
+      Backend.setSuspendMode(Setting.getSuspendMode());
+    }
 
     Backend.applyRGB(Setting.getRed(), Setting.getGreen(), Setting.getBlue());
   };
 
   // get_settings
   public static async getSettings(): Promise<SettingsData> {
-    const res = await call("get_settings") as { result: Record<string, unknown> };
+    const res = await call("get_settings") as Record<string, unknown>;
     if (!res) {
       return new SettingsData();
     }
+    console.log(`get_settings: ${JSON.stringify(res)}`);
     let data = new SettingsData();
-    data.fromDict(res.result as Record<string, unknown>);
+    data.fromDict(res as Record<string, unknown>);
     return data;
   }
 

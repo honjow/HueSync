@@ -2,64 +2,37 @@ import {
   PanelSectionRow,
   DropdownItem,
   gamepadSliderClasses,
+  ToggleField,
 } from "@decky/ui";
-import { FC, useEffect, useState } from "react";
+import { FC } from "react";
 import { localizationManager, localizeStrEnum } from "../i18n";
-import { Setting } from "../hooks";
+import { useRgb } from "../hooks";
 import { SlowSliderField } from ".";
+import { RGBMode } from "../util";
 
 export const RGBComponent: FC = () => {
-  const [mode, setMode] = useState<string>(() => {
-    const initialMode = Setting.getMode();
-    console.log("Initial mode from Setting:", initialMode);
-    return initialMode;
-  });
-  const [hue, setHue] = useState<number>(Setting.getHue());
-  const [saturation, setSaturation] = useState<number>(Setting.getSaturation());
-  const [brightness, setBrightness] = useState<number>(Setting.getBrightness());
+  const {
+    hue,
+    saturation,
+    brightness,
+    setHsv,
+    rgbMode,
+    updateRgbMode,
+    enableControl,
+    updateEnableControl,
+  } = useRgb();
+
 
   const modes = [
-    { 
-      label: localizationManager.getString(localizeStrEnum.LED_MODE_SOLID), 
-      data: "solid" 
+    {
+      label: localizationManager.getString(localizeStrEnum.LED_MODE_DISABLED),
+      data: RGBMode.disabled
     },
-    { 
-      label: localizationManager.getString(localizeStrEnum.LED_MODE_DISABLED), 
-      data: "disabled" 
+    {
+      label: localizationManager.getString(localizeStrEnum.LED_MODE_SOLID),
+      data: RGBMode.solid
     },
   ];
-
-  useEffect(() => {
-    setHue(hue);
-    setSaturation(saturation);
-    setBrightness(brightness);
-  }, [hue, saturation, brightness]);
-
-  useEffect(() => {
-    // 当模式改变时，更新LED状态
-    console.log(">>> Mode state changed to:", mode);
-    if (mode !== Setting.getMode()) {
-      console.log(">>> Updating Setting mode to:", mode);
-      Setting.setMode(mode);
-    }
-  }, [mode]);
-
-  const setHsv = (
-    h: number,
-    s: number,
-    v: number,
-    apply: boolean = true
-  ) => {
-    if (h >= 360) {
-      h = 0;
-    }
-
-    if (apply) {
-      Setting.setHue(h);
-      Setting.setSaturation(s);
-      Setting.setBrightness(v);
-    }
-  };
 
   // 调用更新 RGB 颜色, 放在 onChangeEnd 事件中，避免频繁更新
   const _setHue = (value: number) => {
@@ -74,70 +47,95 @@ export const RGBComponent: FC = () => {
     setHsv(hue, saturation, value);
   }
 
+  const setHue = (value: number) => {
+    setHsv(value, saturation, brightness, false);
+  }
+
+  const setSaturation = (value: number) => {
+    setHsv(hue, value, brightness, false);
+  }
+
+  const setBrightness = (value: number) => {
+    setHsv(hue, saturation, value, false);
+  }
+
   return (
-    <div>
+    <>
       <PanelSectionRow>
-        <DropdownItem
-          label={localizationManager.getString(localizeStrEnum.LED_MODE)}
-          strDefaultLabel={localizationManager.getString(localizeStrEnum.LED_MODE_DESC)}
-          selectedOption={modes.find(m => m.data === mode)?.label}
-          rgOptions={modes}
-          onChange={(option) => {
-            console.log(">>> Dropdown onChange, selected:", option.data);
-            if (option.data !== mode) {
-              console.log(">>> Setting new mode:", option.data);
-              setMode(option.data);
-            }
+        <ToggleField
+          label={localizationManager.getString(
+            localizeStrEnum.ENABLE_LED_CONTROL
+          )}
+          checked={enableControl}
+          onChange={(value) => {
+            updateEnableControl(value);
           }}
         />
       </PanelSectionRow>
-      {mode == "solid" && (
+      {enableControl && (
         <>
           <PanelSectionRow>
-            <SlowSliderField
-              showValue
-              label={localizationManager.getString(localizeStrEnum.HUE)}
-              value={hue}
-              min={0}
-              max={360}
-              validValues="range"
-              bottomSeparator="thick"
-              onChangeEnd={_setHue}
-              onChange={setHue}
-              className="ColorPicker_HSlider"
-              valueSuffix="°"
+            <DropdownItem
+              label={localizationManager.getString(localizeStrEnum.LED_MODE)}
+              strDefaultLabel={localizationManager.getString(localizeStrEnum.LED_MODE_DESC)}
+              selectedOption={modes.find(m => m.data === rgbMode)?.data}
+              rgOptions={modes}
+              onChange={(option) => {
+                console.log(">>> Dropdown onChange, selected:", option.data);
+                if (option.data !== rgbMode) {
+                  console.log(">>> Setting new mode:", option.data);
+                  updateRgbMode(option.data);
+                }
+              }}
             />
           </PanelSectionRow>
-          <PanelSectionRow>
-            <SlowSliderField
-              showValue
-              label={localizationManager.getString(localizeStrEnum.SATURATION)}
-              value={saturation}
-              min={0}
-              max={100}
-              validValues="range"
-              bottomSeparator="thick"
-              onChangeEnd={_setSaturation}
-              onChange={setSaturation}
-              valueSuffix="%"
-              className="ColorPicker_SSlider"
-            />
-          </PanelSectionRow>
-          <PanelSectionRow>
-            <SlowSliderField
-              showValue
-              label={localizationManager.getString(localizeStrEnum.BRIGHTNESS)}
-              value={brightness}
-              min={0}
-              max={100}
-              onChangeEnd={_setBrightness}
-              onChange={setBrightness}
-              valueSuffix="%"
-              className="ColorPicker_VSlider"
-            />
-          </PanelSectionRow>
-          <style>
-            {`
+          {rgbMode == RGBMode.solid && (
+            <>
+              <PanelSectionRow>
+                <SlowSliderField
+                  showValue
+                  label={localizationManager.getString(localizeStrEnum.HUE)}
+                  value={hue}
+                  min={0}
+                  max={360}
+                  validValues="range"
+                  bottomSeparator="thick"
+                  onChangeEnd={_setHue}
+                  onChange={setHue}
+                  className="ColorPicker_HSlider"
+                  valueSuffix="°"
+                />
+              </PanelSectionRow>
+              <PanelSectionRow>
+                <SlowSliderField
+                  showValue
+                  label={localizationManager.getString(localizeStrEnum.SATURATION)}
+                  value={saturation}
+                  min={0}
+                  max={100}
+                  validValues="range"
+                  bottomSeparator="thick"
+                  onChangeEnd={_setSaturation}
+                  onChange={setSaturation}
+                  valueSuffix="%"
+                  className="ColorPicker_SSlider"
+                />
+              </PanelSectionRow>
+              <PanelSectionRow>
+                <SlowSliderField
+                  showValue
+                  label={localizationManager.getString(localizeStrEnum.BRIGHTNESS)}
+                  value={brightness}
+                  min={0}
+                  max={100}
+                  onChangeEnd={_setBrightness}
+                  onChange={setBrightness}
+                  valueSuffix="%"
+                  className="ColorPicker_VSlider"
+                />
+              </PanelSectionRow>
+              <style>
+                {`
                 .ColorPicker_HSlider .${gamepadSliderClasses.SliderTrack} {
                   background: linear-gradient(
                     to right,
@@ -171,9 +169,10 @@ export const RGBComponent: FC = () => {
                   --colored-toggles-main-color: #0000 !important;
                 }
               `}
-          </style>
-        </>
-      )}
-    </div>
+              </style>
+            </>
+          )}
+        </>)}
+    </>
   );
 };

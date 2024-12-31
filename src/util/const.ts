@@ -3,3 +3,12 @@ export enum SuspendMode {
     OFF = 'off',
     KEEP = 'keep',
 }
+
+export enum RGBMode {
+    disabled = "disabled",
+    solid = "solid",
+    rainbow = "rainbow",
+    pulse = "pulse",
+    spiral = "spiral",
+    duality = "duality",
+  }

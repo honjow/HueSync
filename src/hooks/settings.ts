@@ -1,4 +1,4 @@
-import { Backend, hsvToRgb } from "../util";
+import { Backend, hsvToRgb, RGBMode } from "../util";
 
 export class SettingsData {
   public enableControl = false;
@@ -24,6 +24,7 @@ export class SettingsData {
   }
 
   public fromDict(dict: { [key: string]: any }) {
+    console.log(`SettingsData.fromDict: ${JSON.stringify(dict)}`);
     for (const key of Object.keys(dict)) {
       if (this.hasOwnProperty(key)) {
         const typedKey = key as keyof SettingsData;
@@ -52,7 +53,6 @@ export class Setting {
     await this.loadSettingsData();
 
     Backend.isSupportSuspendMode().then((isSupportSuspendMode) => {
-      console.log(`HueSync: isSupportSuspendMode: [${isSupportSuspendMode}]`);
       this._instance.isSupportSuspendMode = isSupportSuspendMode;
     });
   }
@@ -128,21 +128,16 @@ export class Setting {
     return this.settingsData.suspendMode ?? "";
   }
 
-  static getMode() {
-    return this.settingsData.mode || "disabled";
+  public static getMode(): RGBMode {
+    return this.settingsData.mode as RGBMode || RGBMode.disabled;
   }
 
-  static setMode(mode: string) {
-    console.log(">>> Setting.setMode called with:", mode);
-    console.log(">>> Current mode:", this.settingsData.mode);
+  static setMode(mode: RGBMode) {
     if (this.settingsData.mode !== mode) {
       console.log(">>> Updating mode from", this.settingsData.mode, "to", mode);
       this.settingsData.mode = mode;
       this.saveSettingsData();
       Backend.applySettings();
-      console.log(">>> Mode updated, new state:", {
-        mode: this.settingsData.mode,
-      });
     } else {
       console.log(">>> Mode unchanged, skipping update");
     }

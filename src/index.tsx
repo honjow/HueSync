@@ -1,11 +1,9 @@
 import {
   definePlugin,
   PanelSection,
-  PanelSectionRow,
   staticClasses,
-  ToggleField,
 } from "@decky/ui";
-import { FC, useState, useEffect } from "react";
+import { FC } from "react";
 import { FaLightbulb } from "react-icons/fa";
 
 import { localizeStrEnum, localizationManager } from "./i18n";
@@ -15,31 +13,13 @@ import { Setting } from "./hooks";
 import { MoreComponent } from "./components/more";
 
 const Content: FC = () => {
-  const [enableControl, setEnableControl] = useState<boolean>(
-    Setting.enableControl
-  );
-
-  useEffect(() => {
-    Setting.enableControl = enableControl;
-  }, [enableControl]);
 
   return (
     <div>
       <PanelSection
         title={localizationManager.getString(localizeStrEnum.TITEL_SETTINGS)}
       >
-        <PanelSectionRow>
-          <ToggleField
-            label={localizationManager.getString(
-              localizeStrEnum.ENABLE_LED_CONTROL
-            )}
-            checked={enableControl}
-            onChange={(value) => {
-              setEnableControl(value);
-            }}
-          />
-        </PanelSectionRow>
-        {enableControl && <RGBComponent />}
+        <RGBComponent />
         <SuspendModeComponent />
       </PanelSection>
       <MoreComponent />
@@ -49,8 +29,8 @@ const Content: FC = () => {
 
 export default definePlugin(() => {
   const init = async () => {
-    localizationManager.init();
-    Backend.init();
+    await localizationManager.init();
+    await Backend.init();
     await Setting.init();
     Backend.applySettings();
   }
