@@ -1,4 +1,4 @@
-import { Backend, hsvToRgb, RGBMode } from "../util";
+import { Backend, hsvToRgb, RGBMode, RGBModeCapabilities } from "../util";
 
 export class SettingsData {
   public enableControl = false;
@@ -70,21 +70,28 @@ export class SettingsData {
 }
 
 export class Setting {
-  private static _instance: Setting = new Setting();
-  private _settingsData: SettingsData;
-  isSupportSuspendMode: boolean = false;
+  private static _settingsData: SettingsData = new SettingsData();
 
-  private constructor() {
-    this._settingsData = new SettingsData();
-  }
+  // 静态成员
+  public static isSupportSuspendMode: boolean = false;
+  public static modeCapabilities: Record<string, RGBModeCapabilities> = {};
+
+  private constructor() {}
 
   private static get settingsData(): SettingsData {
-    return this._instance._settingsData;
+    return this._settingsData;
   }
 
   public static async init() {
     await this.loadSettingsData();
-    this._instance.isSupportSuspendMode = await Backend.isSupportSuspendMode();
+
+    const [isSupportSuspendMode, modeCapabilities] = await Promise.all([
+      Backend.isSupportSuspendMode(),
+      Backend.getModeCapabilities(),
+    ]);
+
+    this.isSupportSuspendMode = isSupportSuspendMode;
+    this.modeCapabilities = modeCapabilities;
   }
 
   public static async loadSettingsData() {
@@ -129,7 +136,7 @@ export class Setting {
   ) {
     const getter = Setting.createGetter<T>(key);
     const setter = Setting.createSetter<T>(key, preProcess, postProcess);
-    
+
     return function (target: any, propertyKey: string) {
       Object.defineProperty(target, propertyKey, {
         get: getter,
@@ -142,7 +149,7 @@ export class Setting {
 
   private static readonlyProperty<T>(key: keyof SettingsData) {
     const getter = Setting.createGetter<T>(key);
-    
+
     return function (target: any, propertyKey: string) {
       Object.defineProperty(target, propertyKey, {
         get: getter,
@@ -152,7 +159,7 @@ export class Setting {
     };
   }
 
-  @Setting.settingProperty<number>("hue", (hue) => hue === 360 ? 0 : hue)
+  @Setting.settingProperty<number>("hue", (hue) => (hue === 360 ? 0 : hue))
   public static hue: number;
 
   @Setting.settingProperty<number>("saturation")
@@ -161,7 +168,7 @@ export class Setting {
   @Setting.settingProperty<number>("brightness")
   public static brightness: number;
 
-  @Setting.settingProperty<number>("hue2", (hue) => hue === 360 ? 0 : hue)
+  @Setting.settingProperty<number>("hue2", (hue) => (hue === 360 ? 0 : hue))
   public static hue2: number;
 
   @Setting.settingProperty<number>("saturation2")
@@ -191,17 +198,11 @@ export class Setting {
   @Setting.settingProperty<string>("suspendMode")
   public static suspendMode: string;
 
-  @Setting.settingProperty<RGBMode>("mode", undefined, 
-    (oldValue, newValue) => {
-      console.log(">>> Updating mode from", oldValue, "to", newValue);
-    }
-  )
+  @Setting.settingProperty<RGBMode>("mode", undefined, (oldValue, newValue) => {
+    console.log(">>> Updating mode from", oldValue, "to", newValue);
+  })
   public static mode: RGBMode;
 
   @Setting.settingProperty<boolean>("enableControl")
   public static enableControl: boolean;
-
-  public static isSupportSuspendMode(): boolean {
-    return this._instance.isSupportSuspendMode;
-  }
 }

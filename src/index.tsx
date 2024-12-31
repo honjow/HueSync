@@ -41,7 +41,7 @@ export default definePlugin(() => {
     setTimeout(() => {
       Backend.applySettings();
       console.log("结束休眠");
-    }, 3000);
+    }, 5000);
   });
 
   SteamClient.System.RegisterForOnSuspendRequest(async () => {

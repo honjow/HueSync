@@ -4,11 +4,12 @@ import {
   gamepadSliderClasses,
   ToggleField,
 } from "@decky/ui";
-import { FC } from "react";
+import { FC, useMemo } from "react";
 import { localizationManager, localizeStrEnum } from "../i18n";
 import { useRgb } from "../hooks";
 import { SlowSliderField } from ".";
 import { RGBMode } from "../util";
+import { Setting } from "../hooks/settings";
 
 export const RGBComponent: FC = () => {
   const {
@@ -22,17 +23,14 @@ export const RGBComponent: FC = () => {
     updateEnableControl,
   } = useRgb();
 
-
-  const modes = [
-    {
-      label: localizationManager.getString(localizeStrEnum.LED_MODE_DISABLED),
-      data: RGBMode.disabled
-    },
-    {
-      label: localizationManager.getString(localizeStrEnum.LED_MODE_SOLID),
-      data: RGBMode.solid
-    },
-  ];
+  const modes = useMemo(() => {
+    return Object.entries(Setting.modeCapabilities).map(([mode]) => ({
+      label: localizationManager.getString(
+        localizeStrEnum[`LED_MODE_${mode.toUpperCase()}` as keyof typeof localizeStrEnum]
+      ),
+      data: mode,
+    }));
+  }, []);
 
   // 调用更新 RGB 颜色, 放在 onChangeEnd 事件中，避免频繁更新
   const _setHue = (value: number) => {

@@ -1,5 +1,3 @@
-from getopt import gnu_getopt
-from math import log
 import os
 import time
 
@@ -106,7 +104,10 @@ class LedControl:
         if mode == RGBMode.Disabled.value:
             black = Color(0, 0, 0)
             self.device.set_color(
-                color=black, color2=black, brightness=brightness, mode=RGBMode.Solid.value
+                color=black,
+                color2=black,
+                brightness=brightness,
+                mode=RGBMode.Solid.value,
             )
         else:
             self.device.set_color(
@@ -350,14 +351,23 @@ class OneXLEDDevice(BaseLEDDevice):
     def set_onex_color_hid(
         self, color: Color, brightness: int = DEFAULT_BRIGHTNESS
     ) -> None:
-        ledDevice = OneXLEDDeviceHID(0x1A2C, 0xB001)
-        # _brightness: int = int(
-        #     round((299 * color.R + 587 * color.G + 114 * color.B) / 1000 / 255.0 * 100)
-        # )
-        if ledDevice.is_ready():
-            logger.info(f"set_onex_color: color={color}, brightness={brightness}")
-            ledDevice.set_led_brightness(brightness)
-            ledDevice.set_led_color(color, RGBMode.Solid)
+        max_retries = 3
+        retry_delay = 1  # seconds
+        for retry in range(max_retries + 1):
+            if retry > 0:
+                logger.info(f"Retry attempt {retry}/{max_retries}")
+                time.sleep(retry_delay)
+                retry_delay *= 2  # 指数退避
+
+            ledDevice = OneXLEDDeviceHID(0x1A2C, 0xB001)
+            if ledDevice.is_ready():
+                logger.info(f"set_onex_color: color={color}, brightness={brightness}")
+                ledDevice.set_led_brightness(brightness)
+                ledDevice.set_led_color(color, RGBMode.Solid)
+                return
+            logger.info("set_onex_color_hid: device not ready")
+
+        logger.warning("Failed to set color after all retries")
 
     def set_onex_color_serial(
         self, color: Color, brightness: int = DEFAULT_BRIGHTNESS
@@ -393,14 +403,24 @@ class AsusLEDDevice(BaseLEDDevice):
         color2: Color | None = None,
         brightness: int = DEFAULT_BRIGHTNESS,
     ) -> None:
-        if not color:
-            return
-        ledDevice = AsusLEDDeviceHID(
-            self.id_info.vid, self.id_info.pid, [0xFF31], [0x0080]
-        )
-        if ledDevice.is_ready():
-            logger.info(f"set_asus_color: color={color}, brightness={brightness}")
-            ledDevice.set_led_color(color, brightness, RGBMode.Solid)
+        max_retries = 3
+        retry_delay = 1  # seconds
+        for retry in range(max_retries + 1):
+            if retry > 0:
+                logger.info(f"Retry attempt {retry}/{max_retries}")
+                time.sleep(retry_delay)
+                retry_delay *= 2  # 指数退避
+
+            ledDevice = AsusLEDDeviceHID(
+                self.id_info.vid, self.id_info.pid, [0xFF31], [0x0080]
+            )
+            if ledDevice.is_ready():
+                logger.info(f"set_asus_color: color={color}, brightness={brightness}")
+                ledDevice.set_led_color(color, brightness, RGBMode.Solid)
+                return
+            logger.info("set_asus_color: device not ready")
+
+        logger.warning("Failed to set color after all retries")
 
     def get_supported_modes(self) -> list[RGBMode]:
         return [

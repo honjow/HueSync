@@ -1,6 +1,7 @@
 import { Setting, SettingsData } from "../hooks";
 import { call } from "@decky/api";
 import { debounce } from "lodash";
+import { RGBModeCapabilities } from ".";
 
 export class BackendData {
   private current_version = "";
@@ -108,7 +109,7 @@ export class Backend {
       return;
     }
 
-    if (Setting.isSupportSuspendMode()) {
+    if (Setting.isSupportSuspendMode) {
       console.log(`HueSync: set suspend mode [${Setting.suspendMode}]`);
       Backend.setSuspendMode(Setting.suspendMode);
     }
@@ -121,7 +122,7 @@ export class Backend {
       Setting.red2,
       Setting.green2,
       Setting.blue2,
-      100,
+      100
     );
   };
 
@@ -143,5 +144,15 @@ export class Backend {
   // set_settings
   public static async setSettings(settings: SettingsData) {
     return await call("set_settings", settings);
+  }
+
+  // get_mode_capabilities
+  public static async getModeCapabilities(): Promise<
+    Record<string, RGBModeCapabilities>
+  > {
+    return (await call("get_mode_capabilities")) as Record<
+      string,
+      RGBModeCapabilities
+    >;
   }
 }

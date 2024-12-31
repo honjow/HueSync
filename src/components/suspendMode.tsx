@@ -14,7 +14,7 @@ export const SuspendModeComponent: FC = () => {
 
     const [suspendMode, setSuspendMode] = useState<string>(Setting.suspendMode);
 
-    const [isSupportSuspendMode, _] = useState<boolean>(Setting.isSupportSuspendMode());
+    const [isSupportSuspendMode, _] = useState<boolean>(Setting.isSupportSuspendMode);
 
     const options = [
         { mode: SuspendMode.OEM, label: localizationManager.getString(localizeStrEnum.SUSPEND_MODE_OEM) },
