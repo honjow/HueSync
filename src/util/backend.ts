@@ -1,5 +1,6 @@
 import { Setting, SettingsData } from "../hooks";
 import { call } from "@decky/api";
+import { debounce } from "lodash";
 
 export class BackendData {
   private current_version = "";
@@ -88,7 +89,7 @@ export class Backend {
     return (await call("is_support_suspend_mode")) as boolean;
   }
 
-  public static applySettings = () => {
+  private static _applySettings = () => {
     if (!Setting.enableControl) {
       return;
     }
@@ -100,6 +101,9 @@ export class Backend {
 
     Backend.applyRGB(Setting.getRed(), Setting.getGreen(), Setting.getBlue());
   };
+
+  // 使用防抖，延迟 300ms
+  public static applySettings = debounce(Backend._applySettings, 300);
 
   // get_settings
   public static async getSettings(): Promise<SettingsData> {
