@@ -17,10 +17,6 @@ class LEDDevice(ABC):
         pass
 
     @abstractmethod
-    def set_mode(self, mode: str):
-        pass
-
-    @abstractmethod
     def get_supported_modes(self) -> list[RGBMode]:
         pass
 
@@ -77,19 +73,6 @@ class BaseLEDDevice(LEDDevice):
         self._current_brightness = max(
             0, min(100, brightness)
         )  # Ensure brightness is between 0-100
-
-    def set_mode(self, mode: str):
-        """
-        Default implementation for setting mode.
-        Subclasses should override this method if they need specific behavior.
-        """
-        try:
-            # 尝试直接从字符串获取模式
-            rgb_mode = next((m for m in RGBMode if m.value == mode.lower()), None)
-            if rgb_mode and rgb_mode in self.get_supported_modes():
-                self._current_mode = rgb_mode
-        except Exception:
-            pass  # Invalid mode name
 
     def get_supported_modes(self) -> list[RGBMode]:
         """

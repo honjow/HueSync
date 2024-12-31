@@ -98,18 +98,6 @@ class LedControl:
             mode=mode, color=color, color2=color2, brightness=brightness
         )
 
-    def set_mode(self, mode: str):
-        """
-        Sets the mode of the LED device.
-
-        设置LED设备的模式。
-
-        Args:
-            mode (str): The mode to set on the LED device.
-            mode (str): 要在LED设备上设置的模式。
-        """
-        self.device.set_mode(mode)
-
     def get_suspend_mode(self) -> str:
         """
         Retrieves the current suspend mode from the LED device if supported.
@@ -167,9 +155,6 @@ class GenericLEDDevice(BaseLEDDevice):
                 f.write(str(_brightness))
             with open(os.path.join(LED_PATH, "multi_intensity"), "w") as f:
                 f.write(f"{color.R} {color.G} {color.B}")
-
-    def set_mode(self, mode: str):
-        pass
 
 
 class GPDLEDDevice(BaseLEDDevice):
@@ -256,9 +241,6 @@ class AllyLEDDevice(BaseLEDDevice):
                 logger.debug(f"ally brightness={_brightness}")
                 f.write(str(_brightness))
 
-    def set_mode(self, mode: str):
-        pass
-
 
 class AyaNeoLEDDevice(BaseLEDDevice):
     """
@@ -314,9 +296,6 @@ class AyaNeoLEDDevice(BaseLEDDevice):
         self.set_color_one(AyaJoystickGroup.ALL, AyaLedZone.Left, color)
         self.set_color_one(AyaJoystickGroup.ALL, AyaLedZone.Top, color)
 
-    def set_mode(self, mode: str):
-        pass
-
 
 class OneXLEDDevice(BaseLEDDevice):
     """
@@ -363,9 +342,6 @@ class OneXLEDDevice(BaseLEDDevice):
                 ledDevice.set_led_color(color, RGBMode.Solid)
         except Exception as e:
             logger.error(e, exc_info=True)
-
-    def set_mode(self, mode: str):
-        pass
 
 
 class AsusLEDDevice(BaseLEDDevice):
