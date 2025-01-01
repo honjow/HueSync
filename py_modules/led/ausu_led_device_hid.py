@@ -37,6 +37,7 @@ class AsusLEDDeviceHID:
         self,
         main_color: Color,
         mode: RGBMode,
+        secondary_color: Color | None = None,
         init: bool = False,
         global_init: bool = True,
     ) -> bool:
@@ -105,6 +106,21 @@ class AsusLEDDeviceHID:
                 0,
                 0,
                 0,
+            )
+
+        elif mode == RGBMode.Duality:
+            # duality
+            msg = rgb_set(
+                "all",
+                "duality",
+                k_direction,
+                k_speed,
+                main_color.R,
+                main_color.G,
+                main_color.B,
+                secondary_color.R,
+                secondary_color.G,
+                secondary_color.B,
             )
 
         else:

@@ -39,7 +39,9 @@ class AsusLEDDevice(BaseLEDDevice):
                 init = self._current_mode != mode
                 logger.info(f"set_asus_color: color={color} mode={mode} init={init}")
                 if mode:
-                    ledDevice.set_led_color(color, mode, init=init)
+                    ledDevice.set_led_color(
+                        color, mode, init=init, secondary_color=color2
+                    )
                     self._current_mode = mode
                 return
             logger.info("set_asus_color: device not ready")
@@ -79,10 +81,10 @@ class AsusLEDDevice(BaseLEDDevice):
                 supports_color2=False,
                 supports_speed=True,
             ),
-            # RGBMode.Duality: RGBModeCapabilities(
-            #     mode=RGBMode.Duality,
-            #     supports_color=True,
-            #     supports_color2=True,
-            #     supports_speed=True,
-            # ),
+            RGBMode.Duality: RGBModeCapabilities(
+                mode=RGBMode.Duality,
+                supports_color=True,
+                supports_color2=True,
+                supports_speed=True,
+            ),
         }
