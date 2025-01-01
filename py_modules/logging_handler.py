@@ -3,7 +3,7 @@ import subprocess
 import os
 
 LOG = "/tmp/huesync_systemd.log"
-
+LOG_TAG = "huesync"
 
 class SystemdHandler(logging.Handler):
     PRIORITY_MAP = {
@@ -22,7 +22,7 @@ class SystemdHandler(logging.Handler):
             env = os.environ.copy()
             env["LD_LIBRARY_PATH"] = ""  # 清除 LD_LIBRARY_PATH
             subprocess.run(
-                ["systemd-cat", "-t", "huesync", "-p", priority],
+                ["systemd-cat", "-t", LOG_TAG, "-p", priority],
                 input=msg,
                 text=True,
                 env=env

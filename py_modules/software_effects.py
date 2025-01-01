@@ -36,11 +36,7 @@ def hsv_to_rgb(h: float, s: float, v: float) -> Color:
     else:
         r, g, b = c, 0, x
 
-    return Color(
-        int((r + m) * 255),
-        int((g + m) * 255),
-        int((b + m) * 255)
-    )
+    return Color(int((r + m) * 255), int((g + m) * 255), int((b + m) * 255))
 
 
 class SoftwareEffect:
@@ -69,10 +65,15 @@ class SoftwareEffect:
 
 
 class PulseEffect(SoftwareEffect):
-    def __init__(self, base_color: Color, set_color_callback: Callable[[Color], None], speed: float = 1.0):
+    def __init__(
+        self,
+        base_color: Color,
+        set_color_callback: Callable[[Color], None],
+        speed: float = 1.0,
+    ):
         """
         初始化呼吸灯效果
-        
+
         Args:
             base_color (Color): 基础颜色
             set_color_callback: 设置颜色的回调函数
@@ -89,7 +90,7 @@ class PulseEffect(SoftwareEffect):
         return Color(
             int(color.R * brightness),
             int(color.G * brightness),
-            int(color.B * brightness)
+            int(color.B * brightness),
         )
 
     def _run(self):
@@ -100,22 +101,26 @@ class PulseEffect(SoftwareEffect):
             # 将时间映射到0-1的亮度值
             current_time = time.time() - start_time
             brightness = (math.sin(current_time * self.speed) + 1) / 2
-            
+
             # 应用亮度到颜色
             current_color = self._apply_brightness(self.base_color, brightness)
-            
+
             # 调用回调函数设置颜色
             self.set_color_callback(current_color)
-            
+
             # 控制更新频率
             time.sleep(0.05)  # 20Hz 更新率
 
 
 class RainbowEffect(SoftwareEffect):
-    def __init__(self, set_color_callback: Callable[[Color], None], speed: float = 1.0):
+    def __init__(
+        self,
+        set_color_callback: Callable[[Color], None],
+        speed: float = 1.0,
+    ):
         """
         初始化彩虹灯效果
-        
+
         Args:
             set_color_callback: 设置颜色的回调函数
             speed (float): 彩虹变化速度，默认为1.0
@@ -134,13 +139,13 @@ class RainbowEffect(SoftwareEffect):
             # 计算当前色相
             current_time = time.time() - start_time
             hue = (current_time * 30 * self.speed) % 360  # 每秒转30度 * speed
-            
+
             # 转换为RGB颜色
             current_color = hsv_to_rgb(hue, 1.0, 1.0)
-            
+
             # 调用回调函数设置颜色
             self.set_color_callback(current_color)
-            
+
             # 控制更新频率
             time.sleep(0.05)  # 20Hz 更新率
 
@@ -152,11 +157,11 @@ class DualityEffect(SoftwareEffect):
         color2: Color,
         set_color_callback: Callable[[Color], None],
         speed: float = 0.2,
-        transition: str = "sine"
+        transition: str = "sine",
     ):
         """
         初始化双色过渡效果
-        
+
         Args:
             color1: 第一个颜色
             color2: 第二个颜色
@@ -178,19 +183,20 @@ class DualityEffect(SoftwareEffect):
 
     def _interpolate_color(self, color1: Color, color2: Color, t: float) -> Color:
         """在两个颜色之间插值"""
+
         def lerp(a: int, b: int, t: float) -> int:
             return int(a + (b - a) * t)
-        
+
         return Color(
             lerp(color1.R, color2.R, t),
             lerp(color1.G, color2.G, t),
-            lerp(color1.B, color2.B, t)
+            lerp(color1.B, color2.B, t),
         )
 
     def _get_transition_value(self, t: float) -> float:
         """根据过渡模式计算过渡值"""
         t = t % 1.0  # 确保 t 在 [0, 1] 范围内
-        
+
         match self.transition:
             case "sine":
                 # 使用正弦函数实现平滑过渡
@@ -211,15 +217,15 @@ class DualityEffect(SoftwareEffect):
             # 计算当前时间点的过渡进度
             current_time = time.time() - start_time
             progress = (current_time * self.speed) % 1.0
-            
+
             # 应用过渡函数
             t = self._get_transition_value(progress)
-            
+
             # 计算当前颜色
             current_color = self._interpolate_color(self.color1, self.color2, t)
-            
+
             # 设置颜色
             self.set_color_callback(current_color)
-            
+
             # 控制更新频率
             time.sleep(0.05)  # 20Hz 更新率

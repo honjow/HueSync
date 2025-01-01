@@ -11,28 +11,26 @@ LOG_LOCATION = "/tmp/huesync_py.log"
 
 
 def setup_logger():
-    formatter = logging.Formatter(
-        "[%(asctime)s | %(filename)s:%(lineno)s:%(funcName)s] %(levelname)s: %(message)s"
-    )
+    # 定义日志格式
+    file_format = "[%(asctime)s | %(filename)s:%(lineno)s:%(funcName)s] %(levelname)s: %(message)s"
+    systemd_format = "[%(filename)s:%(lineno)s:%(funcName)s] %(levelname)s: %(message)s"
 
-    # 准备 handlers
-    handlers = [SystemdHandler(), logging.FileHandler(filename=LOG_LOCATION, mode="w")]
+    # 创建并配置 handlers
+    systemd_handler = SystemdHandler()
+    systemd_handler.setFormatter(logging.Formatter(systemd_format))
+    
+    file_handler = logging.FileHandler(filename=LOG_LOCATION, mode="w")
+    file_handler.setFormatter(logging.Formatter(file_format))
 
-    for handler in handlers:
-        handler.setFormatter(formatter)
-
+    # 获取 logger
     try:
-        # 尝试使用 decky logger
         logger = decky.logger
     except Exception:
-        # 降级到标准 logger
         logger = logging.getLogger(__name__)
 
     logger.setLevel(logging.INFO)
-
-    # 为 logger 添加 handlers
-    for handler in handlers:
-        logger.addHandler(handler)
+    logger.addHandler(systemd_handler)
+    logger.addHandler(file_handler)
 
     return logger
 
@@ -44,13 +42,13 @@ logger = setup_logger()
 try:
     PRODUCT_NAME = open("/sys/devices/virtual/dmi/id/product_name", "r").read().strip()
 except Exception as e:
-    logging.error(f"设备信息配置异常{e}", exc_info=True)
+    logger.error(f"设备信息配置异常{e}", exc_info=True)
 
 # sys_vendor
 try:
     SYS_VENDOR = open("/sys/devices/virtual/dmi/id/sys_vendor", "r").read().strip()
 except Exception as e:
-    logging.error(f"设备信息配置异常{e}", exc_info=True)
+    logger.error(f"设备信息配置异常{e}", exc_info=True)
 
 LED_PATH_LIST = [
     "/sys/class/leds/ayaneo:rgb:joystick_rings",
