@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Optional
 
 from utils import Color, RGBMode, RGBModeCapabilities
-from software_effects import PulseEffect, RainbowEffect
+from software_effects import PulseEffect, RainbowEffect, DualityEffect
 
 
 class LEDDevice(ABC):
@@ -39,7 +39,7 @@ class BaseLEDDevice(LEDDevice):
     def __init__(self):
         self._current_color: Color | None = None
         self._current_mode: RGBMode = RGBMode.Solid
-        self._current_effect: Optional[PulseEffect | RainbowEffect] = None
+        self._current_effect: Optional[PulseEffect | RainbowEffect | DualityEffect] = None
 
     @property
     def current_color(self) -> Color | None:
@@ -84,6 +84,10 @@ class BaseLEDDevice(LEDDevice):
         elif mode == RGBMode.Rainbow:
             # 创建并启动彩虹灯效果
             self._current_effect = RainbowEffect(self._set_solid_color)
+            self._current_effect.start()
+        elif mode == RGBMode.Duality and color and color2:
+            # 创建并启动双色过渡效果
+            self._current_effect = DualityEffect(color, color2, self._set_solid_color)
             self._current_effect.start()
         elif mode == RGBMode.Solid and color:
             # 普通的固定颜色模式

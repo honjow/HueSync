@@ -61,4 +61,10 @@ class GenericLEDDevice(BaseLEDDevice):
             supports_color2=False,
             supports_speed=True,
         )
+        capabilities[RGBMode.Duality] = RGBModeCapabilities(
+            mode=RGBMode.Duality,
+            supports_color=True,
+            supports_color2=True,
+            supports_speed=True,
+        )
         return capabilities
