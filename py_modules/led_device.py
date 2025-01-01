@@ -16,10 +16,6 @@ class LEDDevice(ABC):
         pass
 
     @abstractmethod
-    def get_supported_modes(self) -> list[RGBMode]:
-        pass
-
-    @abstractmethod
     def get_mode_capabilities(self) -> dict[str, RGBModeCapabilities]:
         """
         Get the capabilities of each supported mode.
@@ -71,30 +67,23 @@ class BaseLEDDevice(LEDDevice):
         if mode:
             self._current_mode = mode
 
-    def get_supported_modes(self) -> list[RGBMode]:
-        """
-        Default supported modes.
-        Subclasses should override this to provide their specific supported modes.
-        """
-        return [RGBMode.Disabled, RGBMode.Solid]
-
-    def get_mode_capabilities(self) -> dict[str, RGBModeCapabilities]:
+    def get_mode_capabilities(self) -> dict[RGBMode, RGBModeCapabilities]:
         """
         Default mode capabilities.
         默认模式功能支持情况。
 
         Returns:
-            dict[str, RGBModeCapabilities]: A dictionary mapping mode names to their capabilities.
-            dict[str, RGBModeCapabilities]: 模式名称到其功能支持情况的映射字典。
+            dict[RGBMode, RGBModeCapabilities]: A dictionary mapping mode names to their capabilities.
+            dict[RGBMode, RGBModeCapabilities]: 模式名称到其功能支持情况的映射字典。
         """
         return {
-            RGBMode.Disabled.value: RGBModeCapabilities(
+            RGBMode.Disabled: RGBModeCapabilities(
                 mode=RGBMode.Disabled,
                 supports_color=False,
                 supports_color2=False,
                 supports_speed=False,
             ),
-            RGBMode.Solid.value: RGBModeCapabilities(
+            RGBMode.Solid: RGBModeCapabilities(
                 mode=RGBMode.Solid,
                 supports_color=True,
                 supports_color2=False,
