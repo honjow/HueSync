@@ -7,7 +7,6 @@ try:
     import update
     from config import CONFIG_KEY, IS_LED_SUSPEND_MODE_SUPPORTED, logger
     from huesync import LedControl
-    from utils import Color
 
     decky.logger.info("HueSync main.py")
 except Exception as e:
@@ -43,11 +42,21 @@ class Plugin:
         b2: int | None = None,
     ):
         try:
-            self.ledControl.set_color(
-                mode=mode,
-                color=Color(r, g, b),
-                color2=Color(r2, g2, b2),
+            from utils import Color, RGBMode
+
+            color = None
+            color2 = None
+            if r is not None and g is not None and b is not None:
+                color = Color(r, g, b)
+            if r2 is not None and g2 is not None and b2 is not None:
+                color2 = Color(r2, g2, b2)
+
+            rgb_mode = (
+                next((m for m in RGBMode if m.value == mode.lower()), None)
+                if mode
+                else None
             )
+            self.ledControl.set_color(rgb_mode, color, color2)
             return True
         except Exception as e:
             logger.error(e, exc_info=True)
@@ -95,7 +104,7 @@ class Plugin:
         except Exception as e:
             logger.error(e, exc_info=True)
 
-    async def get_mode_capabilities(self) -> dict[str, dict]:
+    async def get_mode_capabilities(self):
         """
         Get the capabilities of each supported RGB mode.
         获取每个支持的 RGB 模式的功能支持情况。
@@ -112,8 +121,8 @@ class Plugin:
             capabilities = self.ledControl.get_mode_capabilities()
             # Convert RGBModeCapabilities objects to dictionaries for JSON serialization
             return {
-                mode: {
-                    "mode": cap.mode.value,
+                mode.value: {
+                    "mode": mode.value,
                     "supports_color": cap.supports_color,
                     "supports_color2": cap.supports_color2,
                     "supports_speed": cap.supports_speed,

@@ -74,25 +74,25 @@ class LedControl:
 
     def set_color(
         self,
-        color: Color,
+        mode: RGBMode | None = None,
+        color: Color | None = None,
         color2: Color | None = None,
-        mode: str = RGBMode.Solid.value,
     ) -> None:
         """
         Set the color of the LED
         """
-        if mode == RGBMode.Disabled.value:
+        if mode == RGBMode.Disabled:
             black = Color(0, 0, 0)
             self.device.set_color(
-                mode=RGBMode.Solid.value,
-                color=black,
-                color2=black,
+                RGBMode.Solid,
+                black,
+                black,
             )
         else:
             self.device.set_color(
-                mode=mode or RGBMode.Solid.value,
-                color=color,
-                color2=color2,
+                mode or RGBMode.Solid,
+                color,
+                color2,
             )
 
     def get_suspend_mode(self) -> str:
@@ -127,15 +127,15 @@ class LedControl:
                 with open(LED_SUSPEND_MODE_PATH, "w") as f:
                     f.write(f"{mode}")
 
-    def get_mode_capabilities(self) -> dict[str, RGBModeCapabilities]:
+    def get_mode_capabilities(self) -> dict[RGBMode, RGBModeCapabilities]:
         """
         Get the capabilities of each supported RGB mode.
         获取每个支持的 RGB 模式的功能支持情况。
 
         Returns:
-            dict[str, RGBModeCapabilities]: A dictionary mapping mode names to their capabilities.
+            dict[RGBMode, RGBModeCapabilities]: A dictionary mapping mode names to their capabilities.
                 Each capability describes what features (color, brightness, etc.) are supported by the mode.
-            dict[str, RGBModeCapabilities]: 模式名称到其功能支持情况的映射字典。
+            dict[RGBMode, RGBModeCapabilities]: 模式名称到其功能支持情况的映射字典。
                 每个功能支持情况描述该模式支持的特性（颜色、亮度等）。
         """
         return self.device.get_mode_capabilities()
@@ -151,9 +151,9 @@ class GenericLEDDevice(BaseLEDDevice):
 
     def set_color(
         self,
-        color: Color,
+        mode: RGBMode | None = None,
+        color: Color | None = None,
         color2: Color | None = None,
-        mode: str = RGBMode.Solid.value,
     ) -> None:
         if not color:
             return
@@ -176,13 +176,12 @@ class GPDLEDDevice(BaseLEDDevice):
 
     def set_color(
         self,
-        color: Color,
+        mode: RGBMode | None = None,
+        color: Color | None = None,
         color2: Color | None = None,
-        mode: str = RGBMode.Solid.value,
     ) -> None:
         if not color:
             return
-        logger.info(f"SYS_VENDOR={SYS_VENDOR}, PRODUCT_NAME={PRODUCT_NAME}")
         try:
             wc = WinControls(disableFwCheck=True)
             _color = Color(
@@ -192,18 +191,9 @@ class GPDLEDDevice(BaseLEDDevice):
             )
             conf = ["ledmode=solid", f"colour={_color.hex()}"]
             logger.info(f"conf={conf}")
-            if wc.loaded and wc.setConfig(conf):
-                wc.writeConfig()
+            wc.write(conf)
         except Exception as e:
             logger.error(e, exc_info=True)
-
-    def get_supported_modes(self) -> list[RGBMode]:
-        return [
-            RGBMode.Disabled,
-            RGBMode.Solid,
-            RGBMode.Pulse,
-            RGBMode.Spiral,
-        ]
 
 
 class AyaNeoLEDDevice(BaseLEDDevice):
@@ -216,9 +206,9 @@ class AyaNeoLEDDevice(BaseLEDDevice):
 
     def set_color(
         self,
-        color: Color,
+        mode: RGBMode | None = None,
+        color: Color | None = None,
         color2: Color | None = None,
-        mode: str = RGBMode.Solid.value,
     ) -> None:
         if not color:
             return
@@ -270,9 +260,9 @@ class OneXLEDDevice(BaseLEDDevice):
 
     def set_color(
         self,
-        color: Color,
+        mode: RGBMode | None = None,
+        color: Color | None = None,
         color2: Color | None = None,
-        mode: str = RGBMode.Solid.value,
     ) -> None:
         if not color:
             return
@@ -325,85 +315,66 @@ class AsusLEDDevice(BaseLEDDevice):
 
     def set_color(
         self,
-        color: Color,
+        mode: RGBMode | None = None,
+        color: Color | None = None,
         color2: Color | None = None,
-        mode: str = RGBMode.Solid.value,
     ) -> None:
-        max_retries = 3
-        retry_delay = 1  # seconds
-        for retry in range(max_retries + 1):
-            if retry > 0:
-                logger.info(f"Retry attempt {retry}/{max_retries}")
-                time.sleep(retry_delay)
-                retry_delay *= 2  # 指数退避
-
+        if not color:
+            return
+        try:
             ledDevice = AsusLEDDeviceHID(
                 self.id_info.vid, self.id_info.pid, [0xFF31], [0x0080]
             )
             if ledDevice.is_ready():
-                logger.info(f"set_asus_color: color={color}")
-                ledDevice.set_led_color(color, RGBMode.Solid)
+                init = self._current_mode != mode
+                logger.info(f"set_asus_color: color={color} mode={mode} init={init}")
+                if mode:
+                    ledDevice.set_led_color(color, mode, init=init)
+                    self._current_mode = mode
                 return
             logger.info("set_asus_color: device not ready")
+        except Exception as e:
+            logger.error(e, exc_info=True)
 
-        logger.warning("Failed to set color after all retries")
-
-    def get_supported_modes(self) -> list[RGBMode]:
-        return [
-            RGBMode.Disabled,
-            RGBMode.Solid,
-            RGBMode.Rainbow,
-            RGBMode.Pulse,
-            RGBMode.Spiral,
-            RGBMode.Duality,
-        ]
-
-    def get_mode_capabilities(self) -> dict[str, RGBModeCapabilities]:
+    def get_mode_capabilities(self) -> dict[RGBMode, RGBModeCapabilities]:
         """
         Get the capabilities of each supported RGB mode for Asus devices.
         获取 Asus 设备每个支持的 RGB 模式的功能支持情况。
 
         Returns:
-            dict[str, RGBModeCapabilities]: A dictionary mapping mode names to their capabilities.
-            dict[str, RGBModeCapabilities]: 模式名称到其功能支持情况的映射字典。
+            dict[RGBMode, RGBModeCapabilities]: A dictionary mapping RGB modes to their capabilities.
         """
         return {
-            RGBMode.Disabled.value: RGBModeCapabilities(
+            RGBMode.Disabled: RGBModeCapabilities(
                 mode=RGBMode.Disabled,
                 supports_color=False,
                 supports_color2=False,
                 supports_speed=False,
             ),
-            RGBMode.Solid.value: RGBModeCapabilities(
+            RGBMode.Solid: RGBModeCapabilities(
                 mode=RGBMode.Solid,
                 supports_color=True,
                 supports_color2=False,
                 supports_speed=False,
             ),
-            RGBMode.Rainbow.value: RGBModeCapabilities(
+            RGBMode.Rainbow: RGBModeCapabilities(
                 mode=RGBMode.Rainbow,
                 supports_color=False,
                 supports_color2=False,
                 supports_speed=True,
             ),
-            RGBMode.Pulse.value: RGBModeCapabilities(
+            RGBMode.Pulse: RGBModeCapabilities(
                 mode=RGBMode.Pulse,
                 supports_color=True,
                 supports_color2=False,
                 supports_speed=True,
             ),
-            RGBMode.Spiral.value: RGBModeCapabilities(
-                mode=RGBMode.Spiral,
-                supports_color=False,
-                supports_color2=False,
-                supports_speed=True,
-            ),
-            RGBMode.Duality.value: RGBModeCapabilities(
-                mode=RGBMode.Duality,
-                supports_color=True,
-                supports_color2=True,
-                supports_speed=True,
-            ),
+            # RGBMode.Duality: RGBModeCapabilities(
+            #     mode=RGBMode.Duality,
+            #     supports_color=True,
+            #     supports_color2=True,
+            #     supports_speed=True,
+            # ),
         }
 
 
@@ -417,22 +388,20 @@ class AllyLEDDevice(AsusLEDDevice):
 
     def set_color(
         self,
-        color: Color,
+        mode: RGBMode | None = None,
+        color: Color | None = None,
         color2: Color | None = None,
-        mode: str = RGBMode.Solid.value,
     ) -> None:
         if not color:
             return
-        if mode == RGBMode.Solid.value:
+        if mode == RGBMode.Solid:
             self._set_color_by_sysfs(color)
         else:
-            super().set_color(color, color2, mode)
+            super().set_color(mode, color, color2)
 
     def _set_color_by_sysfs(
         self,
         color: Color,
-        color2: Color | None = None,
-        mode: str = RGBMode.Solid.value,
     ) -> None:
         if not color:
             return

@@ -9,7 +9,7 @@ class LEDDevice(ABC):
     @abstractmethod
     def set_color(
         self,
-        mode: str | None = None,
+        mode: RGBMode | None = None,
         color: Color | None = None,
         color2: Color | None = None,
     ):
@@ -47,18 +47,19 @@ class BaseLEDDevice(LEDDevice):
         return self._current_color
 
     @property
-    def current_mode(self) -> str:
-        return self._current_mode.value
+    def current_mode(self) -> RGBMode:
+        return self._current_mode
 
     def set_color(
         self,
-        mode: str | None = None,
+        mode: RGBMode | None = None,
         color: Color | None = None,
         color2: Color | None = None,
     ):
         """
         Default implementation for setting color.
         Subclasses should override this method if they need specific behavior.
+        默认的设置颜色实现。如果子类需要特定的行为，应该重写此方法。
 
         Args:
             mode: RGB mode to set
@@ -68,12 +69,7 @@ class BaseLEDDevice(LEDDevice):
         if color:
             self._current_color = color
         if mode:
-            try:
-                rgb_mode = next((m for m in RGBMode if m.value == mode.lower()), None)
-                if rgb_mode:
-                    self._current_mode = rgb_mode
-            except Exception:
-                pass  # Invalid mode name
+            self._current_mode = mode
 
     def get_supported_modes(self) -> list[RGBMode]:
         """
@@ -103,17 +99,5 @@ class BaseLEDDevice(LEDDevice):
                 supports_color=True,
                 supports_color2=False,
                 supports_speed=False,
-            ),
-            RGBMode.Rainbow.value: RGBModeCapabilities(
-                mode=RGBMode.Rainbow,
-                supports_color=False,
-                supports_color2=False,
-                supports_speed=True,
-            ),
-            RGBMode.Pulse.value: RGBModeCapabilities(
-                mode=RGBMode.Pulse,
-                supports_color=True,
-                supports_color2=False,
-                supports_speed=True,
             ),
         }
