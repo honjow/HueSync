@@ -6,6 +6,7 @@ class AyaJoystickGroup(Enum):
     Left = 1
     Right = 2
     ALL = 3
+    Bottom = 4
 
 
 class AyaLedZone(Enum):

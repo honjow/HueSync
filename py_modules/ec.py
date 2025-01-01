@@ -1,10 +1,14 @@
 import portio
 import time
+from config import logger
 
 EC_IBF_BIT = 0b10
 EC_OBF_BIT = 0b01
 EC_CMD_STATUS_REGISTER_PORT = 0x66
 EC_DATA_REGISTER_PORT = 0x62
+
+RD_EC = 0x80  # Read Embedded Controller
+WR_EC = 0x81  # Write Embedded Controller
 
 
 def inb(port):
@@ -59,7 +63,7 @@ class EC:
 
     @staticmethod
     def Read(address: int):
-        EC.Register.SetCmd(0x80)
+        EC.Register.SetCmd(RD_EC)
         EC.Register.SetData(address)
         return EC.Register.GetData()
 
@@ -67,16 +71,71 @@ class EC:
     def ReadLonger(address: int, length: int):
         sum = 0
         for len in range(length):
-            EC.Register.SetCmd(0x80)
+            EC.Register.SetCmd(RD_EC)
             EC.Register.SetData(address + len)
             sum = (sum << 8) + EC.Register.GetData()
         return sum
 
     @staticmethod
     def Write(address: int, data: int):
-        EC.Register.SetCmd(0x81)
+        EC.Register.SetCmd(WR_EC)
         EC.Register.SetData(address)
         EC.Register.SetData(data)
+
+    @staticmethod
+    def RamWrite(reg_addr: int, reg_data: int, address: int, data: int):
+        high_byte = (address >> 8) & 0xFF
+        low_byte = address & 0xFF
+        portio.outb(0x2E, reg_addr)
+        portio.outb(0x11, reg_data)
+        portio.outb(0x2F, reg_addr)
+        portio.outb(high_byte, reg_data)
+
+        portio.outb(0x2E, reg_addr)
+        portio.outb(0x10, reg_data)
+        portio.outb(0x2F, reg_addr)
+        portio.outb(low_byte, reg_data)
+
+        portio.outb(0x2E, reg_addr)
+        portio.outb(0x12, reg_data)
+        portio.outb(0x2F, reg_addr)
+        portio.outb(data, reg_data)
+        logger.debug(
+            f"ECRamWrite high_byte={hex(high_byte)} low_byte={hex(low_byte)} address:{hex(address)} value:{data}"
+        )
+
+    @staticmethod
+    def RamRead(reg_addr: int, reg_data: int, address: int):
+        high_byte = (address >> 8) & 0xFF
+        low_byte = address & 0xFF
+        portio.outb(0x2E, reg_addr)
+        portio.outb(0x11, reg_data)
+        portio.outb(0x2F, reg_addr)
+        portio.outb(high_byte, reg_data)
+
+        portio.outb(0x2E, reg_addr)
+        portio.outb(0x10, reg_data)
+        portio.outb(0x2F, reg_addr)
+        portio.outb(low_byte, reg_data)
+
+        portio.outb(0x2E, reg_addr)
+        portio.outb(0x12, reg_data)
+        portio.outb(0x2F, reg_addr)
+        data = portio.inb(reg_data)
+        logger.debug(
+            f"ECRamRead high_byte={hex(high_byte)} low_byte={hex(low_byte)} address:{hex(address)} value:{data}"
+        )
+        return data
+
+    @staticmethod
+    def RamReadLonger(reg_addr: int, reg_data: int, address: int, length: int):
+        sum = 0
+        for len in range(length):
+            value = EC.RamRead(reg_addr, reg_data, address + len)
+            sum = (sum << 8) + value
+            # logger.debug(f"count={len} sum={sum} address={address+len} value={value}")
+        logger.debug(f"ECReadLonger  address:{hex(address)} value:{sum}")
+        return sum
 
     def PrintAll():
         print("", "\t", end="")
