@@ -159,8 +159,11 @@ export class Setting {
     };
   }
 
-  @Setting.settingProperty<number>("hue", (hue) => (hue >= 360 ? 0 : hue))
+  @Setting.settingProperty<number>("hue")
   public static hue: number;
+
+  @Setting.settingProperty<number>("hue2")
+  public static hue2: number;
 
   @Setting.settingProperty<number>("saturation")
   public static saturation: number;
@@ -168,14 +171,17 @@ export class Setting {
   @Setting.settingProperty<number>("brightness")
   public static brightness: number;
 
-  @Setting.settingProperty<number>("hue2", (hue) => (hue >= 360 ? 0 : hue))
-  public static hue2: number;
-
   @Setting.settingProperty<number>("saturation2")
   public static saturation2: number;
 
   @Setting.settingProperty<number>("brightness2")
   public static brightness2: number;
+
+  @Setting.settingProperty<RGBMode>("mode")
+  public static mode: RGBMode;
+
+  @Setting.settingProperty<boolean>("enableControl")
+  public static enableControl: boolean;
 
   @Setting.readonlyProperty<number>("red")
   public static red: number;
@@ -197,12 +203,4 @@ export class Setting {
 
   @Setting.settingProperty<string>("suspendMode")
   public static suspendMode: string;
-
-  @Setting.settingProperty<RGBMode>("mode", undefined, (oldValue, newValue) => {
-    console.log(">>> Updating mode from", oldValue, "to", newValue);
-  })
-  public static mode: RGBMode;
-
-  @Setting.settingProperty<boolean>("enableControl")
-  public static enableControl: boolean;
 }

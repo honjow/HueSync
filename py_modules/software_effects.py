@@ -151,7 +151,7 @@ class DualityEffect(SoftwareEffect):
         color1: Color,
         color2: Color,
         set_color_callback: Callable[[Color], None],
-        speed: float = 1.0,
+        speed: float = 0.2,
         transition: str = "sine"
     ):
         """
@@ -161,7 +161,7 @@ class DualityEffect(SoftwareEffect):
             color1: 第一个颜色
             color2: 第二个颜色
             set_color_callback: 设置颜色的回调函数
-            speed: 过渡速度，默认为1.0
+            speed: 过渡速度，默认为 0.5
                   1.0 表示每秒完成一次完整的过渡
                   0.5 表示每2秒完成一次完整的过渡
             transition: 过渡模式，可选值：

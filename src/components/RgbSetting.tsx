@@ -15,9 +15,20 @@ interface ColorControlsProps {
   saturation: number;
   brightness: number;
   setHsv: (h: number, s: number, v: number, immediate?: boolean) => void;
+  supportsColor2?: boolean;
+  hue2?: number;
+  setHue2?: (h: number, immediate?: boolean) => void;
 }
 
-const ColorControls: FC<ColorControlsProps> = ({ hue, saturation, brightness, setHsv }) => {
+const ColorControls: FC<ColorControlsProps> = ({
+  hue,
+  saturation,
+  brightness,
+  setHsv,
+  supportsColor2,
+  hue2,
+  setHue2,
+}) => {
   // 调用更新 RGB 颜色, 放在 onChangeEnd 事件中，避免频繁更新
   const _setHue = (value: number) => {
     setHsv(value, saturation, brightness);
@@ -31,15 +42,15 @@ const ColorControls: FC<ColorControlsProps> = ({ hue, saturation, brightness, se
     setHsv(hue, saturation, value);
   }
 
-  const setHue = (value: number) => {
+  const setHueValue = (value: number) => {
     setHsv(value, saturation, brightness, false);
   }
 
-  const setSaturation = (value: number) => {
+  const setSaturationValue = (value: number) => {
     setHsv(hue, value, brightness, false);
   }
 
-  const setBrightness = (value: number) => {
+  const setBrightnessValue = (value: number) => {
     setHsv(hue, saturation, value, false);
   }
 
@@ -51,15 +62,32 @@ const ColorControls: FC<ColorControlsProps> = ({ hue, saturation, brightness, se
           label={localizationManager.getString(localizeStrEnum.HUE)}
           value={hue}
           min={0}
-          max={360}
+          max={359}
           validValues="range"
           bottomSeparator="thick"
           onChangeEnd={_setHue}
-          onChange={setHue}
+          onChange={setHueValue}
           className="ColorPicker_HSlider"
           valueSuffix="°"
         />
       </PanelSectionRow>
+      {supportsColor2 && setHue2 && hue2 !== undefined && (
+        <PanelSectionRow>
+          <SlowSliderField
+            showValue
+            label={localizationManager.getString(localizeStrEnum.HUE) + " 2"}
+            value={hue2}
+            min={0}
+            max={359}
+            validValues="range"
+            bottomSeparator="thick"
+            onChangeEnd={(value) => setHue2(value)}
+            onChange={(value) => setHue2(value, false)}
+            className="ColorPicker_HSlider2"
+            valueSuffix="°"
+          />
+        </PanelSectionRow>
+      )}
       <PanelSectionRow>
         <SlowSliderField
           showValue
@@ -70,7 +98,7 @@ const ColorControls: FC<ColorControlsProps> = ({ hue, saturation, brightness, se
           validValues="range"
           bottomSeparator="thick"
           onChangeEnd={_setSaturation}
-          onChange={setSaturation}
+          onChange={setSaturationValue}
           valueSuffix="%"
           className="ColorPicker_SSlider"
         />
@@ -83,14 +111,15 @@ const ColorControls: FC<ColorControlsProps> = ({ hue, saturation, brightness, se
           min={0}
           max={100}
           onChangeEnd={_setBrightness}
-          onChange={setBrightness}
+          onChange={setBrightnessValue}
           valueSuffix="%"
           className="ColorPicker_VSlider"
         />
       </PanelSectionRow>
       <style>
         {`
-        .ColorPicker_HSlider .${gamepadSliderClasses.SliderTrack} {
+        .ColorPicker_HSlider .${gamepadSliderClasses.SliderTrack},
+        .ColorPicker_HSlider2 .${gamepadSliderClasses.SliderTrack} {
           background: linear-gradient(
             to right,
             hsl(0, 100%, 50%),
@@ -131,9 +160,11 @@ const ColorControls: FC<ColorControlsProps> = ({ hue, saturation, brightness, se
 export const RGBComponent: FC = () => {
   const {
     hue,
+    hue2,
     saturation,
     brightness,
     setHsv,
+    setHue2Value,
     rgbMode,
     updateRgbMode,
     enableControl,
@@ -195,6 +226,9 @@ export const RGBComponent: FC = () => {
               saturation={saturation}
               brightness={brightness}
               setHsv={setHsv}
+              supportsColor2={currentModeCapabilities.supports_color2}
+              hue2={hue2}
+              setHue2={setHue2Value}
             />
           )}
         </>

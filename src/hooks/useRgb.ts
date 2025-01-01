@@ -4,6 +4,7 @@ import { Backend, RGBMode } from "../util";
 
 export const useRgb = () => {
   const [hue, setHue] = useState<number>(Setting.hue);
+  const [hue2, setHue2] = useState<number>(Setting.hue2);
   const [saturation, setSaturation] = useState<number>(Setting.saturation);
   const [brightness, setBrightness] = useState<number>(Setting.brightness);
 
@@ -17,6 +18,7 @@ export const useRgb = () => {
     const getData = async () => {
       // await Setting.loadSettingsData();
       // setHue(Setting.hue);
+      // setHue2(Setting.hue2);
       // setSaturation(Setting.saturation);
       // setBrightness(Setting.brightness);
       // setRgbMode(Setting.mode);
@@ -34,12 +36,25 @@ export const useRgb = () => {
     setHue(h);
     setSaturation(s);
     setBrightness(v);
-    // if (h >= 360) {
-    //   h = 0;
-    // }
     Setting.hue = h;
+
     Setting.saturation = s;
     Setting.brightness = v;
+
+    Setting.saturation2 = s;
+    Setting.brightness2 = v;
+
+    if (apply) {
+      await Backend.applySettings();
+    }
+  };
+
+  const setHue2Value = async (
+    h: number,
+    apply: boolean = true
+  ) => {
+    setHue2(h);
+    Setting.hue2 = h;
     if (apply) {
       await Backend.applySettings();
     }
@@ -59,9 +74,11 @@ export const useRgb = () => {
 
   return {
     hue,
+    hue2,
     saturation,
     brightness,
     setHsv,
+    setHue2Value,
     rgbMode,
     updateRgbMode,
     enableControl,
