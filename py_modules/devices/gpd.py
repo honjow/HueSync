@@ -16,6 +16,26 @@ class GPDLEDDevice(BaseLEDDevice):
     GPDLEDDevice专为GPD设备设计，允许对颜色和模式设置进行特定控制。
     """
 
+    def __init__(self):
+        super().__init__()
+        self._use_software_effects = False
+
+    def _set_solid_color(self, color: Color) -> None:
+        """实际设置颜色的方法"""
+        try:
+            wc = WinControls(disableFwCheck=True)
+            _color = Color(
+                color.R * DEFAULT_BRIGHTNESS // 100,
+                color.G * DEFAULT_BRIGHTNESS // 100,
+                color.B * DEFAULT_BRIGHTNESS // 100,
+            )
+            conf = ["ledmode=solid", f"colour={_color.hex()}"]
+            logger.info(f"conf={conf}")
+            if wc.setConfig(config=conf):
+                wc.writeConfig()
+        except Exception as e:
+            logger.error(e, exc_info=True)
+
     def set_color(
         self,
         mode: RGBMode | None = None,
@@ -24,6 +44,13 @@ class GPDLEDDevice(BaseLEDDevice):
     ) -> None:
         if not color:
             return
+
+        # 如果是软件效果，使用父类实现
+        if self._use_software_effects or mode in [RGBMode.Rainbow]:
+            self._use_software_effects = True
+            super().set_color(mode, color, color2)
+            return
+
         try:
             wc = WinControls(disableFwCheck=True)
             _color = Color(
@@ -35,12 +62,21 @@ class GPDLEDDevice(BaseLEDDevice):
             match mode:
                 case RGBMode.Solid:
                     ledmode = "solid"
+                    self._use_software_effects = False
                 case RGBMode.Disabled:
                     ledmode = "off"
+                    self._use_software_effects = False
                 case RGBMode.Pulse:
                     ledmode = "breathe"
+                    self._use_software_effects = False
                 case RGBMode.Spiral:
                     ledmode = "rotate"
+                    self._use_software_effects = False
+                case _:
+                    # 对于不支持的模式，使用软件实现
+                    self._use_software_effects = True
+                    super().set_color(mode, color, color2)
+                    return
 
             conf = [f"ledmode={ledmode}", f"colour={_color.hex()}"]
             logger.info(f"conf={conf}")
@@ -49,17 +85,18 @@ class GPDLEDDevice(BaseLEDDevice):
 
         except Exception as e:
             logger.error(e, exc_info=True)
+            # 如果硬件控制失败，尝试使用软件实现
+            self._use_software_effects = True
+            super().set_color(mode, color, color2)
 
     def get_mode_capabilities(self) -> dict[RGBMode, RGBModeCapabilities]:
         """
-        Default mode capabilities.
-        默认模式功能支持情况。
+        获取每个支持的模式的功能支持情况。
 
         Returns:
-            dict[RGBMode, RGBModeCapabilities]: A dictionary mapping mode names to their capabilities.
             dict[RGBMode, RGBModeCapabilities]: 模式名称到其功能支持情况的映射字典。
         """
-        return {
+        capabilities = {
             RGBMode.Disabled: RGBModeCapabilities(
                 mode=RGBMode.Disabled,
                 supports_color=False,
@@ -84,4 +121,12 @@ class GPDLEDDevice(BaseLEDDevice):
                 supports_color2=False,
                 supports_speed=False,
             ),
+            # 添加软件支持的模式
+            RGBMode.Rainbow: RGBModeCapabilities(
+                mode=RGBMode.Rainbow,
+                supports_color=False,
+                supports_color2=False,
+                supports_speed=True,
+            ),
         }
+        return capabilities

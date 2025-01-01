@@ -6,7 +6,7 @@ from config import (
     logger,
 )
 from ec import EC
-from utils import AyaJoystickGroup, AyaLedZone, Color, RGBMode
+from utils import AyaJoystickGroup, AyaLedZone, Color, RGBMode, RGBModeCapabilities
 from .led_device import BaseLEDDevice
 
 
@@ -18,17 +18,19 @@ class AyaNeoLEDDevice(BaseLEDDevice):
     AyaNeoLEDDevice为AyaNeo设备提供高级控制，支持像素级调整和各种模式。
     """
 
+    def _set_solid_color(self, color: Color) -> None:
+        self.set_color_all(color)
+
     def set_color(
         self, 
         mode: RGBMode | None = None,
         color: Color | None = None,
         color2: Color | None = None,
     ) -> None:
-        if not color:
-            return
         if not IS_AYANEO_EC_SUPPORTED:
             return
-        self.set_color_all(color)
+        # 调用父类的实现来处理软件灯效
+        super().set_color(mode, color, color2)
 
     def set_color_one(self, group: int, ledZone: int, color: Color) -> None:
         self.set_aya_subpixel(group, ledZone * 3, color.R)
@@ -62,3 +64,26 @@ class AyaNeoLEDDevice(BaseLEDDevice):
         self.set_color_one(AyaJoystickGroup.ALL, AyaLedZone.Bottom, color)
         self.set_color_one(AyaJoystickGroup.ALL, AyaLedZone.Left, color)
         self.set_color_one(AyaJoystickGroup.ALL, AyaLedZone.Top, color)
+
+    def get_mode_capabilities(self) -> dict[RGBMode, RGBModeCapabilities]:
+        """
+        获取每个支持的模式的功能支持情况。
+
+        Returns:
+            dict[RGBMode, RGBModeCapabilities]: 模式名称到其功能支持情况的映射字典。
+        """
+        capabilities = super().get_mode_capabilities()
+        # 添加软件效果支持
+        capabilities[RGBMode.Pulse] = RGBModeCapabilities(
+            mode=RGBMode.Pulse,
+            supports_color=True,
+            supports_color2=False,
+            supports_speed=True,
+        )
+        capabilities[RGBMode.Rainbow] = RGBModeCapabilities(
+            mode=RGBMode.Rainbow,
+            supports_color=False,
+            supports_color2=False,
+            supports_speed=True,
+        )
+        return capabilities

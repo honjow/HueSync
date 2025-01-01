@@ -8,7 +8,7 @@ from config import (
 
 
 from .led_device import BaseLEDDevice
-from utils import Color, RGBMode
+from utils import Color, RGBMode, RGBModeCapabilities
 
 
 class GenericLEDDevice(BaseLEDDevice):
@@ -19,14 +19,8 @@ class GenericLEDDevice(BaseLEDDevice):
     GenericLEDDevice作为LED设备的基类，提供设置颜色和亮度的基本功能。
     """
 
-    def set_color(
-        self,
-        mode: RGBMode | None = None,
-        color: Color | None = None,
-        color2: Color | None = None,
-    ) -> None:
-        if not color:
-            return
+    def _set_solid_color(self, color: Color) -> None:
+        """实际设置颜色的方法"""
         if os.path.exists(LED_PATH):
             with open(os.path.join(LED_PATH, "brightness"), "w") as f:
                 _brightness: int = DEFAULT_BRIGHTNESS * 255 // 100
@@ -34,3 +28,37 @@ class GenericLEDDevice(BaseLEDDevice):
                 f.write(str(_brightness))
             with open(os.path.join(LED_PATH, "multi_intensity"), "w") as f:
                 f.write(f"{color.R} {color.G} {color.B}")
+
+    def set_color(
+        self,
+        mode: RGBMode | None = None,
+        color: Color | None = None,
+        color2: Color | None = None,
+    ) -> None:
+        if not os.path.exists(LED_PATH):
+            return
+        # 调用父类的实现来处理软件灯效
+        super().set_color(mode, color, color2)
+
+    def get_mode_capabilities(self) -> dict[RGBMode, RGBModeCapabilities]:
+        """
+        获取每个支持的模式的功能支持情况。
+
+        Returns:
+            dict[RGBMode, RGBModeCapabilities]: 模式名称到其功能支持情况的映射字典。
+        """
+        capabilities = super().get_mode_capabilities()
+        # 添加软件效果支持
+        capabilities[RGBMode.Pulse] = RGBModeCapabilities(
+            mode=RGBMode.Pulse,
+            supports_color=True,
+            supports_color2=False,
+            supports_speed=True,
+        )
+        capabilities[RGBMode.Rainbow] = RGBModeCapabilities(
+            mode=RGBMode.Rainbow,
+            supports_color=False,
+            supports_color2=False,
+            supports_speed=True,
+        )
+        return capabilities
