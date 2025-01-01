@@ -1,6 +1,6 @@
 import logging
 import os
-import traceback
+import decky
 
 from logging_handler import SystemdHandler
 
@@ -8,23 +8,37 @@ CONFIG_KEY = "huesync_config"
 
 # 日志配置
 LOG_LOCATION = "/tmp/huesync_py.log"
-try:
-    logging.basicConfig(
-        level=logging.INFO,
-        format="[%(asctime)s | %(filename)s:%(lineno)s:%(funcName)s] %(levelname)s: %(message)s",
-        force=True,
-        handlers=[
-            SystemdHandler(),
-            logging.FileHandler(filename=LOG_LOCATION, mode="w"),
-        ],
-    )
-except Exception as e:
-    stack = traceback.format_exc()
-    with open(LOG_LOCATION, "a") as f:
-        f.write(str(e))
-        f.write(stack)
 
-logger = logging.getLogger(__name__)
+
+def setup_logger():
+    formatter = logging.Formatter(
+        "[%(asctime)s | %(filename)s:%(lineno)s:%(funcName)s] %(levelname)s: %(message)s"
+    )
+
+    # 准备 handlers
+    handlers = [SystemdHandler(), logging.FileHandler(filename=LOG_LOCATION, mode="w")]
+
+    for handler in handlers:
+        handler.setFormatter(formatter)
+
+    try:
+        # 尝试使用 decky logger
+        logger = decky.logger
+    except Exception:
+        # 降级到标准 logger
+        logger = logging.getLogger(__name__)
+
+    logger.setLevel(logging.INFO)
+
+    # 为 logger 添加 handlers
+    for handler in handlers:
+        logger.addHandler(handler)
+
+    return logger
+
+
+# 初始化 logger
+logger = setup_logger()
 
 # 设备信息获取配置
 try:

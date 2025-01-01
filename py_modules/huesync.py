@@ -7,6 +7,7 @@ from config import (
     LED_SUSPEND_MODE_PATH,
     PRODUCT_NAME,
     SYS_VENDOR,
+    logger,
 )
 
 from devices.led_device import LEDDevice
@@ -52,21 +53,28 @@ class LedControl:
             ValueError: 如果设备不受支持。
         """
         if IS_LED_SUPPORTED:
+            logger.info("Using generic LED device")
             return GenericLEDDevice()
         elif IS_ALLY_LED_SUPPORTED:
+            logger.info("Using Ally LED device")
             return AllyLEDDevice()
         elif IS_AYANEO_EC_SUPPORTED:
+            logger.info("Using AyaNeo LED device")
             return AyaNeoLEDDevice()
         elif SYS_VENDOR == "GPD" and (PRODUCT_NAME == "G1618-04"):
+            logger.info("Using GPD LED device")
             return GPDLEDDevice()
         elif (
             SYS_VENDOR == "ONE-NETBOOK"
             or SYS_VENDOR == "ONE-NETBOOK TECHNOLOGY CO., LTD."
             or SYS_VENDOR == "AOKZOE"
         ):
+            logger.info("Using OneX LED device")
             return OneXLEDDevice()
         elif SYS_VENDOR == "ASUSTeK COMPUTER INC.":
+            logger.info("Using Asus LED device")
             return AsusLEDDevice()
+        logger.error("Unsupported device")
         raise ValueError("Unsupported device")
 
     def set_color(

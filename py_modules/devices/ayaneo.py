@@ -19,7 +19,7 @@ class AyaNeoLEDDevice(BaseLEDDevice):
     """
 
     def set_color(
-        self,
+        self, 
         mode: RGBMode | None = None,
         color: Color | None = None,
         color2: Color | None = None,
