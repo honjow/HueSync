@@ -3,6 +3,21 @@ import { call } from "@decky/api";
 import { debounce } from "lodash";
 import { RGBModeCapabilities } from ".";
 
+interface ApplySettingsOptions {
+  isInit?: boolean;
+}
+
+interface ApplyColorOptions {
+  isInit?: boolean;
+  mode?: string;
+  red?: number;
+  green?: number;
+  blue?: number;
+  red2?: number;
+  green2?: number;
+  blue2?: number;
+}
+
 export class BackendData {
   private current_version = "";
   private latest_version = "";
@@ -44,18 +59,20 @@ export class Backend {
     await this.data.init();
   }
 
-  private static applyColor(
-    mode: string,
-    red: number,
-    green: number,
-    blue: number,
-    red2: number,
-    green2: number,
-    blue2: number
-  ) {
+  private static applyColor(options: ApplyColorOptions = {}) {
     console.log(
-      `Applying color: ${mode} ${red} ${green} ${blue} ${red2} ${green2} ${blue2}`
+      `Applying color: mode=${options.mode} r=${options.red} g=${options.green} b=${options.blue} r2=${options.red2} g2=${options.green2} b2=${options.blue2} init=${options.isInit}`,
     );
+    const {
+      mode = "disabled",
+      red = 0,
+      green = 0,
+      blue = 0,
+      red2 = 0,
+      green2 = 0,
+      blue2 = 0,
+      isInit = false,
+    } = options;
     call<
       [
         mode: string,
@@ -64,10 +81,11 @@ export class Backend {
         b: number,
         r2: number,
         g2: number,
-        b2: number
+        b2: number,
+        init: boolean
       ],
       void
-    >("set_color", mode, red, green, blue, red2, green2, blue2);
+    >("set_color", mode, red, green, blue, red2, green2, blue2, isInit);
   }
 
   public static throwSuspendEvt() {
@@ -102,7 +120,7 @@ export class Backend {
     return (await call("is_support_suspend_mode")) as boolean;
   }
 
-  private static _applySettings = () => {
+  private static _applySettings = ({ isInit = false }: ApplySettingsOptions = {}) => {
     if (!Setting.enableControl) {
       return;
     }
@@ -112,15 +130,17 @@ export class Backend {
       Backend.setSuspendMode(Setting.suspendMode);
     }
 
-    Backend.applyColor(
-      Setting.mode,
-      Setting.red,
-      Setting.green,
-      Setting.blue,
-      Setting.red2,
-      Setting.green2,
-      Setting.blue2
-    );
+    Backend.applyColor({
+      mode: Setting.mode,
+      red: Setting.red,
+      green: Setting.green,
+      blue: Setting.blue,
+      red2: Setting.red2,
+      green2: Setting.green2,
+      blue2: Setting.blue2,
+      isInit,
+    });
+
   };
 
   // 使用防抖，延迟 300ms

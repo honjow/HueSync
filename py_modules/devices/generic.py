@@ -1,14 +1,9 @@
 import os
 
-from config import (
-    DEFAULT_BRIGHTNESS,
-    LED_PATH,
-    logger,
-)
-
+from config import DEFAULT_BRIGHTNESS, LED_PATH, logger
+from utils import Color, RGBMode, RGBModeCapabilities
 
 from .led_device import BaseLEDDevice
-from utils import Color, RGBMode, RGBModeCapabilities
 
 
 class GenericLEDDevice(BaseLEDDevice):
@@ -34,6 +29,7 @@ class GenericLEDDevice(BaseLEDDevice):
         mode: RGBMode | None = None,
         color: Color | None = None,
         color2: Color | None = None,
+        init: bool = False,
     ) -> None:
         if not os.path.exists(LED_PATH):
             return

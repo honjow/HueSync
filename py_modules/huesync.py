@@ -9,15 +9,13 @@ from config import (
     SYS_VENDOR,
     logger,
 )
-
-from devices.led_device import LEDDevice
-from devices.gpd import GPDLEDDevice
-from devices.generic import GenericLEDDevice
-from devices.asus_ally import AllyLEDDevice
 from devices.asus import AsusLEDDevice
-from devices.onexplayer import OneXLEDDevice
+from devices.asus_ally import AllyLEDDevice
 from devices.ayaneo import AyaNeoLEDDevice
-
+from devices.generic import GenericLEDDevice
+from devices.gpd import GPDLEDDevice
+from devices.led_device import LEDDevice
+from devices.onexplayer import OneXLEDDevice
 from utils import Color, RGBMode, RGBModeCapabilities
 
 
@@ -82,6 +80,7 @@ class LedControl:
         mode: RGBMode | None = None,
         color: Color | None = None,
         color2: Color | None = None,
+        init: bool = False,
     ) -> None:
         """
         Set the color of the LED
@@ -92,12 +91,14 @@ class LedControl:
                 RGBMode.Solid,
                 black,
                 black,
+                init=init,
             )
         else:
             self.device.set_color(
                 mode or RGBMode.Solid,
                 color,
                 color2,
+                init=init,
             )
 
     def get_suspend_mode(self) -> str:

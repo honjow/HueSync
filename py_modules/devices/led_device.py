@@ -14,6 +14,7 @@ class LEDDevice(ABC):
         mode: RGBMode | None = None,
         color: Color | None = None,
         color2: Color | None = None,
+        init: bool = False,
     ):
         pass
 
@@ -58,6 +59,7 @@ class BaseLEDDevice(LEDDevice):
         mode: RGBMode | None = None,
         color: Color | None = None,
         color2: Color | None = None,
+        init: bool = False,
     ):
         """
         Default implementation for setting color.

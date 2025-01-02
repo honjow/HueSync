@@ -1,12 +1,8 @@
 import os
 
-from config import (
-    ALLY_LED_PATH,
-    DEFAULT_BRIGHTNESS,
-    logger,
-)
-
+from config import ALLY_LED_PATH, DEFAULT_BRIGHTNESS, logger
 from utils import Color, RGBMode
+
 from .asus import AsusLEDDevice
 
 
@@ -23,6 +19,7 @@ class AllyLEDDevice(AsusLEDDevice):
         mode: RGBMode | None = None,
         color: Color | None = None,
         color2: Color | None = None,
+        init: bool = False,
     ) -> None:
         if not color:
             return

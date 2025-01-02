@@ -1,14 +1,12 @@
 import time
 
-from config import (
-    PRODUCT_NAME,
-    logger,
-)
-
+from config import PRODUCT_NAME, logger
 from led.onex_led_device_hid import OneXLEDDeviceHID
 from led.onex_led_device_serial import OneXLEDDeviceSerial
 from utils import Color, RGBMode
+
 from .led_device import BaseLEDDevice
+
 
 class OneXLEDDevice(BaseLEDDevice):
     """
@@ -23,6 +21,7 @@ class OneXLEDDevice(BaseLEDDevice):
         mode: RGBMode | None = None,
         color: Color | None = None,
         color2: Color | None = None,
+        init: bool = False,
     ) -> None:
         if not color:
             return

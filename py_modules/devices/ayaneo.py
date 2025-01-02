@@ -1,12 +1,9 @@
 import time
 
-from config import (
-    DEFAULT_BRIGHTNESS,
-    IS_AYANEO_EC_SUPPORTED,
-    logger,
-)
+from config import DEFAULT_BRIGHTNESS, IS_AYANEO_EC_SUPPORTED, logger
 from ec import EC
 from utils import AyaJoystickGroup, AyaLedZone, Color, RGBMode, RGBModeCapabilities
+
 from .led_device import BaseLEDDevice
 
 
@@ -22,10 +19,11 @@ class AyaNeoLEDDevice(BaseLEDDevice):
         self.set_color_all(color)
 
     def set_color(
-        self, 
+        self,
         mode: RGBMode | None = None,
         color: Color | None = None,
         color2: Color | None = None,
+        init: bool = False,
     ) -> None:
         if not IS_AYANEO_EC_SUPPORTED:
             return

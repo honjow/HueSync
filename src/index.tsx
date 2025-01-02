@@ -32,14 +32,14 @@ export default definePlugin(() => {
     await localizationManager.init();
     await Backend.init();
     await Setting.init();
-    Backend.applySettings();
+    Backend.applySettings({ isInit: true });
   }
 
   init();
 
   SteamClient.System.RegisterForOnResumeFromSuspend(async () => {
     setTimeout(() => {
-      Backend.applySettings();
+      Backend.applySettings({ isInit: true });
       console.log("结束休眠");
     }, 5000);
   });

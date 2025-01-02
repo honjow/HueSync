@@ -1,10 +1,7 @@
-from config import (
-    DEFAULT_BRIGHTNESS,
-    logger,
-)
-
+from config import DEFAULT_BRIGHTNESS, logger
 from utils import Color, RGBMode, RGBModeCapabilities
 from wincontrols.hardware import WinControls
+
 from .led_device import BaseLEDDevice
 
 
@@ -41,6 +38,7 @@ class GPDLEDDevice(BaseLEDDevice):
         mode: RGBMode | None = None,
         color: Color | None = None,
         color2: Color | None = None,
+        init: bool = False,
     ) -> None:
         if not color:
             return

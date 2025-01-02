@@ -69,7 +69,7 @@ export const useRgb = () => {
   const updateEnableControl = async (enableControl: boolean) => {
     setEnableControl(enableControl);
     Setting.enableControl = enableControl;
-    await Backend.applySettings();
+    await Backend.applySettings({ isInit: true });
   };
 
   return {

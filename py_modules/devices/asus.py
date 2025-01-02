@@ -1,7 +1,4 @@
-from config import (
-    PRODUCT_NAME,
-    logger,
-)
+from config import PRODUCT_NAME, logger
 from id_info import ID_MAP
 from led.ausu_led_device_hid import AsusLEDDeviceHID
 from utils import Color, RGBMode, RGBModeCapabilities
@@ -28,6 +25,7 @@ class AsusLEDDevice(BaseLEDDevice):
         mode: RGBMode | None = None,
         color: Color | None = None,
         color2: Color | None = None,
+        init: bool = False,
     ) -> None:
         if not color:
             return
@@ -36,7 +34,7 @@ class AsusLEDDevice(BaseLEDDevice):
                 self.id_info.vid, self.id_info.pid, [0xFF31], [0x0080]
             )
             if ledDevice.is_ready():
-                init = self._current_mode != mode
+                init = self._current_mode != mode or init
                 logger.info(f"set_asus_color: color={color} mode={mode} init={init}")
                 if mode:
                     ledDevice.set_led_color(

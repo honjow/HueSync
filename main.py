@@ -40,6 +40,7 @@ class Plugin:
         r2: int | None = None,
         g2: int | None = None,
         b2: int | None = None,
+        init: bool = False,
     ):
         try:
             from utils import Color, RGBMode
@@ -56,7 +57,7 @@ class Plugin:
                 if mode
                 else None
             )
-            self.ledControl.set_color(rgb_mode, color, color2)
+            self.ledControl.set_color(rgb_mode, color, color2, init=init)
             return True
         except Exception as e:
             logger.error(e, exc_info=True)
