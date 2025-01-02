@@ -1,3 +1,4 @@
+from re import I
 from config import PRODUCT_NAME, logger
 from id_info import ID_MAP
 from led.ausu_led_device_hid import AsusLEDDeviceHID
@@ -54,6 +55,8 @@ class AsusLEDDevice(BaseLEDDevice):
                     f"set_asus_color: mode={mode} color={color} secondary={color2} init={init}"
                 )
                 if mode:
+                    if init:
+                        ledDevice.set_led_color(color, RGBMode.Disabled, init=True)
                     ledDevice.set_led_color(
                         color, mode, init=init, secondary_color=color2
                     )

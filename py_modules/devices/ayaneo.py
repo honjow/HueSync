@@ -18,18 +18,6 @@ class AyaNeoLEDDevice(BaseLEDDevice):
     def _set_solid_color(self, color: Color) -> None:
         self.set_color_all(color)
 
-    def set_color(
-        self,
-        mode: RGBMode | None = None,
-        color: Color | None = None,
-        color2: Color | None = None,
-        init: bool = False,
-    ) -> None:
-        if not IS_AYANEO_EC_SUPPORTED:
-            return
-        # 调用父类的实现来处理软件灯效
-        super().set_color(mode, color, color2)
-
     def set_color_one(self, group: int, ledZone: int, color: Color) -> None:
         self.set_aya_subpixel(group, ledZone * 3, color.R)
         self.set_aya_subpixel(group, ledZone * 3 + 1, color.G)

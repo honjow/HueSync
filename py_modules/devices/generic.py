@@ -25,18 +25,6 @@ class GenericLEDDevice(BaseLEDDevice):
             with open(os.path.join(LED_PATH, "multi_intensity"), "w") as f:
                 f.write(f"{color.R} {color.G} {color.B}")
 
-    def set_color(
-        self,
-        mode: RGBMode | None = None,
-        color: Color | None = None,
-        color2: Color | None = None,
-        init: bool = False,
-    ) -> None:
-        if not os.path.exists(LED_PATH):
-            return
-        # 调用父类的实现来处理软件灯效
-        super().set_color(mode, color, color2)
-
     def get_mode_capabilities(self) -> dict[RGBMode, RGBModeCapabilities]:
         """
         获取每个支持的模式的功能支持情况。

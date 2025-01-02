@@ -123,6 +123,12 @@ class BaseLEDDevice(LEDDevice):
             # 创建并启动双色过渡效果
             self._current_effect = DualityEffect(color, color2, self._set_solid_color)
             self._current_effect.start()
+        elif mode == RGBMode.Solid:
+            # 直接设置颜色
+            self._set_solid_color(color)
+        elif mode == RGBMode.Disabled:
+            # 设置为禁用状态
+            self._set_solid_color(Color(0, 0, 0))
         else:
             # 其他模式直接设置颜色
             self._set_solid_color(color)
