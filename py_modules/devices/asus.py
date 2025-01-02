@@ -35,7 +35,9 @@ class AsusLEDDevice(BaseLEDDevice):
             )
             if ledDevice.is_ready():
                 init = self._current_mode != mode or init
-                logger.info(f"set_asus_color: color={color} mode={mode} init={init}")
+                logger.info(
+                    f"set_asus_color: mode={mode} color={color} secondary={color2} init={init}"
+                )
                 if mode:
                     ledDevice.set_led_color(
                         color, mode, init=init, secondary_color=color2
