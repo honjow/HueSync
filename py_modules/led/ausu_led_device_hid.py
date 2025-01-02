@@ -1,5 +1,6 @@
 import lib_hid as hid
 from utils import Color, RGBMode
+from config import logger
 
 from .hhd_asus_hid import (
     rgb_set,
@@ -44,6 +45,10 @@ class AsusLEDDeviceHID:
         if not self.is_ready():
             return False
 
+        logger.debug(
+            f">>>> set_asus_color: mode={mode} color={main_color} secondary={secondary_color} init={init}"
+        )
+
         k_direction = "left"
         k_speed = "low"
         k_brightness = "medium"
@@ -55,9 +60,9 @@ class AsusLEDDeviceHID:
                 "disabled",
                 k_direction,
                 k_speed,
-                main_color.R,
-                main_color.G,
-                main_color.B,
+                0,
+                0,
+                0,
                 0,
                 0,
                 0,

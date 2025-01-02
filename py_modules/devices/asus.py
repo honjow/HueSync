@@ -16,11 +16,25 @@ class AsusLEDDevice(BaseLEDDevice):
 
     def __init__(self):
         super().__init__()
+        self._current_real_mode: RGBMode = RGBMode.Disabled
         for product_name, id_info in ID_MAP.items():
             if product_name in PRODUCT_NAME:
                 self.id_info = id_info
 
-    def set_color(
+    def _set_solid_color(self, color: Color) -> None:
+        self._set_hardware_color(RGBMode.Solid, color)
+
+    @property
+    def hardware_supported_modes(self) -> list[RGBMode]:
+        return [
+            RGBMode.Disabled,
+            RGBMode.Solid,
+            RGBMode.Pulse,
+            RGBMode.Duality,
+            RGBMode.Rainbow,
+        ]
+
+    def _set_hardware_color(
         self,
         mode: RGBMode | None = None,
         color: Color | None = None,
@@ -29,24 +43,26 @@ class AsusLEDDevice(BaseLEDDevice):
     ) -> None:
         if not color:
             return
+
         try:
             ledDevice = AsusLEDDeviceHID(
                 self.id_info.vid, self.id_info.pid, [0xFF31], [0x0080]
             )
             if ledDevice.is_ready():
-                init = self._current_mode != mode or init
-                logger.info(
+                init = self._current_real_mode != mode or init
+                logger.debug(
                     f"set_asus_color: mode={mode} color={color} secondary={color2} init={init}"
                 )
                 if mode:
                     ledDevice.set_led_color(
                         color, mode, init=init, secondary_color=color2
                     )
-                    self._current_mode = mode
+                self._current_real_mode = mode
                 return
             logger.info("set_asus_color: device not ready")
         except Exception as e:
             logger.error(e, exc_info=True)
+            raise
 
     def get_mode_capabilities(self) -> dict[RGBMode, RGBModeCapabilities]:
         """

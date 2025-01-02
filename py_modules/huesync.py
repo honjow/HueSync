@@ -85,21 +85,12 @@ class LedControl:
         """
         Set the color of the LED
         """
-        if mode == RGBMode.Disabled:
-            black = Color(0, 0, 0)
-            self.device.set_color(
-                RGBMode.Solid,
-                black,
-                black,
-                init=init,
-            )
-        else:
-            self.device.set_color(
-                mode or RGBMode.Solid,
-                color,
-                color2,
-                init=init,
-            )
+        self.device.set_color(
+            mode or RGBMode.Solid,
+            color,
+            color2,
+            init=init,
+        )
 
     def get_suspend_mode(self) -> str:
         """

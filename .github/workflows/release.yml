@@ -28,6 +28,10 @@ jobs:
         run: |
           git submodule update --init --recursive py_modules
 
+      - name: change log level
+        run: |
+          sed -i 's/logging.DEBUG/logging.INFO/' py_modules/config.py
+
       - name: build plugin
         run: |
           npm i -g pnpm

@@ -8,7 +8,7 @@ CONFIG_KEY = "huesync_config"
 
 # 日志配置
 LOG_LOCATION = "/tmp/huesync_py.log"
-
+LOG_LEVEL = logging.DEBUG
 
 def setup_logger():
     # 定义日志格式
@@ -28,7 +28,7 @@ def setup_logger():
     except Exception:
         logger = logging.getLogger(__name__)
 
-    logger.setLevel(logging.INFO)
+    logger.setLevel(LOG_LEVEL)
     logger.addHandler(systemd_handler)
     logger.addHandler(file_handler)
 

@@ -16,7 +16,10 @@ class OneXLEDDevice(BaseLEDDevice):
     OneXLEDDevice专为OneX设备设计，支持HID和串行通信以进行颜色和模式设置。
     """
 
-    def set_color(
+    def _set_solid_color(self, color: Color) -> None:
+        self._set_color(RGBMode.Solid, color)
+
+    def _set_color(
         self,
         mode: RGBMode | None = None,
         color: Color | None = None,

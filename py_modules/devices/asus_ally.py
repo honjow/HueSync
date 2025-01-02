@@ -14,6 +14,9 @@ class AllyLEDDevice(AsusLEDDevice):
     AllyLEDDevice提供Ally LED设备特有的控制功能，包括颜色和模式调整。
     """
 
+    def _set_solid_color(self, color: Color) -> None:
+        self._set_color_by_sysfs(color)
+
     def set_color(
         self,
         mode: RGBMode | None = None,
