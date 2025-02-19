@@ -4,6 +4,7 @@ import time
 from typing import Optional, Callable
 
 from utils import Color
+from config import logger
 
 
 def hsv_to_rgb(h: float, s: float, v: float) -> Color:
@@ -69,7 +70,9 @@ class PulseEffect(SoftwareEffect):
         self,
         base_color: Color,
         set_color_callback: Callable[[Color], None],
-        speed: float = 1.0,
+        speed: float = 0.25,
+        hold_time: float = 2.0,
+        update_rate: float = 20.0,  # 更新频率，默认20Hz
     ):
         """
         初始化呼吸灯效果
@@ -77,12 +80,18 @@ class PulseEffect(SoftwareEffect):
         Args:
             base_color (Color): 基础颜色
             set_color_callback: 设置颜色的回调函数
-            speed (float): 呼吸速度，默认为1.0
+            speed (float): 呼吸速度，默认为0.25
+                         1.0 表示大约2.5秒一个周期
+                         0.25 表示大约10秒一个周期
+            hold_time (float): 在最大和最小亮度处的维持时间（秒）
+            update_rate (float): 更新频率（Hz），默认20Hz
         """
         super().__init__()
         self.base_color = base_color
         self.set_color_callback = set_color_callback
         self.speed = speed
+        self.hold_time = hold_time
+        self.update_rate = update_rate
         self._brightness = 1.0
 
     def _apply_brightness(self, color: Color, brightness: float) -> Color:
@@ -95,21 +104,54 @@ class PulseEffect(SoftwareEffect):
 
     def _run(self):
         """运行呼吸灯效果"""
-        start_time = time.time()
+        sleep_time = 1.0 / self.update_rate
+        state = "up"  # 状态：up（上升），hold_high（保持最大），down（下降），hold_low（保持最小）
+        hold_end = 0
+        phase = 0
+
         while self._running:
-            # 使用正弦函数生成平滑的亮度变化
-            # 将时间映射到0-1的亮度值
-            current_time = time.time() - start_time
-            brightness = (math.sin(current_time * self.speed) + 1) / 2
+            current_time = time.time()
+            
+            if state == "up":
+                # 上升阶段
+                phase = (phase + self.speed * math.pi * sleep_time) % (2 * math.pi)
+                brightness = (math.sin(phase) + 1) / 2
+                if brightness > 0.99:  # 达到最大值
+                    state = "hold_high"
+                    hold_end = current_time + self.hold_time
+                    brightness = 1.0
+                    logger.debug("进入最大值保持")
+            
+            elif state == "hold_high":
+                # 保持最大值
+                brightness = 1.0
+                if current_time >= hold_end:
+                    state = "down"
+                    phase = math.pi/2  # 从最大值开始下降
+                    logger.debug("开始下降")
+            
+            elif state == "down":
+                # 下降阶段
+                phase = (phase + self.speed * math.pi * sleep_time) % (2 * math.pi)
+                brightness = (math.sin(phase) + 1) / 2
+                if brightness < 0.01:  # 达到最小值
+                    state = "hold_low"
+                    hold_end = current_time + self.hold_time
+                    brightness = 0.0
+                    logger.debug("进入最小值保持")
+            
+            else:  # hold_low
+                # 保持最小值
+                brightness = 0.0
+                if current_time >= hold_end:
+                    state = "up"
+                    phase = 3*math.pi/2  # 从最小值开始上升
+                    logger.debug("开始上升")
 
             # 应用亮度到颜色
             current_color = self._apply_brightness(self.base_color, brightness)
-
-            # 调用回调函数设置颜色
             self.set_color_callback(current_color)
-
-            # 控制更新频率
-            time.sleep(0.05)  # 20Hz 更新率
+            time.sleep(sleep_time)
 
 
 class RainbowEffect(SoftwareEffect):
