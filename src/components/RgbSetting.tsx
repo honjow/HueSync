@@ -154,7 +154,7 @@ const ColorControls: FC<ColorControlsProps> = ({
           background: linear-gradient(
             to right,
             hsl(0, 100%, 0%),
-            hsl(${hue}, ${saturation}%, 50%)
+            hsl(${hue}, ${onlyBrightness ? 0 : saturation}%, 50%)
           ) !important;
           --left-track-color: #0000 !important;
           --colored-toggles-main-color: #0000 !important;
@@ -239,7 +239,7 @@ export const RGBComponent: FC = () => {
             currentModeCapabilities.brightness) && (
             <ColorControls
               hue={hue}
-              saturation={currentModeCapabilities.brightness ? 0 : saturation}
+              saturation={saturation}
               brightness={brightness}
               setHsv={setHsv}
               supportsColor2={currentModeCapabilities.color2}
