@@ -36,20 +36,27 @@ class GenericLEDDevice(BaseLEDDevice):
         # 添加软件效果支持
         capabilities[RGBMode.Pulse] = RGBModeCapabilities(
             mode=RGBMode.Pulse,
-            supports_color=True,
-            supports_color2=False,
-            supports_speed=True,
+            color=True,
+            color2=False,
+            speed=True,
         )
         capabilities[RGBMode.Rainbow] = RGBModeCapabilities(
             mode=RGBMode.Rainbow,
-            supports_color=False,
-            supports_color2=False,
-            supports_speed=True,
+            color=False,
+            color2=False,
+            speed=True,
         )
         capabilities[RGBMode.Duality] = RGBModeCapabilities(
             mode=RGBMode.Duality,
-            supports_color=True,
-            supports_color2=True,
-            supports_speed=True,
+            color=True,
+            color2=True,
+            speed=True,
+        )
+        capabilities[RGBMode.Battery] = RGBModeCapabilities(
+            mode=RGBMode.Battery,
+            color=True,
+            color2=False,
+            speed=False,
+            brightness=True,
         )
         return capabilities

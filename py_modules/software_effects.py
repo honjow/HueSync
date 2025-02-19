@@ -3,7 +3,7 @@ import threading
 import time
 from typing import Optional, Callable
 
-from utils import Color
+from utils import Color, get_battery_info
 from config import logger
 
 
@@ -271,3 +271,97 @@ class DualityEffect(SoftwareEffect):
 
             # 控制更新频率
             time.sleep(0.05)  # 20Hz 更新率
+
+
+class BatteryEffect(SoftwareEffect):
+    """电池状态灯效，根据电池电量和充电状态显示不同颜色"""
+    
+    def __init__(
+        self,
+        set_color_callback: Callable[[Color], None],
+        update_rate: float = 0.5,  # 更新频率
+        low_battery_threshold: int = 20,  # 低电量阈值
+        base_brightness: int = 100,  # 基础亮度 0 - 100
+    ):
+        """
+        初始化电池状态灯效
+
+        Args:
+            set_color_callback: 设置颜色的回调函数
+            update_rate (float): 更新频率（Hz）
+            low_battery_threshold (int): 低电量阈值（0-100）
+            base_brightness (int): 基础亮度（0-100）
+        """
+        super().__init__()
+        self.set_color_callback = set_color_callback
+        self.update_rate = update_rate
+        self.low_battery_threshold = low_battery_threshold
+        self.base_brightness = max(0, min(100, base_brightness))
+        self.sleep_time = 1.0 / self.update_rate
+        self.latest_color = Color(0, 0, 0)
+
+    def _get_battery_color(self, percentage: int, is_charging: bool) -> Color:
+        """根据电池状态返回对应的颜色"""
+        if is_charging:
+            # 充电中：绿色
+            return Color(0, 255, 0)
+        elif percentage < 0:
+            # 无法获取电量：黑色
+            return Color(0, 0, 0)
+        elif percentage <= self.low_battery_threshold:
+            # 低电量：红色
+            return Color(255, 0, 0)
+        elif percentage <= 60:
+            # 中等电量：黄色
+            return Color(255, 255, 0)
+        elif percentage <= 80:
+            # 较高电量：蓝色
+            return Color(0, 0, 255)
+        else:
+            # 高电量：绿色
+            return Color(0, 255, 0)
+
+    def _apply_brightness(self, color: Color, brightness: float) -> Color:
+        """应用亮度值到颜色"""
+        return Color(
+            int(color.R * brightness),
+            int(color.G * brightness),
+            int(color.B * brightness),
+        )
+
+    def _run(self):
+        """运行电池状态灯效"""
+        self.sleep_time = 1.0 / self.update_rate
+
+        while self._running:
+            logger.info("Running battery effect sleep_time: %s", self.sleep_time)
+            # 获取电池信息
+            percentage, is_charging = get_battery_info()
+            
+            # 根据状态设置颜色
+            color = self._get_battery_color(percentage, is_charging)
+            logger.debug(f"Battery color: {color}, base brightness: {self.base_brightness}")
+            
+            # 应用基础亮度（转换为 0-1 范围）
+            brightness_factor = self.base_brightness / 100.0
+            color = self._apply_brightness(color, brightness_factor)
+            logger.debug(f"Battery color (adjusted): {color}")
+            
+            # 如果正在充电，添加呼吸效果
+            if is_charging:
+                # 使用当前时间来创建简单的呼吸效果（速度降为原来的 1/3）
+                phase = (time.time() * math.pi / 3) % (2 * math.pi)
+                # sin 值范围从 -1 到 1，转换到 0 到 1
+                normalized = (math.sin(phase) + 1) / 2
+                # 将 0-1 的范围映射到 0.1-1.0
+                brightness = normalized * 0.9 + 0.1
+                # 应用到当前亮度
+                color = self._apply_brightness(color, brightness)
+            
+            # 只有当颜色发生变化时才设置
+            if self.latest_color != color:
+                self.set_color_callback(color)
+                self.latest_color = color
+            
+            # 等待下一次更新
+            time.sleep(self.sleep_time)

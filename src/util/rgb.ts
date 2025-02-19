@@ -1,8 +1,9 @@
 export interface RGBModeCapabilities {
   mode: string;
-  supports_color: boolean;
-  supports_color2: boolean;
-  supports_speed: boolean;
+  color: boolean;
+  color2: boolean;
+  speed: boolean;
+  brightness: boolean;
 }
 
 export function hslToRgb(

@@ -10,6 +10,7 @@
     "LED_MODE_PULSE": "호흡등",
     "LED_MODE_SPIRAL": "나선형",
     "LED_MODE_DUALITY": "이중색상",
+    "LED_MODE_BATTERY": "전기",
     "BRIGHTNESS": "밝기",
     "RED": "빨강",
     "GREEN": "초록",

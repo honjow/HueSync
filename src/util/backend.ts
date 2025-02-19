@@ -16,6 +16,7 @@ interface ApplyColorOptions {
   red2?: number;
   green2?: number;
   blue2?: number;
+  brightness?: number;
 }
 
 export class BackendData {
@@ -61,7 +62,7 @@ export class Backend {
 
   private static applyColor(options: ApplyColorOptions = {}) {
     console.log(
-      `Applying color: mode=${options.mode} r=${options.red} g=${options.green} b=${options.blue} r2=${options.red2} g2=${options.green2} b2=${options.blue2} init=${options.isInit}`,
+      `Applying color: mode=${options.mode} r=${options.red} g=${options.green} b=${options.blue} r2=${options.red2} g2=${options.green2} b2=${options.blue2} init=${options.isInit} brightness=${options.brightness}`,
     );
     const {
       mode = "disabled",
@@ -72,6 +73,7 @@ export class Backend {
       green2 = 0,
       blue2 = 0,
       isInit = false,
+      brightness = 100,
     } = options;
     call<
       [
@@ -82,10 +84,11 @@ export class Backend {
         r2: number,
         g2: number,
         b2: number,
-        init: boolean
+        init: boolean,
+        brightness: number,
       ],
       void
-    >("set_color", mode, red, green, blue, red2, green2, blue2, isInit);
+    >("set_color", mode, red, green, blue, red2, green2, blue2, isInit, brightness);
   }
 
   public static throwSuspendEvt() {
@@ -139,6 +142,7 @@ export class Backend {
       green2: Setting.green2,
       blue2: Setting.blue2,
       isInit,
+      brightness: Setting.brightness,
     });
 
   };

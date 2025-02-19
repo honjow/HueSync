@@ -18,6 +18,7 @@ interface ColorControlsProps {
   supportsColor2?: boolean;
   hue2?: number;
   setHue2?: (h: number, immediate?: boolean) => void;
+  onlyBrightness?: boolean;
 }
 
 const ColorControls: FC<ColorControlsProps> = ({
@@ -28,81 +29,88 @@ const ColorControls: FC<ColorControlsProps> = ({
   supportsColor2,
   hue2,
   setHue2,
+  onlyBrightness,
 }) => {
   // 调用更新 RGB 颜色, 放在 onChangeEnd 事件中，避免频繁更新
   const _setHue = (value: number) => {
     setHsv(value, saturation, brightness);
-  }
+  };
 
   const _setSaturation = (value: number) => {
     setHsv(hue, value, brightness);
-  }
+  };
 
   const _setBrightness = (value: number) => {
     setHsv(hue, saturation, value);
-  }
+  };
 
   const setHueValue = (value: number) => {
     setHsv(value, saturation, brightness, false);
-  }
+  };
 
   const setSaturationValue = (value: number) => {
     setHsv(hue, value, brightness, false);
-  }
+  };
 
   const setBrightnessValue = (value: number) => {
     setHsv(hue, saturation, value, false);
-  }
+  };
 
   return (
     <>
-      <PanelSectionRow>
-        <SlowSliderField
-          showValue
-          label={localizationManager.getString(localizeStrEnum.HUE)}
-          value={hue}
-          min={0}
-          max={359}
-          validValues="range"
-          bottomSeparator="thick"
-          onChangeEnd={_setHue}
-          onChange={setHueValue}
-          className="ColorPicker_HSlider"
-          valueSuffix="°"
-        />
-      </PanelSectionRow>
-      {supportsColor2 && setHue2 && hue2 !== undefined && (
-        <PanelSectionRow>
-          <SlowSliderField
-            showValue
-            label={localizationManager.getString(localizeStrEnum.HUE) + " 2"}
-            value={hue2}
-            min={0}
-            max={359}
-            validValues="range"
-            bottomSeparator="thick"
-            onChangeEnd={(value) => setHue2(value)}
-            onChange={(value) => setHue2(value, false)}
-            className="ColorPicker_HSlider2"
-            valueSuffix="°"
-          />
-        </PanelSectionRow>
+      {!onlyBrightness && (
+        <>
+          <PanelSectionRow>
+            <SlowSliderField
+              showValue
+              label={localizationManager.getString(localizeStrEnum.HUE)}
+              value={hue}
+              min={0}
+              max={359}
+              validValues="range"
+              bottomSeparator="thick"
+              onChangeEnd={_setHue}
+              onChange={setHueValue}
+              className="ColorPicker_HSlider"
+              valueSuffix="°"
+            />
+          </PanelSectionRow>
+          {supportsColor2 && setHue2 && hue2 !== undefined && (
+            <PanelSectionRow>
+              <SlowSliderField
+                showValue
+                label={
+                  localizationManager.getString(localizeStrEnum.HUE) + " 2"
+                }
+                value={hue2}
+                min={0}
+                max={359}
+                validValues="range"
+                bottomSeparator="thick"
+                onChangeEnd={(value) => setHue2(value)}
+                onChange={(value) => setHue2(value, false)}
+                className="ColorPicker_HSlider2"
+                valueSuffix="°"
+              />
+            </PanelSectionRow>
+          )}
+          <PanelSectionRow>
+            <SlowSliderField
+              showValue
+              label={localizationManager.getString(localizeStrEnum.SATURATION)}
+              value={saturation}
+              min={0}
+              max={100}
+              validValues="range"
+              bottomSeparator="thick"
+              onChangeEnd={_setSaturation}
+              onChange={setSaturationValue}
+              valueSuffix="%"
+              className="ColorPicker_SSlider"
+            />
+          </PanelSectionRow>
+        </>
       )}
-      <PanelSectionRow>
-        <SlowSliderField
-          showValue
-          label={localizationManager.getString(localizeStrEnum.SATURATION)}
-          value={saturation}
-          min={0}
-          max={100}
-          validValues="range"
-          bottomSeparator="thick"
-          onChangeEnd={_setSaturation}
-          onChange={setSaturationValue}
-          valueSuffix="%"
-          className="ColorPicker_SSlider"
-        />
-      </PanelSectionRow>
       <PanelSectionRow>
         <SlowSliderField
           showValue
@@ -174,7 +182,9 @@ export const RGBComponent: FC = () => {
   const modes = useMemo(() => {
     return Object.entries(Setting.modeCapabilities).map(([mode]) => ({
       label: localizationManager.getString(
-        localizeStrEnum[`LED_MODE_${mode.toUpperCase()}` as keyof typeof localizeStrEnum]
+        localizeStrEnum[
+          `LED_MODE_${mode.toUpperCase()}` as keyof typeof localizeStrEnum
+        ]
       ),
       data: mode,
     }));
@@ -182,12 +192,15 @@ export const RGBComponent: FC = () => {
 
   // 获取当前模式的能力
   const currentModeCapabilities = useMemo(() => {
-    return Setting.modeCapabilities[rgbMode] || {
-      mode: rgbMode,
-      supports_color: false,
-      supports_color2: false,
-      supports_speed: false,
-    };
+    return (
+      Setting.modeCapabilities[rgbMode] || {
+        mode: rgbMode,
+        color: false,
+        color2: false,
+        speed: false,
+        brightness: false,
+      }
+    );
   }, [rgbMode]);
 
   return (
@@ -208,8 +221,10 @@ export const RGBComponent: FC = () => {
           <PanelSectionRow>
             <DropdownItem
               label={localizationManager.getString(localizeStrEnum.LED_MODE)}
-              strDefaultLabel={localizationManager.getString(localizeStrEnum.LED_MODE_DESC)}
-              selectedOption={modes.find(m => m.data === rgbMode)?.data}
+              strDefaultLabel={localizationManager.getString(
+                localizeStrEnum.LED_MODE_DESC
+              )}
+              selectedOption={modes.find((m) => m.data === rgbMode)?.data}
               rgOptions={modes}
               onChange={(option) => {
                 console.log(">>> Dropdown onChange, selected:", option.data);
@@ -220,15 +235,17 @@ export const RGBComponent: FC = () => {
               }}
             />
           </PanelSectionRow>
-          {currentModeCapabilities.supports_color && (
+          {(currentModeCapabilities.color ||
+            currentModeCapabilities.brightness) && (
             <ColorControls
               hue={hue}
-              saturation={saturation}
+              saturation={currentModeCapabilities.brightness ? 0 : saturation}
               brightness={brightness}
               setHsv={setHsv}
-              supportsColor2={currentModeCapabilities.supports_color2}
+              supportsColor2={currentModeCapabilities.color2}
               hue2={hue2}
               setHue2={setHue2Value}
+              onlyBrightness={currentModeCapabilities.brightness}
             />
           )}
         </>

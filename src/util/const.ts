@@ -11,4 +11,5 @@ export enum RGBMode {
     pulse = "pulse",
     spiral = "spiral",
     duality = "duality",
+    battery = "battery",
   }

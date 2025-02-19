@@ -10,6 +10,7 @@
   "LED_MODE_PULSE": "Pulse",
   "LED_MODE_SPIRAL": "Spiral",
   "LED_MODE_DUALITY": "Duality",
+  "LED_MODE_BATTERY": "Battery",
   "BRIGHTNESS": "Brightness",
   "RED": "Red",
   "GREEN": "Green",

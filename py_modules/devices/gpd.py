@@ -72,40 +72,40 @@ class GPDLEDDevice(BaseLEDDevice):
         capabilities = {
             RGBMode.Disabled: RGBModeCapabilities(
                 mode=RGBMode.Disabled,
-                supports_color=False,
-                supports_color2=False,
-                supports_speed=False,
+                color=False,
+                color2=False,
+                speed=False,
             ),
             RGBMode.Solid: RGBModeCapabilities(
                 mode=RGBMode.Solid,
-                supports_color=True,
-                supports_color2=False,
-                supports_speed=False,
+                color=True,
+                color2=False,
+                speed=False,
             ),
             RGBMode.Pulse: RGBModeCapabilities(
                 mode=RGBMode.Pulse,
-                supports_color=True,
-                supports_color2=False,
-                supports_speed=False,
+                color=True,
+                color2=False,
+                speed=False,
             ),
             RGBMode.Spiral: RGBModeCapabilities(
                 mode=RGBMode.Spiral,
-                supports_color=False,
-                supports_color2=False,
-                supports_speed=False,
+                color=False,
+                color2=False,
+                speed=False,
             ),
             # 添加软件支持的模式
             RGBMode.Rainbow: RGBModeCapabilities(
                 mode=RGBMode.Rainbow,
-                supports_color=False,
-                supports_color2=False,
-                supports_speed=True,
+                color=False,
+                color2=False,
+                speed=True,
             ),
             RGBMode.Duality: RGBModeCapabilities(
                 mode=RGBMode.Duality,
-                supports_color=True,
-                supports_color2=True,
-                supports_speed=True,
+                color=True,
+                color2=True,
+                speed=True,
             ),
         }
         return capabilities

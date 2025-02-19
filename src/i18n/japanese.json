@@ -10,6 +10,7 @@
     "LED_MODE_PULSE": "ブリージング",
     "LED_MODE_SPIRAL": "スパイラル",
     "LED_MODE_DUALITY": "二色モード",
+    "LED_MODE_BATTERY": "ベトエリ",
     "BRIGHTNESS": "明るさ",
     "RED": "赤",
     "GREEN": "緑",

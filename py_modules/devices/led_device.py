@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Optional
 
 from utils import Color, RGBMode, RGBModeCapabilities
-from software_effects import PulseEffect, RainbowEffect, DualityEffect
+from software_effects import PulseEffect, RainbowEffect, DualityEffect, BatteryEffect
 from config import logger
 
 
@@ -16,6 +16,7 @@ class LEDDevice(ABC):
         color: Color | None = None,
         color2: Color | None = None,
         init: bool = False,
+        brightness: float | None = None,
     ):
         pass
 
@@ -83,6 +84,7 @@ class BaseLEDDevice(LEDDevice):
         color: Color | None = None,
         color2: Color | None = None,
         init: bool = False,
+        brightness: int | None = None,
     ):
         """
         Default implementation for setting color.
@@ -123,6 +125,12 @@ class BaseLEDDevice(LEDDevice):
             # 创建并启动双色过渡效果
             self._current_effect = DualityEffect(color, color2, self._set_solid_color)
             self._current_effect.start()
+        elif mode == RGBMode.Battery:
+            # 创建并启动电池状态灯效果
+            self._current_effect = BatteryEffect(
+                self._set_solid_color, base_brightness=brightness
+            )
+            self._current_effect.start()
         elif mode == RGBMode.Solid:
             # 直接设置颜色
             self._set_solid_color(color)
@@ -147,14 +155,14 @@ class BaseLEDDevice(LEDDevice):
         return {
             RGBMode.Disabled: RGBModeCapabilities(
                 mode=RGBMode.Disabled,
-                supports_color=False,
-                supports_color2=False,
-                supports_speed=False,
+                color=False,
+                color2=False,
+                speed=False,
             ),
             RGBMode.Solid: RGBModeCapabilities(
                 mode=RGBMode.Solid,
-                supports_color=True,
-                supports_color2=False,
-                supports_speed=False,
+                color=True,
+                color2=False,
+                speed=False,
             ),
         }

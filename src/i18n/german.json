@@ -10,6 +10,7 @@
     "LED_MODE_PULSE": "Pulsierend",
     "LED_MODE_SPIRAL": "Spirale",
     "LED_MODE_DUALITY": "Zweifarbig",
+    "LED_MODE_BATTERY": "Batterie",
     "BRIGHTNESS": "Helligkeit",
     "RED": "Rot",
     "GREEN": "Grün",
