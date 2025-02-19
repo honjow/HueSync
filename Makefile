@@ -32,6 +32,7 @@ update-decky-ui: ## Update @decky/ui @decky/api
 	@echo "+ $@"
 	@pnpm update @decky/ui --latest
 	@pnpm update @decky/api --latest
+	@pnpm update @decky/rollup --latest
 
 build-front: ## Build frontend
 	@echo "+ $@"
