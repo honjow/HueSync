@@ -1,4 +1,3 @@
-from re import I
 from config import PRODUCT_NAME, logger
 from id_info import ID_MAP
 from led.ausu_led_device_hid import AsusLEDDeviceHID
