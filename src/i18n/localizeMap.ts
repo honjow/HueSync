@@ -83,33 +83,46 @@ export const localizeMap: { [key: string]: LanguageProps } = {
   },
 };
 
-export enum localizeStrEnum {
-  TITEL_SETTINGS = "TITEL_SETTINGS",
-  ENABLE_LED_CONTROL = "ENABLE_LED_CONTROL",
-  LED_ON = "LED_ON",
-  LED_MODE = "LED_MODE",
-  LED_MODE_DESC = "LED_MODE_DESC",
-  LED_MODE_SOLID = "LED_MODE_SOLID",
-  LED_MODE_DISABLED = "LED_MODE_DISABLED",
-  LED_MODE_RAINBOW = "LED_MODE_RAINBOW",
-  LED_MODE_PULSE = "LED_MODE_PULSE",
-  LED_MODE_SPIRAL = "LED_MODE_SPIRAL",
-  LED_MODE_DUALITY = "LED_MODE_DUALITY",
-  LED_MODE_BATTERY = "LED_MODE_BATTERY",
-  BRIGHTNESS = "BRIGHTNESS",
-  RED = "RED",
-  GREEN = "GREEN",
-  BLUE = "BLUE",
-  HUE = "HUE",
-  SATURATION = "SATURATION",
-  VERSION = "VERSION",
-  REINSTALL_PLUGIN = "REINSTALL_PLUGIN",
-  UPDATE_PLUGIN = "UPDATE_PLUGIN",
-  INSTALLED_VERSION = "INSTALLED_VERSION",
-  LATEST_VERSION = "LATEST_VERSION",
-  SUSPEND_MODE = "SUSPEND_MODE",
-  SUSPEND_MODE_DESC = "SUSPEND_MODE_DESC",
-  SUSPEND_MODE_OEM = "SUSPEND_MODE_OEM",
-  SUSPEND_MODE_OFF = "SUSPEND_MODE_OFF",
-  SUSPEND_MODE_KEEP = "SUSPEND_MODE_KEEP",
+function createLocalizeConstants<T extends readonly string[]>(keys: T) {
+  return keys.reduce((obj, key) => {
+    obj[key as keyof typeof obj] = key;
+    return obj;
+  }, {} as { [K in T[number]]: K });
 }
+
+const I18N_KEYS = [
+  "TITEL_SETTINGS",
+  "ENABLE_LED_CONTROL",
+  "LED_ON",
+  "LED_MODE",
+  "LED_MODE_DESC",
+  "LED_MODE_SOLID",
+  "LED_MODE_DISABLED",
+  "LED_MODE_RAINBOW",
+  "LED_MODE_PULSE",
+  "LED_MODE_SPIRAL",
+  "LED_MODE_DUALITY",
+  "LED_MODE_BATTERY",
+  "BRIGHTNESS",
+  "RED",
+  "GREEN",
+  "BLUE",
+  "HUE",
+  "SATURATION",
+  "VERSION",
+  "REINSTALL_PLUGIN",
+  "UPDATE_PLUGIN",
+  "INSTALLED_VERSION",
+  "LATEST_VERSION",
+  "SUSPEND_MODE",
+  "SUSPEND_MODE_DESC",
+  "SUSPEND_MODE_OEM",
+  "SUSPEND_MODE_OFF",
+  "SUSPEND_MODE_KEEP",
+] as const;
+
+export const L = createLocalizeConstants(I18N_KEYS);
+
+export type LocalizeStrKey = keyof typeof L;
+
+export const localizeStrEnum = L;
