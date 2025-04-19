@@ -2,7 +2,7 @@ import lib_hid as hid
 from utils import Color, RGBMode
 from config import logger
 from typing import Sequence
-from .hhd_asus_hid import (
+from .hhd.hhd_asus_hid import (
     rgb_set,
     rgb_set_brightness,
     RGB_APPLY,
@@ -24,9 +24,13 @@ class AsusLEDDeviceHID:
         self._pid = pid
         self._usage_page = usage_page
         self._usage = usage
+        self.interface = interface
         self.hid_device = None
 
     def is_ready(self) -> bool:
+        if self.hid_device:
+            return True
+
         hid_device_list = hid.enumerate()
 
         # Check every HID device to find LED device
@@ -46,7 +50,7 @@ class AsusLEDDeviceHID:
                 and device["usage"] in self._usage
             ):
                 self.hid_device = hid.Device(path=device["path"])
-                logger.info(
+                logger.debug(
                     f"Found device: {device}, \npath: {device['path']}, \ninterface: {device['interface_number']}"
                 )
                 return True
@@ -169,5 +173,7 @@ class AsusLEDDeviceHID:
 
         for m in msg:
             self.hid_device.write(m)
+
+        self.hid_device.close()
 
         return True

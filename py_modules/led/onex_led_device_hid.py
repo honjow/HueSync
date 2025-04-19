@@ -16,6 +16,9 @@ class OneXLEDDeviceHID:
         self.hid_device = None
 
     def is_ready(self) -> bool:
+        if self.hid_device:
+            return True
+
         # Prepare list for all HID devices
         hid_device_list = hid.enumerate(self._vid, self._pid)
 
@@ -75,5 +78,5 @@ class OneXLEDDeviceHID:
         result: bytearray = bytearray(msg)
 
         self.hid_device.write(bytes(result))
-
+        self.hid_device.close()
         return True

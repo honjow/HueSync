@@ -70,9 +70,9 @@ class PulseEffect(SoftwareEffect):
         self,
         base_color: Color,
         set_color_callback: Callable[[Color], None],
-        speed: float = 0.25,
-        hold_time: float = 2.0,
-        update_rate: float = 30.0,  # 更新频率
+        speed: float = 0.6,
+        hold_time: float = 1.0,
+        update_rate: float = 50.0,  # 更新频率
     ):
         """
         初始化呼吸灯效果

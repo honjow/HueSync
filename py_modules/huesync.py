@@ -17,6 +17,7 @@ from devices.gpd import GPDLEDDevice
 from devices.led_device import LEDDevice
 from devices.onexplayer import OneXLEDDevice
 from devices.legion_go import LegionGoLEDDevice
+from devices.msi import MSILEDDevice
 from utils import Color, RGBMode, RGBModeCapabilities
 
 
@@ -51,6 +52,9 @@ class LedControl:
             ValueError: If the device is unsupported.
             ValueError: 如果设备不受支持。
         """
+        logger.info(f"SYS_VENDOR: {SYS_VENDOR}")
+        logger.info(f"PRODUCT_NAME: {PRODUCT_NAME}")
+
         if IS_LED_SUPPORTED:
             logger.info("Using generic LED device")
             return GenericLEDDevice()
@@ -76,6 +80,9 @@ class LedControl:
         elif SYS_VENDOR == "LENOVO":
             logger.info("Using Legion Go LED device")
             return LegionGoLEDDevice()
+        elif SYS_VENDOR == "Micro-Star International Co., Ltd.":
+            logger.info("Using MSI LED device")
+            return MSILEDDevice()
         logger.error("Unsupported device")
         raise ValueError("Unsupported device")
 

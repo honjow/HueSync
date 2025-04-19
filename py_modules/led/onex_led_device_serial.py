@@ -125,4 +125,6 @@ class OneXLEDDeviceSerial:
         logger.info(f"write msg, len={len(msg)} hex_data={msg_hex}")
         self.ser.write(msg_bytes)
 
+        self.ser.close()
+
         return True

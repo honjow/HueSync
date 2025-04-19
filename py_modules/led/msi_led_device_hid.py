@@ -2,10 +2,35 @@ import lib_hid as hid
 from utils import Color, RGBMode
 from config import logger
 from typing import Sequence
-from .hhd.hhd_legino_go_s_hid import rgb_multi_load_settings, rgb_enable
 
 
-class LegionGoLEDDeviceHID:
+def set_rgb_cmd(brightness, red, green, blue):
+    return bytes(
+        [
+            # Preamble
+            0x0F,
+            0x00,
+            0x00,
+            0x3C,
+            # Write first profile
+            0x21,
+            0x01,
+            # Start at
+            0x01,
+            0xFA,
+            # Write 31 bytes
+            0x20,
+            # Index, Frame num, Effect, Speed, Brightness
+            0x00,
+            0x01,
+            0x09,
+            0x03,
+            max(0, min(100, int(brightness * 100))),
+        ]
+    ) + 9 * bytes([red, green, blue])
+
+
+class MSILEDDeviceHID:
     def __init__(
         self,
         vid: Sequence[int] = [],
@@ -20,17 +45,15 @@ class LegionGoLEDDeviceHID:
         self._usage = usage
         self.interface = interface
         self.hid_device = None
-        self.prev_mode = None
 
     def is_ready(self) -> bool:
         if self.hid_device:
             return True
-        
+
         hid_device_list = hid.enumerate()
 
         # Check every HID device to find LED device
         for device in hid_device_list:
-            logger.debug(f"device: {device}")
             if device["vendor_id"] not in self._vid:
                 continue
             if device["product_id"] not in self._pid:
@@ -40,6 +63,7 @@ class LegionGoLEDDeviceHID:
                 and device["interface_number"] != self.interface
             ):
                 continue
+            logger.debug(f"device: {device}")
             if (
                 device["usage_page"] in self._usage_page
                 and device["usage"] in self._usage
@@ -56,62 +80,30 @@ class LegionGoLEDDeviceHID:
         main_color: Color,
         mode: RGBMode,
         secondary_color: Color | None = None,
+        init: bool = False,
     ) -> bool:
         if not self.is_ready():
             return False
 
         logger.debug(
-            f">>>> set_legion_go_color: mode={mode} color={main_color} secondary={secondary_color}"
+            f">>>> set_asus_color: mode={mode} color={main_color} secondary={secondary_color} init={init}"
         )
 
-        brightness = 1
-        speed = 1
-        rgb_mode = None
-
         if mode == RGBMode.Disabled:
-            rgb_mode = None
+            # disabled
+            msg = [set_rgb_cmd(0, 0, 0, 0)]
 
         elif mode == RGBMode.Solid:
-            if main_color.R == 0 and main_color.G == 0 and main_color.B == 0:
-                rgb_mode = None
-            else:
-                rgb_mode = "solid"
-
-        elif mode == RGBMode.Rainbow:
-            # rainbow
-            rgb_mode = "dynamic"
-
-        elif mode == RGBMode.Pulse:
-            # pulse
-            rgb_mode = "pulse"
-
-        elif mode == RGBMode.Spiral:
-            # spiral
-            rgb_mode = "spiral"
+            # solid
+            msg = [set_rgb_cmd(100, main_color.R, main_color.G, main_color.B)]
 
         else:
             return False
 
-        if rgb_mode:
-            reps = rgb_multi_load_settings(
-                rgb_mode,
-                0x03,
-                main_color.R,
-                main_color.G,
-                main_color.B,
-                brightness,
-                speed,
-                self.prev_mode != rgb_mode,
-            )
-
-        else:
-            reps = [rgb_enable(False)]
-
-
-        for r in reps:
-            msg_hex = ",".join([f"{x:02X}" for x in r])
+        for m in msg:
+            msg_hex = ",".join([f"{x:02X}" for x in m])
             logger.debug(f"msg_hex: {msg_hex}")
-            self.hid_device.write(r)
+            self.hid_device.write(m)
 
         self.hid_device.close()
 

@@ -1,19 +1,19 @@
 from .led_device import BaseLEDDevice
 from config import logger
-from led.legion_led_device_hid import LegionGoLEDDeviceHID
+from led.msi_led_device_hid import MSILEDDeviceHID
 from utils import Color, RGBMode, RGBModeCapabilities
 
-GOS_VID = 0x1A86
-GOS_XINPUT = 0xE310
-GOS_PIDS = {
-    GOS_XINPUT: "xinput",
-    0xE311: "dinput",
-}
+MSI_CLAW_VID = 0x0DB0
+MSI_CLAW_XINPUT_PID = 0x1901
+MSI_CLAW_DINPUT_PID = 0x1902
+
+KBD_VID = 0x0001
+KBD_PID = 0x0001
 
 
-class LegionGoLEDDevice(BaseLEDDevice):
+class MSILEDDevice(BaseLEDDevice):
     """
-    LegionGoLEDDevice provides control for Legion Go LED devices.
+    MSILEDDevice provides control for MSI LED devices.
     """
 
     def __init__(self):
@@ -25,11 +25,8 @@ class LegionGoLEDDevice(BaseLEDDevice):
         return [
             RGBMode.Disabled,
             RGBMode.Solid,
-            RGBMode.Pulse,
-            RGBMode.Rainbow,
-            RGBMode.Spiral,
         ]
-    
+
     def _set_solid_color(self, color: Color) -> None:
         self._set_hardware_color(RGBMode.Solid, color)
 
@@ -44,11 +41,11 @@ class LegionGoLEDDevice(BaseLEDDevice):
             return
 
         try:
-            ledDevice = LegionGoLEDDeviceHID(
-                vid=[GOS_VID],
-                pid=list(GOS_PIDS),
-                usage_page=[0xFFA0],
-                usage=[0x0001],
+            ledDevice = MSILEDDeviceHID(
+                vid=[MSI_CLAW_VID],
+                pid=[MSI_CLAW_XINPUT_PID, MSI_CLAW_DINPUT_PID],
+                usage_page=[0xFFA0,0xFFF0],
+                usage=[0x0001,0x0040],
             )
             if ledDevice.is_ready():
                 init = self._current_real_mode != mode or init
@@ -97,12 +94,6 @@ class LegionGoLEDDevice(BaseLEDDevice):
             ),
             RGBMode.Pulse: RGBModeCapabilities(
                 mode=RGBMode.Pulse,
-                color=True,
-                color2=False,
-                speed=True,
-            ),
-            RGBMode.Spiral: RGBModeCapabilities(
-                mode=RGBMode.Spiral,
                 color=True,
                 color2=False,
                 speed=True,
