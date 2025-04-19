@@ -78,5 +78,5 @@ class OneXLEDDeviceHID:
         result: bytearray = bytearray(msg)
 
         self.hid_device.write(bytes(result))
-        self.hid_device.close()
+        # self.hid_device.close()
         return True

@@ -174,6 +174,7 @@ class AsusLEDDeviceHID:
         for m in msg:
             self.hid_device.write(m)
 
-        self.hid_device.close()
+        # if self.hid_device:
+        #     self.hid_device.close()
 
         return True
