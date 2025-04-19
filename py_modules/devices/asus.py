@@ -1,4 +1,3 @@
-from re import I
 from config import PRODUCT_NAME, logger
 from id_info import ID_MAP
 from led.ausu_led_device_hid import AsusLEDDeviceHID
@@ -47,7 +46,11 @@ class AsusLEDDevice(BaseLEDDevice):
 
         try:
             ledDevice = AsusLEDDeviceHID(
-                self.id_info.vid, self.id_info.pid, [0xFF31], [0x0080]
+                vid=[self.id_info.vid],
+                pid=[self.id_info.pid],
+                usage_page=[0xFF31],
+                usage=[0x0080],
+                interface=self.id_info.interface,
             )
             if ledDevice.is_ready():
                 init = self._current_real_mode != mode or init

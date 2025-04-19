@@ -1,7 +1,7 @@
 import lib_hid as hid
 from utils import Color, RGBMode
 from config import logger
-
+from typing import Sequence
 from .hhd_asus_hid import (
     rgb_set,
     rgb_set_brightness,
@@ -12,7 +12,14 @@ from .hhd_asus_hid import (
 
 
 class AsusLEDDeviceHID:
-    def __init__(self, vid, pid, usage_page, usage):
+    def __init__(
+        self,
+        vid: Sequence[int] = [],
+        pid: Sequence[int] = [],
+        usage_page: Sequence[int] = [],
+        usage: Sequence[int] = [],
+        interface: int | None = None,
+    ):
         self._vid = vid
         self._pid = pid
         self._usage_page = usage_page
@@ -20,18 +27,29 @@ class AsusLEDDeviceHID:
         self.hid_device = None
 
     def is_ready(self) -> bool:
-        # Prepare list for all HID devices
-        hid_device_list = hid.enumerate(self._vid, self._pid)
+        hid_device_list = hid.enumerate()
 
         # Check every HID device to find LED device
         for device in hid_device_list:
+            logger.debug(f"device: {device}")
+            if device["vendor_id"] not in self._vid:
+                continue
+            if device["product_id"] not in self._pid:
+                continue
+            if (
+                self.interface is not None
+                and device["interface_number"] != self.interface
+            ):
+                continue
             if (
                 device["usage_page"] in self._usage_page
                 and device["usage"] in self._usage
             ):
                 self.hid_device = hid.Device(path=device["path"])
+                logger.info(
+                    f"Found device: {device}, \npath: {device['path']}, \ninterface: {device['interface_number']}"
+                )
                 return True
-
         return False
 
     def set_led_color(
