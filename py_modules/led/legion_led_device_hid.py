@@ -104,7 +104,10 @@ class LegionGoLEDDeviceHID:
         else:
             reps = [rgb_enable(False)]
 
+
         for r in reps:
+            msg_hex = ",".join([f"{x:02X}" for x in r])
+            logger.info(f"msg_hex: {msg_hex}")
             self.hid_device.write(r)
 
         return True

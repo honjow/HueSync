@@ -23,6 +23,7 @@ class LegionGoLEDDevice(BaseLEDDevice):
     @property
     def hardware_supported_modes(self) -> list[RGBMode]:
         return [
+            RGBMode.Disabled,
             RGBMode.Solid,
             RGBMode.Pulse,
             RGBMode.Rainbow,
@@ -66,8 +67,8 @@ class LegionGoLEDDevice(BaseLEDDevice):
 
     def get_mode_capabilities(self) -> dict[RGBMode, RGBModeCapabilities]:
         """
-        Get the capabilities of each supported RGB mode for Asus devices.
-        获取 Asus 设备每个支持的 RGB 模式的功能支持情况。
+        Get the capabilities of each supported RGB mode for devices.
+        获取设备每个支持的 RGB 模式的功能支持情况。
 
         Returns:
             dict[RGBMode, RGBModeCapabilities]: A dictionary mapping RGB modes to their capabilities.
