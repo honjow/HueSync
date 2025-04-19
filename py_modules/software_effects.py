@@ -159,7 +159,7 @@ class RainbowEffect(SoftwareEffect):
         self,
         set_color_callback: Callable[[Color], None],
         speed: float = 1.0,
-        update_rate: float = 30.0,  # 更新频率
+        update_rate: float = 50.0,  # 更新频率
     ):
         """
         初始化彩虹灯效果
@@ -174,6 +174,7 @@ class RainbowEffect(SoftwareEffect):
         self.set_color_callback = set_color_callback
         self.speed = speed
         self._hue = 0.0
+        self.update_rate = update_rate
 
     def _run(self):
         """运行彩虹灯效果"""
@@ -202,7 +203,7 @@ class DualityEffect(SoftwareEffect):
         set_color_callback: Callable[[Color], None],
         speed: float = 0.2,
         transition: str = "sine",
-        update_rate: float = 30.0,  # 更新频率
+        update_rate: float = 50.0,  # 更新频率
     ):
         """
         初始化双色过渡效果
@@ -225,7 +226,7 @@ class DualityEffect(SoftwareEffect):
         self.set_color_callback = set_color_callback
         self.speed = speed
         self.transition = transition
-
+        self.update_rate = update_rate
     def _interpolate_color(self, color1: Color, color2: Color, t: float) -> Color:
         """在两个颜色之间插值"""
 

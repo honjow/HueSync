@@ -44,8 +44,8 @@ class MSILEDDevice(BaseLEDDevice):
             ledDevice = MSILEDDeviceHID(
                 vid=[MSI_CLAW_VID],
                 pid=[MSI_CLAW_XINPUT_PID, MSI_CLAW_DINPUT_PID],
-                usage_page=[0xFFA0,0xFFF0],
-                usage=[0x0001,0x0040],
+                usage_page=[0xFFA0, 0xFFF0],
+                usage=[0x0001, 0x0040],
             )
             if ledDevice.is_ready():
                 init = self._current_real_mode != mode or init
@@ -96,6 +96,12 @@ class MSILEDDevice(BaseLEDDevice):
                 mode=RGBMode.Pulse,
                 color=True,
                 color2=False,
+                speed=True,
+            ),
+            RGBMode.Duality: RGBModeCapabilities(
+                mode=RGBMode.Duality,
+                color=True,
+                color2=True,
                 speed=True,
             ),
             RGBMode.Battery: RGBModeCapabilities(
