@@ -50,7 +50,6 @@ class AsusLEDDevice(BaseLEDDevice):
                 pid=[self.id_info.pid],
                 usage_page=[0xFF31],
                 usage=[0x0080],
-                interface=self.id_info.interface,
             )
             if ledDevice.is_ready():
                 init = self._current_real_mode != mode or init
