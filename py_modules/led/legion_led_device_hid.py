@@ -113,6 +113,6 @@ class LegionGoLEDDeviceHID:
             logger.debug(f"msg_hex: {msg_hex}")
             self.hid_device.write(r)
 
-        self.hid_device.close()
+        # self.hid_device.close()
 
         return True
