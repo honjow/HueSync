@@ -16,6 +16,7 @@ from devices.generic import GenericLEDDevice
 from devices.gpd import GPDLEDDevice
 from devices.led_device import LEDDevice
 from devices.onexplayer import OneXLEDDevice
+from devices.legion_go import LegionGoLEDDevice
 from utils import Color, RGBMode, RGBModeCapabilities
 
 
@@ -72,6 +73,9 @@ class LedControl:
         elif SYS_VENDOR == "ASUSTeK COMPUTER INC.":
             logger.info("Using Asus LED device")
             return AsusLEDDevice()
+        elif SYS_VENDOR == "LENOVO":
+            logger.info("Using Legion Go LED device")
+            return LegionGoLEDDevice()
         logger.error("Unsupported device")
         raise ValueError("Unsupported device")
 
