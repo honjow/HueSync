@@ -30,7 +30,7 @@ class LegionGoLEDDeviceHID:
 
         # Check every HID device to find LED device
         for device in hid_device_list:
-            logger.debug(f"device: {device}")
+            # logger.debug(f"device: {device}")
             if device["vendor_id"] not in self._vid:
                 continue
             if device["product_id"] not in self._pid:

@@ -49,6 +49,7 @@ class LegionGoLEDDevice(BaseLEDDevice):
                 pid=list(GOS_PIDS),
                 usage_page=[0xFFA0],
                 usage=[0x0001],
+                interface=3,
             )
             if ledDevice.is_ready():
                 init = self._current_real_mode != mode or init
@@ -103,7 +104,7 @@ class LegionGoLEDDevice(BaseLEDDevice):
             ),
             RGBMode.Spiral: RGBModeCapabilities(
                 mode=RGBMode.Spiral,
-                color=True,
+                color=False,
                 color2=False,
                 speed=True,
             ),
