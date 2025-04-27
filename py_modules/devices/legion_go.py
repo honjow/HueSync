@@ -29,7 +29,7 @@ class LegionGoLEDDevice(BaseLEDDevice):
             RGBMode.Rainbow,
             RGBMode.Spiral,
         ]
-    
+
     def _set_solid_color(self, color: Color) -> None:
         self._set_hardware_color(RGBMode.Solid, color)
 
@@ -58,13 +58,20 @@ class LegionGoLEDDevice(BaseLEDDevice):
                 )
                 if mode:
                     if init:
-                        ledDevice.set_led_color(main_color=color, mode=RGBMode.Disabled)
+                        ledDevice.set_led_color(
+                            main_color=color,
+                            mode=RGBMode.Disabled,
+                            close_device=False,
+                        )
                     ledDevice.set_led_color(
-                        main_color=color, mode=mode, secondary_color=color2
+                        main_color=color,
+                        mode=mode,
+                        secondary_color=color2,
+                        close_device=self.is_current_software_mode(),
                     )
                 self._current_real_mode = mode
                 return
-            logger.info("set_asus_color: device not ready")
+            logger.info("set_legion_go_color: device not ready")
         except Exception as e:
             logger.error(e, exc_info=True)
             raise
@@ -106,6 +113,12 @@ class LegionGoLEDDevice(BaseLEDDevice):
                 mode=RGBMode.Spiral,
                 color=False,
                 color2=False,
+                speed=True,
+            ),
+            RGBMode.Duality: RGBModeCapabilities(
+                mode=RGBMode.Duality,
+                color=True,
+                color2=True,
                 speed=True,
             ),
             RGBMode.Battery: RGBModeCapabilities(

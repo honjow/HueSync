@@ -58,6 +58,9 @@ class BaseLEDDevice(LEDDevice):
     def hardware_supported_modes(self) -> list[RGBMode]:
         """子类应该重写此方法，返回支持的硬件灯效模式列表"""
         return []
+    
+    def is_current_software_mode(self) -> bool:
+        return self._current_mode not in self.hardware_supported_modes
 
     def _set_solid_color(self, color: Color) -> None:
         """实际设置颜色的方法，子类应该重写此方法"""

@@ -56,6 +56,7 @@ class LegionGoLEDDeviceHID:
         main_color: Color,
         mode: RGBMode,
         secondary_color: Color | None = None,
+        close_device: bool = False,
     ) -> bool:
         if not self.is_ready():
             return False
@@ -113,6 +114,7 @@ class LegionGoLEDDeviceHID:
             logger.debug(f"msg_hex: {msg_hex}")
             self.hid_device.write(r)
 
-        # self.hid_device.close()
+        if close_device:
+            self.hid_device.close()
 
         return True
