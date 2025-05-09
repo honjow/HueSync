@@ -30,6 +30,13 @@
   - A2
 - ROG
   - Ally
+  - Ally X
+- MSI
+  - Claw
+  - Claw 8
+  - Claw 7
+- Lenovo
+  - Legion Go S
 
 ### 额外支持
 
