@@ -10,7 +10,7 @@
 
 |                           |
 | ------------------------- |
-| ![](./assets/HueSync.jpg) |
+| ![](./assets/HueSync_cn.jpg) |
 
 ## 支持设备
 
