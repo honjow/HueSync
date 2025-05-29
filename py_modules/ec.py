@@ -1,5 +1,6 @@
-import portio
 import time
+
+import portio
 from config import logger
 
 EC_IBF_BIT = 0b10
@@ -19,10 +20,10 @@ def outb(port, data):
     return portio.outb(data, port)
 
 
-res_sc = portio.ioperm(EC_CMD_STATUS_REGISTER_PORT, 1, 1)
-res_data = portio.ioperm(EC_DATA_REGISTER_PORT, 1, 1)
-if res_sc != 0 or res_data != 0:
-    raise Exception("ioperm error")
+# 使用iopl(3)获得完整I/O权限，而不是只针对特定端口的ioperm
+status = portio.iopl(3)
+if status != 0:
+    raise Exception("iopl error")
 
 
 class EC:
