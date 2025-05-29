@@ -5,7 +5,7 @@ from settings import SettingsManager
 
 try:
     import update
-    from config import CONFIG_KEY, IS_LED_SUSPEND_MODE_SUPPORTED, logger
+    from config import CONFIG_KEY, logger
     from huesync import LedControl
 
     decky.logger.info("HueSync main.py")
@@ -58,7 +58,9 @@ class Plugin:
                 if mode
                 else None
             )
-            self.ledControl.set_color(rgb_mode, color, color2, init=init, brightness=brightness)
+            self.ledControl.set_color(
+                rgb_mode, color, color2, init=init, brightness=brightness
+            )
             return True
         except Exception as e:
             logger.error(e, exc_info=True)
@@ -73,17 +75,20 @@ class Plugin:
 
     async def set_suspend_mode(self, mode: str):
         try:
-            if IS_LED_SUSPEND_MODE_SUPPORTED:
-                self.ledControl.set_suspend_mode(mode)
-                return True
-            else:
-                return False
+            self.ledControl.set_suspend_mode(mode)
+            return True
         except Exception as e:
             logger.error(e, exc_info=True)
             return False
 
     async def is_support_suspend_mode(self):
-        return IS_LED_SUSPEND_MODE_SUPPORTED
+        return self.ledControl.get_suspend_mode() != ""
+
+    async def suspend(self):
+        self.ledControl.suspend()
+
+    async def resume(self):
+        self.ledControl.resume()
 
     async def update_latest(self):
         logger.info("Updating latest")

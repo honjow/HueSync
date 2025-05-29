@@ -1,9 +1,9 @@
 from abc import ABC, abstractmethod
 from typing import Optional
 
-from utils import Color, RGBMode, RGBModeCapabilities
-from software_effects import PulseEffect, RainbowEffect, DualityEffect, BatteryEffect
 from config import logger
+from software_effects import BatteryEffect, DualityEffect, PulseEffect, RainbowEffect
+from utils import Color, RGBMode, RGBModeCapabilities
 
 
 class LEDDevice(ABC):
@@ -32,6 +32,22 @@ class LEDDevice(ABC):
         """
         pass
 
+    @abstractmethod
+    def get_suspend_mode(self) -> str:
+        pass
+
+    @abstractmethod
+    def set_suspend_mode(self, mode: str) -> None:
+        pass
+
+    @abstractmethod
+    def suspend(self) -> None:
+        pass
+
+    @abstractmethod
+    def resume(self) -> None:
+        pass
+
 
 class BaseLEDDevice(LEDDevice):
     """
@@ -58,7 +74,7 @@ class BaseLEDDevice(LEDDevice):
     def hardware_supported_modes(self) -> list[RGBMode]:
         """子类应该重写此方法，返回支持的硬件灯效模式列表"""
         return []
-    
+
     def is_current_software_mode(self) -> bool:
         return self._current_mode not in self.hardware_supported_modes
 
@@ -169,3 +185,15 @@ class BaseLEDDevice(LEDDevice):
                 speed=False,
             ),
         }
+
+    def get_suspend_mode(self) -> str:
+        return ""
+
+    def set_suspend_mode(self, mode: str) -> None:
+        return
+
+    def suspend(self) -> None:
+        return
+
+    def resume(self) -> None:
+        return

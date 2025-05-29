@@ -46,3 +46,5 @@ yalc.lock
 backend/out
 
 .history
+
+py_modules/**/*.c

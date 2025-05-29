@@ -15,9 +15,9 @@ from devices.ayaneo import AyaNeoLEDDevice
 from devices.generic import GenericLEDDevice
 from devices.gpd import GPDLEDDevice
 from devices.led_device import LEDDevice
-from devices.onexplayer import OneXLEDDevice
 from devices.legion_go import LegionGoLEDDevice
 from devices.msi import MSILEDDevice
+from devices.onexplayer import OneXLEDDevice
 from utils import Color, RGBMode, RGBModeCapabilities
 
 
@@ -120,7 +120,8 @@ class LedControl:
                 with open(LED_SUSPEND_MODE_PATH, "r") as f:
                     # eg: [oem] keep off, read the part between []
                     return f.read().split("[")[1].split("]")[0]
-        return ""
+        else:
+            return self.device.get_suspend_mode()
 
     def set_suspend_mode(self, mode: str) -> None:
         """
@@ -136,6 +137,14 @@ class LedControl:
             if os.path.exists(LED_SUSPEND_MODE_PATH):
                 with open(LED_SUSPEND_MODE_PATH, "w") as f:
                     f.write(f"{mode}")
+        else:
+            self.device.set_suspend_mode(mode)
+
+    def suspend(self) -> None:
+        self.device.suspend()
+
+    def resume(self) -> None:
+        self.device.resume()
 
     def get_mode_capabilities(self) -> dict[RGBMode, RGBModeCapabilities]:
         """

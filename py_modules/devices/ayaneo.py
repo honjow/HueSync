@@ -1,7 +1,8 @@
 import time
 
-from config import DEFAULT_BRIGHTNESS, IS_AYANEO_EC_SUPPORTED, logger
+from config import DEFAULT_BRIGHTNESS, logger
 from ec import EC
+from led.ayaneo_led_device_ec import AyaNeoLEDDeviceEC
 from utils import AyaJoystickGroup, AyaLedZone, Color, RGBMode, RGBModeCapabilities
 
 from .led_device import BaseLEDDevice
@@ -15,8 +16,25 @@ class AyaNeoLEDDevice(BaseLEDDevice):
     AyaNeoLEDDevice为AyaNeo设备提供高级控制，支持像素级调整和各种模式。
     """
 
+    def __init__(self):
+        super().__init__()
+        self.aya_led_device_ec = AyaNeoLEDDeviceEC()
+
     def _set_solid_color(self, color: Color) -> None:
-        self.set_color_all(color)
+        # self.set_color_all(color)
+        self.aya_led_device_ec.set_led_color(color)
+
+    def get_suspend_mode(self) -> str:
+        return self.aya_led_device_ec.get_suspend_mode()
+
+    def set_suspend_mode(self, mode: str) -> None:
+        self.aya_led_device_ec.set_suspend_mode(mode)
+
+    def suspend(self) -> None:
+        self.aya_led_device_ec.suspend()
+
+    def resume(self) -> None:
+        self.aya_led_device_ec.resume()
 
     def set_color_one(self, group: int, ledZone: int, color: Color) -> None:
         self.set_aya_subpixel(group, ledZone * 3, color.R)
