@@ -2,7 +2,6 @@ import os
 
 from config import (
     IS_ALLY_LED_SUPPORTED,
-    IS_AYANEO_EC_SUPPORTED,
     IS_LED_SUPPORTED,
     LED_SUSPEND_MODE_PATH,
     PRODUCT_NAME,
@@ -61,7 +60,7 @@ class LedControl:
         elif IS_ALLY_LED_SUPPORTED:
             logger.info("Using Ally LED device")
             return AllyLEDDevice()
-        elif IS_AYANEO_EC_SUPPORTED:
+        elif SYS_VENDOR == "AYANEO":
             logger.info("Using AyaNeo LED device")
             return AyaNeoLEDDevice()
         elif SYS_VENDOR == "GPD" and (PRODUCT_NAME == "G1618-04"):

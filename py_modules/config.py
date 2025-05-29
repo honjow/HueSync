@@ -1,7 +1,7 @@
 import logging
 import os
-import decky
 
+import decky
 from logging_handler import SystemdHandler
 
 CONFIG_KEY = "huesync_config"
@@ -9,6 +9,7 @@ CONFIG_KEY = "huesync_config"
 # 日志配置
 LOG_LOCATION = "/tmp/huesync_py.log"
 LOG_LEVEL = logging.DEBUG
+
 
 def setup_logger():
     # 定义日志格式
@@ -18,7 +19,7 @@ def setup_logger():
     # 创建并配置 handlers
     systemd_handler = SystemdHandler()
     systemd_handler.setFormatter(logging.Formatter(systemd_format))
-    
+
     file_handler = logging.FileHandler(filename=LOG_LOCATION, mode="w")
     file_handler.setFormatter(logging.Formatter(file_format))
 
@@ -83,18 +84,18 @@ IS_LED_SUSPEND_MODE_SUPPORTED = is_led_suspend_mode_supported()
 IS_ALLY_LED_SUPPORTED = os.path.exists(ALLY_LED_PATH)
 
 
-AYANEO_EC_SUPPORT_LIST = [
-    "AIR",
-    "AIR Pro",
-    "AIR 1S",
-    "AIR 1S Limited",
-    "AYANEO 2",
-    "AYANEO 2S",
-    "GEEK",
-    "GEEK 1S",
-]
+# AYANEO_EC_SUPPORT_LIST = [
+#     "AIR",
+#     "AIR Pro",
+#     "AIR 1S",
+#     "AIR 1S Limited",
+#     "AYANEO 2",
+#     "AYANEO 2S",
+#     "GEEK",
+#     "GEEK 1S",
+# ]
 
-IS_AYANEO_EC_SUPPORTED = PRODUCT_NAME in AYANEO_EC_SUPPORT_LIST
+# IS_AYANEO_EC_SUPPORTED = PRODUCT_NAME in AYANEO_EC_SUPPORT_LIST
 
 API_URL = "https://api.github.com/repos/honjow/HueSync/releases/latest"
 
