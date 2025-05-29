@@ -136,6 +136,9 @@ class AyaNeoLEDDeviceEC:
             255  # 总亮度，默认最大值 (对应C: max_brightness = 255)
         )
 
+        # 控制权状态跟踪 - 避免软件灯效时频繁重新初始化
+        self._has_control = False
+
         logger.info(f"AyaNeo LED Device initialized, model: {self.model}")
 
     def _detect_model(self) -> Optional[AyaNeoModel]:
@@ -566,6 +569,9 @@ class AyaNeoLEDDeviceEC:
 
     def _take_control(self):
         """对应C: ayaneo_led_mc_take_control"""
+        if self._has_control:
+            return  # 已经有控制权，避免重复初始化
+
         if self._is_legacy_device():
             self._led_mc_legacy_hold()
             self._led_mc_legacy_reset()
@@ -575,14 +581,21 @@ class AyaNeoLEDDeviceEC:
             self._led_mc_reset()
             self._led_mc_off()
 
+        self._has_control = True
+
     def _release_control(self):
         """对应C: ayaneo_led_mc_release_control"""
+        if not self._has_control:
+            return  # 没有控制权，无需释放
+
         if self._is_legacy_device():
             self._led_mc_legacy_reset()
             self._led_mc_legacy_release()
         else:
             self._led_mc_reset()
             self._led_mc_release()
+
+        self._has_control = False
 
     # =================== 公共接口 ===================
 
@@ -713,6 +726,8 @@ class AyaNeoLEDDeviceEC:
 
     def resume(self):
         """恢复处理 - 对应C: ayaneo_platform_resume"""
+        # 恢复时重新获取控制权
+        self._has_control = False  # 重置状态，确保重新初始化
         self._take_control()
 
         # 重新应用最后的颜色
