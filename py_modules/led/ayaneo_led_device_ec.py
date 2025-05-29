@@ -192,26 +192,31 @@ class AyaNeoLEDDeviceEC:
         try:
             # C代码: outb(AYANEO_HIGH_BYTE, AYANEO_DATA_PORT) + outb(index, AYANEO_DATA_PORT)
             full_address = (AyaNeoECConstants.HIGH_BYTE << 8) + index
+
             self.ec.RamWrite(
                 AyaNeoECConstants.ADDR_PORT,  # 0x4e
                 AyaNeoECConstants.DATA_PORT,  # 0x4f
                 full_address,
                 value,
             )
+
             return True
         except Exception as e:
-            logger.error(f"EC RAM write failed at 0x{index:02x}: {e}")
+            logger.error(f"EC write failed at 0x{index:02x}: {e}")
             return False
 
     def _ec_read_ram(self, index: int) -> Optional[int]:
         """对应C代码的ec_read_ram函数"""
         try:
             full_address = (AyaNeoECConstants.HIGH_BYTE << 8) + index
-            return self.ec.RamRead(
+
+            result = self.ec.RamRead(
                 AyaNeoECConstants.ADDR_PORT, AyaNeoECConstants.DATA_PORT, full_address
             )
+
+            return result
         except Exception as e:
-            logger.error(f"EC RAM read failed at 0x{index:02x}: {e}")
+            logger.error(f"EC read failed at 0x{index:02x}: {e}")
             return None
 
     # =================== Modern设备LED控制方法 ===================
@@ -335,9 +340,7 @@ class AyaNeoLEDDeviceEC:
         self.ec.Write(AyaNeoECConstants.LED_POS, pos)
         self.ec.Write(AyaNeoECConstants.LED_BRIGHTNESS, brightness)
         self.ec.Write(AyaNeoECConstants.LED_MODE_REG, AyaNeoECConstants.LED_MODE_WRITE)
-
         time.sleep(AyaNeoECConstants.LED_WRITE_DELAY_LEGACY_MS)
-
         self.ec.Write(AyaNeoECConstants.LED_MODE_REG, AyaNeoECConstants.LED_MODE_HOLD)
 
     def _led_mc_legacy_hold(self):
@@ -682,6 +685,8 @@ class AyaNeoLEDDeviceEC:
     def set_suspend_mode(self, mode: str):
         """设置suspend模式 - 对应C: suspend_mode_store"""
         try:
+            if mode == "":
+                mode = "oem"
             self.suspend_mode = AyaNeoSuspendMode(mode)
             logger.info(f"Suspend mode set to: {mode}")
         except ValueError:

@@ -1,7 +1,7 @@
 import { Setting, SettingsData } from "../hooks";
 import { call } from "@decky/api";
 import { debounce } from "lodash";
-import { RGBModeCapabilities } from ".";
+import { Logger, RGBModeCapabilities } from ".";
 
 interface ApplySettingsOptions {
   isInit?: boolean;
@@ -129,7 +129,7 @@ export class Backend {
     }
 
     if (Setting.isSupportSuspendMode) {
-      console.log(`HueSync: set suspend mode [${Setting.suspendMode}]`);
+      Logger.info(`HueSync: set suspend mode [${Setting.suspendMode}]`);
       Backend.setSuspendMode(Setting.suspendMode);
     }
 
@@ -175,5 +175,25 @@ export class Backend {
       string,
       RGBModeCapabilities
     >;
+  }
+
+  // log_info
+  public static logInfo(message: string) {
+    return call("log_info", message);
+  }
+
+  // log_error
+  public static logError(message: string) {
+    return call("log_error", message);
+  }
+
+  // log_warn
+  public static logWarn(message: string) {
+    return call("log_warn", message);
+  }
+
+  // log_debug
+  public static logDebug(message: string) {
+    return call("log_debug", message);
   }
 }

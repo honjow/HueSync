@@ -1,4 +1,4 @@
-import { Backend, hsvToRgb, RGBMode, RGBModeCapabilities } from "../util";
+import { Backend, hsvToRgb, Logger, RGBMode, RGBModeCapabilities } from "../util";
 
 export class SettingsData {
   public enableControl = false;
@@ -100,6 +100,7 @@ export class Setting {
   }
 
   public static async saveSettingsData() {
+    Logger.info(`HueSync: saveSettingsData: ${JSON.stringify(this.settingsData)}`);
     await Backend.setSettings(this.settingsData);
   }
 

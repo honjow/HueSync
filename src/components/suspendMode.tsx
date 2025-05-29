@@ -8,7 +8,7 @@ import { FC, useEffect, useState } from "react";
 import { localizationManager, localizeStrEnum } from "../i18n";
 import { Setting } from "../hooks";
 import { SlowSliderField } from ".";
-import { SuspendMode } from "../util";
+import { Logger, SuspendMode } from "../util";
 
 export const SuspendModeComponent: FC = () => {
 
@@ -43,7 +43,10 @@ export const SuspendModeComponent: FC = () => {
     }
 
     useEffect(() => {
-        Setting.suspendMode = suspendMode;
+        Logger.info(`HueSync: suspendMode: ${suspendMode}`);
+        if (Setting.suspendMode !== suspendMode && Setting.suspendMode !== "") {
+            Setting.suspendMode = suspendMode;
+        }
     }, [suspendMode]);
 
     return (
