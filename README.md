@@ -8,7 +8,7 @@ LED controller for handheld devices
 
 |                           |
 | ------------------------- |
-| ![](./assets/HueSync.jpg) |
+| ![](./screenshot/HueSync.jpg) |
 
 ## Supported Devices
 ### Directly Supported
