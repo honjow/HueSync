@@ -1,10 +1,10 @@
 import math
 import threading
 import time
-from typing import Optional, Callable
+from typing import Callable, Optional
 
-from utils import Color, get_battery_info
 from config import logger
+from utils import Color, get_battery_info
 
 
 def hsv_to_rgb(h: float, s: float, v: float) -> Color:
@@ -120,7 +120,7 @@ class PulseEffect(SoftwareEffect):
                     state = "hold_high"
                     hold_end = current_time + self.hold_time
                     brightness = 1.0
-                    logger.debug("进入最大值保持")
+                    logger.debug("Entering maximum value hold state")
 
             elif state == "hold_high":
                 # 保持最大值
@@ -128,7 +128,7 @@ class PulseEffect(SoftwareEffect):
                 if current_time >= hold_end:
                     state = "down"
                     phase = math.pi / 2  # 从最大值开始下降
-                    logger.debug("开始下降")
+                    logger.debug("Starting brightness down phase")
 
             elif state == "down":
                 # 下降阶段
@@ -138,7 +138,7 @@ class PulseEffect(SoftwareEffect):
                     state = "hold_low"
                     hold_end = current_time + self.hold_time
                     brightness = 0.0
-                    logger.debug("进入最小值保持")
+                    logger.debug("Entering minimum value hold state")
 
             else:  # hold_low
                 # 保持最小值
@@ -146,7 +146,7 @@ class PulseEffect(SoftwareEffect):
                 if current_time >= hold_end:
                     state = "up"
                     phase = 3 * math.pi / 2  # 从最小值开始上升
-                    logger.debug("开始上升")
+                    logger.debug("Starting brightness up phase")
 
             # 应用亮度到颜色
             current_color = self._apply_brightness(self.base_color, brightness)
@@ -227,6 +227,7 @@ class DualityEffect(SoftwareEffect):
         self.speed = speed
         self.transition = transition
         self.update_rate = update_rate
+
     def _interpolate_color(self, color1: Color, color2: Color, t: float) -> Color:
         """在两个颜色之间插值"""
 

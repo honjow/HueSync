@@ -40,13 +40,13 @@ export default definePlugin(() => {
   SteamClient.System.RegisterForOnResumeFromSuspend(async () => {
     setTimeout(() => {
       Backend.applySettings({ isInit: true });
-      console.log("结束休眠");
+      console.log("Resume from suspend");
     }, 5000);
   });
 
   SteamClient.System.RegisterForOnSuspendRequest(async () => {
     Backend.throwSuspendEvt();
-    console.log("开始休眠");
+    console.log("Entering suspend mode");
   });
   return {
     title: <div className={staticClasses.Title}>HueSync</div>,

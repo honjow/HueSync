@@ -43,13 +43,13 @@ logger = setup_logger()
 try:
     PRODUCT_NAME = open("/sys/devices/virtual/dmi/id/product_name", "r").read().strip()
 except Exception as e:
-    logger.error(f"设备信息配置异常{e}", exc_info=True)
+    logger.error(f"Device information configuration error: {e}", exc_info=True)
 
 # sys_vendor
 try:
     SYS_VENDOR = open("/sys/devices/virtual/dmi/id/sys_vendor", "r").read().strip()
 except Exception as e:
-    logger.error(f"设备信息配置异常{e}", exc_info=True)
+    logger.error(f"Device information configuration error: {e}", exc_info=True)
 
 LED_PATH_LIST = [
     "/sys/class/leds/ayaneo:rgb:joystick_rings",
