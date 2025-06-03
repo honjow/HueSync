@@ -31,7 +31,7 @@ const ColorControls: FC<ColorControlsProps> = ({
   setHue2,
   onlyBrightness,
 }) => {
-  // 调用更新 RGB 颜色, 放在 onChangeEnd 事件中，避免频繁更新
+  // Call to update RGB color, placed in onChangeEnd event to avoid frequent updates | 调用更新 RGB 颜色, 放在 onChangeEnd 事件中，避免频繁更新
   const _setHue = (value: number) => {
     setHsv(value, saturation, brightness);
   };
@@ -190,7 +190,7 @@ export const RGBComponent: FC = () => {
     }));
   }, []);
 
-  // 获取当前模式的能力
+  // Get current mode capabilities | 获取当前模式的能力
   const currentModeCapabilities = useMemo(() => {
     return (
       Setting.modeCapabilities[rgbMode] || {

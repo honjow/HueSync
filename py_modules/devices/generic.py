@@ -33,7 +33,7 @@ class GenericLEDDevice(BaseLEDDevice):
             dict[RGBMode, RGBModeCapabilities]: 模式名称到其功能支持情况的映射字典。
         """
         capabilities = super().get_mode_capabilities()
-        # 添加软件效果支持
+        # Add software effect support | 添加软件效果支持
         capabilities[RGBMode.Pulse] = RGBModeCapabilities(
             mode=RGBMode.Pulse,
             color=True,

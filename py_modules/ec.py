@@ -20,7 +20,7 @@ def outb(port, data):
     return portio.outb(data, port)
 
 
-# 使用iopl(3)获得完整I/O权限，而不是只针对特定端口的ioperm
+# Use iopl(3) to get complete I/O permissions, not just ioperm for specific ports | 使用iopl(3)获得完整I/O权限，而不是只针对特定端口的ioperm
 status = portio.iopl(3)
 if status != 0:
     raise Exception("iopl error")

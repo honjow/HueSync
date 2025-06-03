@@ -115,7 +115,7 @@ class BaseLEDDevice(LEDDevice):
         if not mode:
             mode = self._current_mode
 
-        # 如果是支持硬件的灯效模式，尝试使用硬件实现
+        # If hardware-supported LED mode, try hardware implementation | 如果是支持硬件的灯效模式，尝试使用硬件实现
         if mode in self.hardware_supported_modes:
             try:
                 logger.info(f"use hardware control: mode={mode}")
@@ -124,40 +124,40 @@ class BaseLEDDevice(LEDDevice):
                 return
             except Exception as e:
                 logger.error(e, exc_info=True)
-                # 如果硬件控制失败，回退到软件实现
+                # If hardware control fails, fallback to software implementation | 如果硬件控制失败，回退到软件实现
                 pass
 
         logger.info(f"use software control: mode={mode}")
-        # 停止当前的效果（如果有的话）
+        # Stop current effect (if any) | 停止当前的效果（如果有的话）
         self.stop_effects()
 
-        # 使用软件实现
+        # Use software implementation | 使用软件实现
         if mode == RGBMode.Pulse and color:
-            # 创建并启动呼吸灯效果
+            # Create and start breathing effect | 创建并启动呼吸灯效果
             self._current_effect = PulseEffect(color, self._set_solid_color)
             self._current_effect.start()
         elif mode == RGBMode.Rainbow:
-            # 创建并启动彩虹灯效果
+            # Create and start rainbow effect | 创建并启动彩虹灯效果
             self._current_effect = RainbowEffect(self._set_solid_color)
             self._current_effect.start()
         elif mode == RGBMode.Duality and color and color2:
-            # 创建并启动双色过渡效果
+            # Create and start dual-color transition effect | 创建并启动双色过渡效果
             self._current_effect = DualityEffect(color, color2, self._set_solid_color)
             self._current_effect.start()
         elif mode == RGBMode.Battery:
-            # 创建并启动电池状态灯效果
+            # Create and start battery status effect | 创建并启动电池状态灯效果
             self._current_effect = BatteryEffect(
                 self._set_solid_color, base_brightness=brightness
             )
             self._current_effect.start()
         elif mode == RGBMode.Solid:
-            # 直接设置颜色
+            # Directly set color | 直接设置颜色
             self._set_solid_color(color)
         elif mode == RGBMode.Disabled:
-            # 设置为禁用状态
+            # Set to disabled state | 设置为禁用状态
             self._set_solid_color(Color(0, 0, 0))
         else:
-            # 其他模式直接设置颜色
+            # Other modes directly set color | 其他模式直接设置颜色
             self._set_solid_color(color)
 
         self._current_mode = mode

@@ -27,9 +27,9 @@ export class localizationManager {
 
     i18n.init({
       resources: resources,
-      lng: this.getLocale(), // 目标语言
-      fallbackLng: defaultLocale, // 回落语言
-      returnEmptyString: false, // 空字符串不返回, 使用回落语言
+      lng: this.getLocale(), // Target language | 目标语言
+      fallbackLng: defaultLocale, // Fallback language | 回落语言
+      returnEmptyString: false, // Don't return empty strings, use fallback language | 空字符串不返回, 使用回落语言
       interpolation: {
         escapeValue: false,
       },

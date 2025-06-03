@@ -40,7 +40,7 @@ class OneXLEDDevice(BaseLEDDevice):
             if retry > 0:
                 logger.info(f"Retry attempt {retry}/{max_retries}")
                 time.sleep(retry_delay)
-                retry_delay *= 2  # 指数退避
+                retry_delay *= 2  # Exponential backoff | 指数退避
 
             ledDevice = OneXLEDDeviceHID(0x1A2C, 0xB001)
             if ledDevice.is_ready():

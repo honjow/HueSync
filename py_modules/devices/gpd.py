@@ -41,7 +41,7 @@ class GPDLEDDevice(BaseLEDDevice):
                 color.B * DEFAULT_BRIGHTNESS // 100,
             )
 
-            # 映射模式到 WinControls 的模式
+            # Map mode to WinControls mode | 映射模式到 WinControls 的模式
             match mode:
                 case RGBMode.Solid:
                     ledmode = "solid"
@@ -94,7 +94,7 @@ class GPDLEDDevice(BaseLEDDevice):
                 color2=False,
                 speed=False,
             ),
-            # 添加软件支持的模式
+            # Add software-supported modes | 添加软件支持的模式
             RGBMode.Rainbow: RGBModeCapabilities(
                 mode=RGBMode.Rainbow,
                 color=False,

@@ -6,24 +6,24 @@ from logging_handler import SystemdHandler
 
 CONFIG_KEY = "huesync_config"
 
-# 日志配置
+# Log configuration | 日志配置
 LOG_LOCATION = "/tmp/huesync_py.log"
 LOG_LEVEL = logging.DEBUG
 
 
 def setup_logger():
-    # 定义日志格式
+    # Define log format | 定义日志格式
     file_format = "[%(asctime)s | %(filename)s:%(lineno)s:%(funcName)s] %(levelname)s: %(message)s"
     systemd_format = "[%(filename)s:%(lineno)s:%(funcName)s] %(levelname)s: %(message)s"
 
-    # 创建并配置 handlers
+    # Create and configure handlers | 创建并配置 handlers
     systemd_handler = SystemdHandler()
     systemd_handler.setFormatter(logging.Formatter(systemd_format))
 
     file_handler = logging.FileHandler(filename=LOG_LOCATION, mode="w")
     file_handler.setFormatter(logging.Formatter(file_format))
 
-    # 获取 logger
+    # Get logger | 获取 logger
     try:
         logger = decky.logger
     except Exception:
@@ -36,10 +36,10 @@ def setup_logger():
     return logger
 
 
-# 初始化 logger
+# Initialize logger | 初始化 logger
 logger = setup_logger()
 
-# 设备信息获取配置
+# Device information configuration | 设备信息获取配置
 try:
     PRODUCT_NAME = open("/sys/devices/virtual/dmi/id/product_name", "r").read().strip()
 except Exception as e:

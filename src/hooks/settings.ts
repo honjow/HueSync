@@ -59,7 +59,7 @@ export class SettingsData {
     for (const key of Object.keys(dict)) {
       if (this.hasOwnProperty(key)) {
         const typedKey = key as keyof SettingsData;
-        // 确保类型安全的赋值
+        // Ensure type-safe assignment | 确保类型安全的赋值
         const value = dict[key];
         if (typeof value === typeof this[typedKey]) {
           (this[typedKey] as any) = value;
@@ -72,7 +72,7 @@ export class SettingsData {
 export class Setting {
   private static _settingsData: SettingsData = new SettingsData();
 
-  // 静态成员
+  // Static members | 静态成员
   public static isSupportSuspendMode: boolean = false;
   public static modeCapabilities: Record<string, RGBModeCapabilities> = {};
 

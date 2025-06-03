@@ -147,7 +147,7 @@ export class Backend {
 
   };
 
-  // 使用防抖，延迟 300ms
+  // Use debounce with 300ms delay | 使用防抖，延迟 300ms
   public static applySettings = debounce(Backend._applySettings, 300);
 
   // get_settings
