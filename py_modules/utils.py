@@ -59,8 +59,8 @@ class Color:
     def __str__(self):
         return f"Color(R={self.R}, G={self.G}, B={self.B})"
 
-    def __eq__(self, other):
-        """比较两个颜色是否相等"""
+    def __eq__(self, other) -> bool:
+        """Compare two colors for equality"""
         if not isinstance(other, Color):
             return False
         return self.R == other.R and self.G == other.G and self.B == other.B

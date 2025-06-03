@@ -5,26 +5,31 @@ import ssl
 import stat
 import subprocess
 import tempfile
+import urllib.request
 from contextlib import contextmanager
 from typing import Optional
 from urllib.error import URLError
-import urllib.request
 
-from packaging import version
-
-from config import logger, API_URL
 import decky
+from config import API_URL, logger
+from packaging import version
 
 
 class UpdateError(Exception):
-    """更新过程中的错误"""
+    """
+    Error during update process
+    更新过程中的错误
+    """
 
     pass
 
 
 @contextmanager
 def temp_download_file(suffix: str = None):
-    """创建临时文件的上下文管理器"""
+    """
+    Context manager for creating temporary files
+    创建临时文件的上下文管理器
+    """
     temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=suffix)
     try:
         yield temp_file.name
@@ -34,7 +39,10 @@ def temp_download_file(suffix: str = None):
 
 
 def recursive_chmod(path: str, perms: int) -> None:
-    """递归设置目录权限"""
+    """
+    Recursively set directory permissions
+    递归设置目录权限
+    """
     for dirpath, dirnames, filenames in os.walk(path):
         try:
             current_perms = os.stat(dirpath).st_mode
@@ -47,7 +55,10 @@ def recursive_chmod(path: str, perms: int) -> None:
 
 
 def get_github_release_data() -> dict:
-    """获取 GitHub release 数据"""
+    """
+    Get GitHub release data
+    获取 GitHub release 数据
+    """
     gcontext = ssl.SSLContext()
     try:
         with urllib.request.urlopen(API_URL, context=gcontext, timeout=10) as response:
@@ -57,7 +68,10 @@ def get_github_release_data() -> dict:
 
 
 def download_file(url: str, file_path: str) -> None:
-    """下载文件到指定路径"""
+    """
+    Download file to specified path
+    下载文件到指定路径
+    """
     gcontext = ssl.SSLContext()
     try:
         with (
@@ -70,7 +84,10 @@ def download_file(url: str, file_path: str) -> None:
 
 
 def download_latest_build() -> str:
-    """下载最新版本"""
+    """
+    Download latest version
+    下载最新版本
+    """
     json_data = get_github_release_data()
 
     try:
@@ -87,11 +104,14 @@ def download_latest_build() -> str:
 
 
 def update_latest() -> Optional[subprocess.CompletedProcess]:
-    """更新到最新版本"""
+    """
+    Update to latest version
+    更新到最新版本
+    """
     temp_file = None
     temp_extract_dir = None
     try:
-        # 下载文件
+        # Download file
         json_data = get_github_release_data()
         try:
             download_url = json_data["assets"][0]["browser_download_url"]
@@ -100,20 +120,20 @@ def update_latest() -> Optional[subprocess.CompletedProcess]:
 
         logger.info(f"Downloading from: {download_url}")
 
-        # 创建临时文件
+        # Create temporary file
         temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".tar.gz")
         temp_filepath = temp_file.name
         temp_file.close()
 
-        # 下载到临时文件
+        # Download to temporary file
         download_file(download_url, temp_filepath)
         logger.info(f"Downloaded to: {temp_filepath}")
 
-        # 创建临时解压目录
+        # Create temporary extract directory
         temp_extract_dir = tempfile.mkdtemp(prefix="huesync_update_")
         logger.info(f"Created temp extract dir: {temp_extract_dir}")
 
-        # 先解压到临时目录
+        # Extract to temporary directory first
         logger.info("Extracting update file to temp directory")
         try:
             shutil.unpack_archive(
@@ -124,26 +144,26 @@ def update_latest() -> Optional[subprocess.CompletedProcess]:
         except Exception as e:
             raise UpdateError(f"Failed to extract update file: {e}")
 
-        # 验证解压是否成功
+        # Verify extraction success
         if not os.path.exists(os.path.join(temp_extract_dir, "HueSync")):
             raise UpdateError("Invalid update package: HueSync directory not found")
 
         plugin_dir = decky.DECKY_PLUGIN_DIR
         plugins_dir = f"{decky.DECKY_USER_HOME}/homebrew/plugins"
 
-        # 添加写权限
+        # Add write permission
         logger.info(f"Adding write permission to {plugin_dir}")
         recursive_chmod(plugin_dir, stat.S_IWUSR)
 
-        # 删除旧插件
+        # Remove old plugin
         logger.info(f"Removing old plugin from {plugin_dir}")
         shutil.rmtree(plugin_dir)
 
-        # 移动新版本到插件目录
+        # Move new version to plugin directory
         logger.info(f"Moving new version to {plugins_dir}")
         shutil.move(os.path.join(temp_extract_dir, "HueSync"), plugins_dir)
 
-        # 重启服务
+        # Restart service
         logger.info("Restarting plugin_loader.service")
         cmd = "pkill -HUP PluginLoader"
         result = subprocess.run(
@@ -161,7 +181,7 @@ def update_latest() -> Optional[subprocess.CompletedProcess]:
         logger.error(f"Update failed: {e}")
         raise UpdateError(f"Update failed: {e}")
     finally:
-        # 清理临时文件和目录
+        # Clean up temporary files and directories
         if temp_file and os.path.exists(temp_file.name):
             try:
                 os.unlink(temp_file.name)
@@ -176,12 +196,18 @@ def update_latest() -> Optional[subprocess.CompletedProcess]:
 
 
 def get_version() -> str:
-    """获取当前版本号"""
+    """
+    Get current version number
+    获取当前版本号
+    """
     return decky.DECKY_PLUGIN_VERSION
 
 
 def get_latest_version() -> str:
-    """获取最新版本号"""
+    """
+    Get latest version number
+    获取最新版本号
+    """
     json_data = get_github_release_data()
 
     try:
@@ -189,14 +215,17 @@ def get_latest_version() -> str:
     except KeyError:
         raise UpdateError("Invalid release data format")
 
-    # 如果是 v* 标签，移除 v
+    # If it's a v* tag, remove v
     if tag.startswith("v"):
         tag = tag[1:]
     return tag
 
 
 def is_update_available() -> bool:
-    """检查是否有更新可用"""
+    """
+    Check if update is available
+    检查是否有更新可用
+    """
     try:
         current = version.parse(get_version())
         latest = version.parse(get_latest_version())

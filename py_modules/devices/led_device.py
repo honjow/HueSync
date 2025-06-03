@@ -72,14 +72,20 @@ class BaseLEDDevice(LEDDevice):
 
     @property
     def hardware_supported_modes(self) -> list[RGBMode]:
-        """子类应该重写此方法，返回支持的硬件灯效模式列表"""
+        """
+        Subclasses should override this method to return list of supported hardware lighting modes
+        子类应该重写此方法，返回支持的硬件灯效模式列表
+        """
         return []
 
     def is_current_software_mode(self) -> bool:
         return self._current_mode not in self.hardware_supported_modes
 
     def _set_solid_color(self, color: Color) -> None:
-        """实际设置颜色的方法，子类应该重写此方法"""
+        """
+        Actual color setting method, subclasses should override this method
+        实际设置颜色的方法，子类应该重写此方法
+        """
         self._current_color = color
 
     def stop_effects(self):
@@ -94,7 +100,10 @@ class BaseLEDDevice(LEDDevice):
         color2: Color | None = None,
         init: bool = False,
     ) -> None:
-        """子类应该重写此方法，实现硬件灯效控制"""
+        """
+        Subclasses should override this method to implement hardware lighting control
+        子类应该重写此方法，实现硬件灯效控制
+        """
         raise NotImplementedError
 
     def set_color(

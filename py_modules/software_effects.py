@@ -95,7 +95,7 @@ class PulseEffect(SoftwareEffect):
         self._brightness = 1.0
 
     def _apply_brightness(self, color: Color, brightness: float) -> Color:
-        """应用亮度值到颜色"""
+        """Apply brightness value to color"""
         return Color(
             int(color.R * brightness),
             int(color.G * brightness),
@@ -103,7 +103,7 @@ class PulseEffect(SoftwareEffect):
         )
 
     def _run(self):
-        """运行呼吸灯效果"""
+        """Run breathing light effect"""
         sleep_time = 1.0 / self.update_rate
         state = "up"  # State: up(rising), hold_high(hold max), down(falling), hold_low(hold min) | 状态：up（上升），hold_high（保持最大），down（下降），hold_low（保持最小）
         hold_end = 0
@@ -179,7 +179,7 @@ class RainbowEffect(SoftwareEffect):
         self.update_rate = update_rate
 
     def _run(self):
-        """运行彩虹灯效果"""
+        """Run rainbow light effect"""
         start_time = time.time()
         while self._running:
             self.sleep_time = 1.0 / self.update_rate
@@ -233,7 +233,7 @@ class DualityEffect(SoftwareEffect):
         self.update_rate = update_rate
 
     def _interpolate_color(self, color1: Color, color2: Color, t: float) -> Color:
-        """在两个颜色之间插值"""
+        """Interpolate between two colors"""
 
         def lerp(a: int, b: int, t: float) -> int:
             return int(a + (b - a) * t)
@@ -245,7 +245,10 @@ class DualityEffect(SoftwareEffect):
         )
 
     def _get_transition_value(self, t: float) -> float:
-        """根据过渡模式计算过渡值"""
+        """
+        Calculate transition value based on transition mode
+        根据过渡模式计算过渡值
+        """
         t = t % 1.0  # Ensure t is in [0, 1] range | 确保 t 在 [0, 1] 范围内
 
         match self.transition:
@@ -262,7 +265,10 @@ class DualityEffect(SoftwareEffect):
                 return t
 
     def _run(self):
-        """运行双色过渡效果"""
+        """
+        Run dual-color transition effect
+        运行双色过渡效果
+        """
         start_time = time.time()
         while self._running:
             self.sleep_time = 1.0 / self.update_rate
@@ -286,7 +292,10 @@ class DualityEffect(SoftwareEffect):
 
 
 class BatteryEffect(SoftwareEffect):
-    """电池状态灯效，根据电池电量和充电状态显示不同颜色"""
+    """
+    Battery status light effect, displays different colors based on battery level and charging status
+    电池状态灯效，根据电池电量和充电状态显示不同颜色
+    """
 
     def __init__(
         self,
@@ -336,7 +345,10 @@ class BatteryEffect(SoftwareEffect):
         )
 
     def _get_battery_color(self, percentage: int, is_charging: bool) -> Color:
-        """根据电池状态返回对应的颜色"""
+        """
+        Return corresponding color based on battery status
+        根据电池状态返回对应的颜色
+        """
         if is_charging:
             # Charging | 充电中
             return self.is_charging_color
@@ -357,7 +369,10 @@ class BatteryEffect(SoftwareEffect):
             return self.is_charging_color
 
     def _apply_brightness(self, color: Color, brightness: float) -> Color:
-        """应用亮度值到颜色"""
+        """
+        Apply brightness value to color
+        应用亮度值到颜色
+        """
         return Color(
             int(color.R * brightness),
             int(color.G * brightness),
@@ -365,7 +380,10 @@ class BatteryEffect(SoftwareEffect):
         )
 
     def _run(self):
-        """运行电池状态灯效"""
+        """
+        Run battery status light effect
+        运行电池状态灯效
+        """
         sleep_time = 1.0 / self.update_rate
         breathing_sleep_time = 1.0 / self._breathing_update_rate
 

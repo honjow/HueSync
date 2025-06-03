@@ -15,7 +15,10 @@ class GenericLEDDevice(BaseLEDDevice):
     """
 
     def _set_solid_color(self, color: Color) -> None:
-        """实际设置颜色的方法"""
+        """
+        Set solid color LED
+        设置纯色LED
+        """
         if os.path.exists(LED_PATH):
             logger.debug(f">>>> Setting color to {color}")
             with open(os.path.join(LED_PATH, "brightness"), "w") as f:
