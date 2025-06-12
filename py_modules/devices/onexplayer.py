@@ -13,7 +13,7 @@ from led.onex_led_device_hid import (
     OneXLEDDeviceHID,
 )
 from led.onex_led_device_serial import OneXLEDDeviceSerial
-from utils import Color, RGBMode
+from utils import Color, RGBMode, RGBModeCapabilities
 
 from .led_device import BaseLEDDevice
 
@@ -26,10 +26,46 @@ class OneXLEDDevice(BaseLEDDevice):
     OneXLEDDevice专为OneX设备设计，支持HID和串行通信以进行颜色和模式设置。
     """
 
-    def _set_solid_color(self, color: Color) -> None:
-        self._set_color(RGBMode.Solid, color)
+    def __init__(self):
+        super().__init__()
+        self._current_real_mode: RGBMode = RGBMode.Solid
 
-    def _set_color(
+    @property
+    def hardware_supported_modes(self) -> list[RGBMode]:
+        return [
+            RGBMode.Disabled,
+            RGBMode.Solid,
+            RGBMode.Rainbow,
+        ]
+
+    def _set_solid_color(self, color: Color) -> None:
+        self._set_hardware_color(RGBMode.Solid, color)
+
+    def get_mode_capabilities(self) -> dict[RGBMode, RGBModeCapabilities]:
+        """
+        Get the capabilities of each supported RGB mode for Asus devices.
+        获取 Asus 设备每个支持的 RGB 模式的功能支持情况。
+
+        Returns:
+            dict[RGBMode, RGBModeCapabilities]: A dictionary mapping RGB modes to their capabilities.
+        """
+        capabilities = super().get_mode_capabilities()
+        capabilities[RGBMode.Rainbow] = RGBModeCapabilities(
+            mode=RGBMode.Rainbow,
+            color=False,
+            color2=False,
+            speed=True,
+        )
+        capabilities[RGBMode.Battery] = RGBModeCapabilities(
+            mode=RGBMode.Battery,
+            color=False,
+            color2=False,
+            speed=False,
+            brightness=True,
+        )
+        return capabilities
+
+    def _set_hardware_color(
         self,
         mode: RGBMode | None = None,
         color: Color | None = None,
@@ -60,7 +96,8 @@ class OneXLEDDevice(BaseLEDDevice):
             )
             if ledDevice.is_ready():
                 logger.info(f"set_onex_color: color={color}")
-                ledDevice.set_led_color(color, RGBMode.Solid)
+                # ledDevice.set_led_color(color, RGBMode.Solid)
+                ledDevice.set_led_color_new(color, RGBMode.Solid)
                 return
             logger.info("set_onex_color_hid: device not ready")
 
