@@ -1,14 +1,10 @@
-import lib_hid as hid
-from utils import Color, RGBMode
-from config import logger
 from typing import Sequence
-from .hhd.hhd_asus_hid import (
-    rgb_set,
-    rgb_set_brightness,
-    RGB_APPLY,
-    RGB_INIT,
-    RGB_SET,
-)
+
+import lib_hid as hid
+from config import logger
+from utils import Color, RGBMode
+
+from .hhd.hhd_asus_hid import RGB_APPLY, RGB_INIT, RGB_SET, rgb_set, rgb_set_brightness
 
 
 class AsusLEDDeviceHID:
@@ -145,9 +141,9 @@ class AsusLEDDeviceHID:
                 main_color.R,
                 main_color.G,
                 main_color.B,
-                secondary_color.R,
-                secondary_color.G,
-                secondary_color.B,
+                secondary_color.R if secondary_color else 0,
+                secondary_color.G if secondary_color else 0,
+                secondary_color.B if secondary_color else 0,
             )
 
         else:
@@ -170,6 +166,9 @@ class AsusLEDDeviceHID:
                 *RGB_INIT,
                 *msg,
             ]
+
+        if self.hid_device is None:
+            return False
 
         for m in msg:
             self.hid_device.write(m)

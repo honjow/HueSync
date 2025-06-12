@@ -1,7 +1,8 @@
-import lib_hid as hid
-from utils import Color, RGBMode
-from config import logger
 from typing import Sequence
+
+import lib_hid as hid
+from config import logger
+from utils import Color, RGBMode
 
 
 def set_rgb_cmd(brightness, red, green, blue):
@@ -98,6 +99,9 @@ class MSILEDDeviceHID:
             msg = [set_rgb_cmd(100, main_color.R, main_color.G, main_color.B)]
 
         else:
+            return False
+
+        if self.hid_device is None:
             return False
 
         for m in msg:

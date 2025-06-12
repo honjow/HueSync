@@ -1,8 +1,10 @@
-import lib_hid as hid
-from utils import Color, RGBMode
-from config import logger
 from typing import Sequence
-from .hhd.hhd_legino_go_s_hid import rgb_multi_load_settings, rgb_enable
+
+import lib_hid as hid
+from config import logger
+from utils import Color, RGBMode
+
+from .hhd.hhd_legino_go_s_hid import rgb_enable, rgb_multi_load_settings
 
 
 class LegionGoLEDDeviceHID:
@@ -25,7 +27,7 @@ class LegionGoLEDDeviceHID:
     def is_ready(self) -> bool:
         if self.hid_device:
             return True
-        
+
         hid_device_list = hid.enumerate()
 
         # Check every HID device to find LED device
@@ -108,6 +110,8 @@ class LegionGoLEDDeviceHID:
         else:
             reps = [rgb_enable(False)]
 
+        if self.hid_device is None:
+            return False
 
         for r in reps:
             msg_hex = ",".join([f"{x:02X}" for x in r])
