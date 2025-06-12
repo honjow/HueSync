@@ -1,7 +1,17 @@
 import time
 
 from config import PRODUCT_NAME, logger
-from led.onex_led_device_hid import OneXLEDDeviceHID
+from led.onex_led_device_hid import (
+    X1_MINI_PAGE,
+    X1_MINI_PID,
+    X1_MINI_USAGE,
+    X1_MINI_VID,
+    XFLY_PAGE,
+    XFLY_PID,
+    XFLY_USAGE,
+    XFLY_VID,
+    OneXLEDDeviceHID,
+)
 from led.onex_led_device_serial import OneXLEDDeviceSerial
 from utils import Color, RGBMode
 
@@ -42,7 +52,12 @@ class OneXLEDDevice(BaseLEDDevice):
                 time.sleep(retry_delay)
                 retry_delay *= 2  # Exponential backoff | 指数退避
 
-            ledDevice = OneXLEDDeviceHID(0x1A2C, 0xB001)
+            ledDevice = OneXLEDDeviceHID(
+                [XFLY_VID, X1_MINI_VID],
+                [XFLY_PID, X1_MINI_PID],
+                [XFLY_PAGE, X1_MINI_PAGE],
+                [XFLY_USAGE, X1_MINI_USAGE],
+            )
             if ledDevice.is_ready():
                 logger.info(f"set_onex_color: color={color}")
                 ledDevice.set_led_color(color, RGBMode.Solid)
