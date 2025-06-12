@@ -64,10 +64,10 @@ class AyaNeoLEDDevice(BaseLEDDevice):
             color.B * DEFAULT_BRIGHTNESS // 100,
         )
 
-        self.set_color_one(AyaJoystickGroup.ALL, AyaLedZone.Right, color)
-        self.set_color_one(AyaJoystickGroup.ALL, AyaLedZone.Bottom, color)
-        self.set_color_one(AyaJoystickGroup.ALL, AyaLedZone.Left, color)
-        self.set_color_one(AyaJoystickGroup.ALL, AyaLedZone.Top, color)
+        self.set_color_one(AyaJoystickGroup.ALL.value, AyaLedZone.Right.value, color)
+        self.set_color_one(AyaJoystickGroup.ALL.value, AyaLedZone.Bottom.value, color)
+        self.set_color_one(AyaJoystickGroup.ALL.value, AyaLedZone.Left.value, color)
+        self.set_color_one(AyaJoystickGroup.ALL.value, AyaLedZone.Top.value, color)
 
     def get_mode_capabilities(self) -> dict[RGBMode, RGBModeCapabilities]:
         """

@@ -1,7 +1,8 @@
-from .led_device import BaseLEDDevice
 from config import logger
 from led.msi_led_device_hid import MSILEDDeviceHID
 from utils import Color, RGBMode, RGBModeCapabilities
+
+from .led_device import BaseLEDDevice
 
 MSI_CLAW_VID = 0x0DB0
 MSI_CLAW_XINPUT_PID = 0x1901
@@ -58,7 +59,7 @@ class MSILEDDevice(BaseLEDDevice):
                     ledDevice.set_led_color(
                         main_color=color, mode=mode, secondary_color=color2
                     )
-                self._current_real_mode = mode
+                self._current_real_mode = mode or RGBMode.Disabled
                 return
             logger.info("set_asus_color: device not ready")
         except Exception as e:

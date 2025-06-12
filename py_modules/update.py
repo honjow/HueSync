@@ -25,7 +25,7 @@ class UpdateError(Exception):
 
 
 @contextmanager
-def temp_download_file(suffix: str = None):
+def temp_download_file(suffix: str | None = None):
     """
     Context manager for creating temporary files
     创建临时文件的上下文管理器

@@ -104,7 +104,7 @@ class LedControl:
             brightness=brightness,
         )
 
-    def get_suspend_mode(self) -> str:
+    def get_suspend_mode(self) -> str | None:
         """
         Retrieves the current suspend mode from the LED device if supported.
 

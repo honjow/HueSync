@@ -1,7 +1,8 @@
-from .led_device import BaseLEDDevice
 from config import logger
 from led.legion_led_device_hid import LegionGoLEDDeviceHID
 from utils import Color, RGBMode, RGBModeCapabilities
+
+from .led_device import BaseLEDDevice
 
 GOS_VID = 0x1A86
 GOS_XINPUT = 0xE310
@@ -69,7 +70,7 @@ class LegionGoLEDDevice(BaseLEDDevice):
                         secondary_color=color2,
                         close_device=self.is_current_software_mode(),
                     )
-                self._current_real_mode = mode
+                self._current_real_mode = mode or RGBMode.Disabled
                 return
             logger.info("set_legion_go_color: device not ready")
         except Exception as e:

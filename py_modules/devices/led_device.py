@@ -16,7 +16,7 @@ class LEDDevice(ABC):
         color: Color | None = None,
         color2: Color | None = None,
         init: bool = False,
-        brightness: float | None = None,
+        brightness: int | None = None,
     ):
         pass
 
@@ -58,9 +58,9 @@ class BaseLEDDevice(LEDDevice):
     def __init__(self):
         self._current_color: Color | None = None
         self._current_mode: RGBMode = RGBMode.Solid
-        self._current_effect: Optional[PulseEffect | RainbowEffect | DualityEffect] = (
-            None
-        )
+        self._current_effect: Optional[
+            PulseEffect | RainbowEffect | DualityEffect | BatteryEffect
+        ] = None
 
     @property
     def current_color(self) -> Color | None:
@@ -156,7 +156,8 @@ class BaseLEDDevice(LEDDevice):
         elif mode == RGBMode.Battery:
             # Create and start battery status effect | 创建并启动电池状态灯效果
             self._current_effect = BatteryEffect(
-                self._set_solid_color, base_brightness=brightness
+                self._set_solid_color,
+                base_brightness=brightness if brightness else 100,
             )
             self._current_effect.start()
         elif mode == RGBMode.Solid:

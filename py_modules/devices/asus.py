@@ -62,7 +62,7 @@ class AsusLEDDevice(BaseLEDDevice):
                     ledDevice.set_led_color(
                         color, mode, init=init, secondary_color=color2
                     )
-                self._current_real_mode = mode
+                self._current_real_mode = mode or RGBMode.Disabled
                 return
             logger.info("set_asus_color: device not ready")
         except Exception as e:
