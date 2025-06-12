@@ -35,6 +35,7 @@ jobs:
       - name: build plugin
         run: |
           npm i -g pnpm
+          pnpm config set registry https://registry.npmmirror.com/
           pnpm install --no-frozen-lockfile
           pnpm update @decky/ui --latest
           pnpm update @decky/api --latest
