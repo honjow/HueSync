@@ -11,9 +11,9 @@ convert from https://github.com/Valkirie/HandheldCompanion/blob/main/HandheldCom
 
 class OneXLEDDeviceHID:
     def __init__(self, vid, pid):
-        self._vid = vid
-        self._pid = pid
-        self.hid_device = None
+        self._vid: int = vid
+        self._pid: int = pid
+        self.hid_device: hid.Device | None = None
 
     def is_ready(self) -> bool:
         if self.hid_device:
@@ -67,7 +67,7 @@ class OneXLEDDeviceHID:
 
         elif mode == RGBMode.Rainbow:
             LEDOption = [0x03]
-            rgbData = list(repeat(0x00, 60))
+            rgbData = [list(repeat(0x00, 60))]
 
         else:
             return False
@@ -76,6 +76,9 @@ class OneXLEDDeviceHID:
         msg_hex = "".join([f"{x:02X}" for x in msg])
         logger.info(f"msg={msg_hex}")
         result: bytearray = bytearray(msg)
+
+        if self.hid_device is None:
+            return False
 
         self.hid_device.write(bytes(result))
         # self.hid_device.close()

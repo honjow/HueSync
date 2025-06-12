@@ -8,7 +8,7 @@ from utils import Color, RGBMode
 
 class OneXLEDDeviceSerial:
     def __init__(self):
-        self.ser = None
+        self.ser: serial.Serial | None = None
 
     def is_ready(self) -> bool:
         # ser = serial.Serial('/dev/serial/by-id/usb-1a86_USB_Serial-if00-port0', baudrate = 115200, bytesize = serial.EIGHTBITS, parity = serial.PARITY_EVEN, stopbits = serial.STOPBITS_TWO)
@@ -58,6 +58,9 @@ class OneXLEDDeviceSerial:
         hex_data = " ".join([f"{x:02X}" for x in brightness_data])
         logger.info(f"brightness len={len(brightness_data)} hex_data={hex_data}")
 
+        if self.ser is None:
+            return False
+
         self.ser.write(bytes_data)
         time.sleep(0.1)
         return True
@@ -103,7 +106,7 @@ class OneXLEDDeviceSerial:
             - len(suffix)
         )
 
-        if mode == RGBMode.SolidColor:
+        if mode == RGBMode.Solid:
             led_color = main_color
             LEDOption = [0xFE]
 
@@ -123,6 +126,9 @@ class OneXLEDDeviceSerial:
         msg_bytes = bytes(bytearray(msg))
 
         logger.info(f"write msg, len={len(msg)} hex_data={msg_hex}")
+
+        if self.ser is None:
+            return False
         self.ser.write(msg_bytes)
 
         self.ser.close()
