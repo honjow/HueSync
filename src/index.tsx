@@ -10,7 +10,6 @@ import { localizeStrEnum, localizationManager } from "./i18n";
 import { RGBComponent, SuspendModeComponent } from "./components";
 import { Backend } from "./util";
 import { Setting } from "./hooks";
-import { MoreComponent } from "./components/more";
 
 const Content: FC = () => {
 
@@ -22,7 +21,6 @@ const Content: FC = () => {
         <RGBComponent />
         <SuspendModeComponent />
       </PanelSection>
-      <MoreComponent />
     </div>
   );
 };
