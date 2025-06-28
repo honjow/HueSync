@@ -13,6 +13,7 @@ from urllib.error import URLError
 import decky
 from config import API_URL, logger
 from packaging import version
+import utils
 
 
 class UpdateError(Exception):
@@ -148,8 +149,11 @@ def update_latest() -> Optional[subprocess.CompletedProcess]:
         if not os.path.exists(os.path.join(temp_extract_dir, "HueSync")):
             raise UpdateError("Invalid update package: HueSync directory not found")
 
-        plugin_dir = decky.DECKY_PLUGIN_DIR
+        # plugin_dir = decky.DECKY_PLUGIN_DIR
         plugins_dir = f"{decky.DECKY_USER_HOME}/homebrew/plugins"
+        plugin_dir = f"{plugins_dir}/{decky.DECKY_PLUGIN_NAME}"
+        logger.info(f"Plugin directory: {plugin_dir}, plugin name: {decky.DECKY_PLUGIN_NAME}")
+
 
         # Add write permission
         logger.info(f"Adding write permission to {plugin_dir}")
@@ -165,7 +169,8 @@ def update_latest() -> Optional[subprocess.CompletedProcess]:
 
         # Restart service
         logger.info("Restarting plugin_loader.service")
-        cmd = "pkill -HUP PluginLoader"
+        # cmd = "pkill -HUP PluginLoader"
+        cmd = "systemctl restart plugin_loader.service"
         result = subprocess.run(
             cmd,
             shell=True,
@@ -173,6 +178,7 @@ def update_latest() -> Optional[subprocess.CompletedProcess]:
             text=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
+            env=utils.get_env(),
         )
         logger.info(result.stdout)
         return result

@@ -142,7 +142,8 @@ class MSILEDDeviceHID:
         for m in msg:
             msg_hex = ",".join([f"{x:02X}" for x in m])
             logger.debug(f"msg_hex: {msg_hex}")
-            self.hid_device.write(m)
+            if self.hid_device:
+                self.hid_device.write(m)
 
         self.hid_device.close()
 

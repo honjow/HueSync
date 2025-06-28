@@ -142,3 +142,8 @@ def is_battery_charging() -> bool:
     """
     _, is_charging = get_battery_info()
     return is_charging
+
+def get_env():
+    env = os.environ.copy()
+    env["LD_LIBRARY_PATH"] = ""
+    return env
