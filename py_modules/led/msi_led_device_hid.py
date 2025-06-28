@@ -5,7 +5,22 @@ from config import logger
 from utils import Color, RGBMode
 
 
-def set_rgb_cmd(brightness, red, green, blue):
+# 0211
+ADDR_0163 = {
+    "rgb": [0x01, 0xFA],
+    "m1": [0x00, 0x7A],
+    "m2": [0x01, 0x1F],
+}
+# 0217
+ADDR_0166 = {
+    "rgb": [0x02, 0x4A],
+    "m1": [0x00, 0xBA],
+    "m2": [0x01, 0x63],
+}
+ADDR_DEFAULT = ADDR_0163
+
+
+def set_rgb_cmd(brightness, red, green, blue, addr: dict = ADDR_DEFAULT) -> bytes:
     return bytes(
         [
             # Preamble
@@ -17,8 +32,7 @@ def set_rgb_cmd(brightness, red, green, blue):
             0x21,
             0x01,
             # Start at
-            0x01,
-            0xFA,
+            *addr["rgb"],
             # Write 31 bytes
             0x20,
             # Index, Frame num, Effect, Speed, Brightness
@@ -46,6 +60,8 @@ class MSILEDDeviceHID:
         self._usage = usage
         self.interface = interface
         self.hid_device = None
+        self.device_info = None
+        self.addr = None
 
     def is_ready(self) -> bool:
         if self.hid_device:
@@ -70,9 +86,20 @@ class MSILEDDeviceHID:
                 and device["usage"] in self._usage
             ):
                 self.hid_device = hid.Device(path=device["path"])
+                self.device_info = device
                 logger.debug(
                     f"Found device: {device}, \npath: {device['path']}, \ninterface: {device['interface_number']}"
                 )
+                if self.addr is None:
+                    ver = (self.device_info or {}).get("release_number", 0x0)
+                    major = ver >> 8
+                    logger.info(
+                        f"Device version: {ver:#04x}, major: {major}, addr: {self.addr}"
+                    )
+                    if (major == 1 and ver >= 0x0166) or (major == 2 and ver >= 0x0217):
+                        self.addr = ADDR_0166
+                    else:
+                        self.addr = ADDR_0163
                 return True
         return False
 
@@ -92,11 +119,19 @@ class MSILEDDeviceHID:
 
         if mode == RGBMode.Disabled:
             # disabled
-            msg = [set_rgb_cmd(0, 0, 0, 0)]
+            msg = [set_rgb_cmd(0, 0, 0, 0, self.addr or ADDR_DEFAULT)]
 
         elif mode == RGBMode.Solid:
             # solid
-            msg = [set_rgb_cmd(100, main_color.R, main_color.G, main_color.B)]
+            msg = [
+                set_rgb_cmd(
+                    100,
+                    main_color.R,
+                    main_color.G,
+                    main_color.B,
+                    self.addr or ADDR_DEFAULT,
+                )
+            ]
 
         else:
             return False
