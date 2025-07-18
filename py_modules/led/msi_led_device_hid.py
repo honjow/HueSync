@@ -4,7 +4,6 @@ import lib_hid as hid
 from config import logger
 from utils import Color, RGBMode
 
-
 # 0211
 ADDR_0163 = {
     "rgb": [0x01, 0xFA],
@@ -12,6 +11,7 @@ ADDR_0163 = {
     "m2": [0x01, 0x1F],
 }
 # 0217
+# 0308
 ADDR_0166 = {
     "rgb": [0x02, 0x4A],
     "m1": [0x00, 0xBA],
@@ -96,7 +96,11 @@ class MSILEDDeviceHID:
                     logger.info(
                         f"Device version: {ver:#04x}, major: {major}, addr: {self.addr}"
                     )
-                    if (major == 1 and ver >= 0x0166) or (major == 2 and ver >= 0x0217):
+                    if (
+                        (major == 1 and ver >= 0x0166)
+                        or (major == 2 and ver >= 0x0217)
+                        or (major >= 3)
+                    ):
                         self.addr = ADDR_0166
                     else:
                         self.addr = ADDR_0163
