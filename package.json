@@ -1,6 +1,6 @@
 {
   "name": "HueSync",
-  "version": "2.2.6",
+  "version": "2.2.7",
   "description": "LED controller for non-Steam Deck gaming handhelds running SteamOS.",
   "type": "module",
   "scripts": {
