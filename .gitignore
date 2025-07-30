@@ -51,6 +51,6 @@ py_modules/**/*.c
 /cli
 /out
 
-/py_modules/submodule
+
 test
 /submodule
