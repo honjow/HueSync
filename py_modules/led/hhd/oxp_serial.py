@@ -6,6 +6,7 @@ import os
 import subprocess
 from typing import Literal
 
+import utils
 from config import logger
 
 
@@ -137,6 +138,7 @@ def get_serial():
             check=True,
             capture_output=True,
             text=True,
+            env=utils.get_env(),
         )
 
         if f"ID_VENDOR_ID={VID}" not in out.stdout:
@@ -159,6 +161,7 @@ def get_serial():
             check=True,
             capture_output=True,
             text=True,
+            env=utils.get_env(),
         )
 
         # OneXFly device is pnp
