@@ -15,7 +15,7 @@ echo "installing $package"
 temp=$(mktemp -d)
 sudo chmod -R +w "${HOME}/homebrew/plugins/"
 plugin_dir="${HOME}/homebrew/plugins/${package}"
-mkdir -p $plugin_dir
+sudo mkdir -p $plugin_dir
 
 use_jq=false
 if [ -x "$(command -v jq)" ]; then
