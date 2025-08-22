@@ -301,15 +301,15 @@ class BatteryEffect(SoftwareEffect):
         self,
         set_color_callback: Callable[[Color], None],
         update_rate: float = 0.5,  # Update rate | 更新频率
-        low_battery_threshold: int = 20,  # Low battery threshold | 低电量阈值
+        low_battery_threshold: int = 10,  # Low battery threshold | 低电量阈值
         mid_battery_threshold: int = 50,  # Mid battery threshold | 中等电量阈值
         high_battery_threshold: int = 90,  # High battery threshold | 高电量阈值
         low_color: Color = Color(255, 0, 0),  # Low battery color | 低电量颜色 红色
         mid_color: Color = Color(
-            255, 70, 0
+            255, 255, 0
         ),  # Mid low battery color | 中低电量颜色 橙色
-        high_color: Color = Color(0, 0, 255),  # High battery color | 高电量颜色 蓝色
-        is_charging_color: Color = Color(0, 255, 0),  # Charging color | 充电颜色 绿色
+        high_color: Color = Color(0, 255, 0),  # High battery color | 高电量颜色 蓝色
+        is_charging_color: Color = Color(0, 0, 255),  # Charging color | 充电颜色 绿色
         base_brightness: int = 100,  # Base brightness | 基础亮度 0 - 100
     ):
         """
@@ -360,10 +360,10 @@ class BatteryEffect(SoftwareEffect):
             return self.low_color
         elif percentage <= self.mid_battery_threshold:
             # Medium battery | 中等电量
-            return self.mid_color
+            return Color(255, round(6.375 * percentage - 63.75), 0)
         elif percentage <= self.high_battery_threshold:
             # High battery | 较高电量
-            return self.high_color
+            return Color(round(-6.375 * percentage + 573.75), 255, 0)
         else:
             # Full battery | 高电量
             return self.is_charging_color
@@ -401,7 +401,7 @@ class BatteryEffect(SoftwareEffect):
             brightness_factor = self.base_brightness / 100.0
 
             # Add breathing effect if charging | 如果正在充电，添加呼吸效果
-            if is_charging:
+            if is_charging or (percentage < 10):
                 # Use current time to create simple breathing effect | 使用当前时间来创建简单的呼吸效果
                 phase = (time.time() * self._breathing_speed * 2 * math.pi) % (
                     2 * math.pi
@@ -423,7 +423,7 @@ class BatteryEffect(SoftwareEffect):
                 self.latest_color = color
 
             # Wait for next update | 等待下一次更新
-            if is_charging:
+            if is_charging or (percentage < 10):
                 time.sleep(
                     breathing_sleep_time
                 )  # Use shorter interval for breathing effect | 呼吸效果时使用较短的间隔
