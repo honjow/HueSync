@@ -11,6 +11,7 @@ import { RGBComponent, SuspendModeComponent } from "./components";
 import { Backend } from "./util";
 import { Setting } from "./hooks";
 import { MoreComponent } from "./components/more";
+import { SteamUtils } from "./util/steamUtils";
 
 const Content: FC = () => {
 
@@ -37,14 +38,14 @@ export default definePlugin(() => {
 
   init();
 
-  SteamClient.System.RegisterForOnResumeFromSuspend(async () => {
+  SteamUtils.RegisterForOnResumeFromSuspend(async () => {
     setTimeout(() => {
       Backend.applySettings({ isInit: true });
       console.log("Resume from suspend");
     }, 5000);
   });
 
-  SteamClient.System.RegisterForOnSuspendRequest(async () => {
+  SteamUtils.RegisterForOnSuspendRequest(async () => {
     Backend.throwSuspendEvt();
     console.log("Entering suspend mode");
   });
