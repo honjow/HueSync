@@ -51,8 +51,8 @@ copy-ssh-key: ## Copy public ssh key to steamdeck
 
 deploy-steamdeck: ## Deploy plugin build to steamdeck
 	@echo "+ $@"
-	@ssh $(DECK_USER)@$(DECK_HOST) -p $(DECK_PORT) -i $(DECK_KEY) \
- 		'chmod -v 755 $(DECK_HOME)/homebrew/plugins/ && mkdir -p $(DECK_HOME)/homebrew/plugins/$(PLUGIN_FOLDER)'
+	@ssh -t $(DECK_USER)@$(DECK_HOST) -p $(DECK_PORT) -i $(DECK_KEY) \
+ 		'sudo chmod -v 755 $(DECK_HOME)/homebrew/plugins/ && mkdir -p $(DECK_HOME)/homebrew/plugins/$(PLUGIN_FOLDER)'
 	@rsync -azp --delete --progress -e "ssh -p $(DECK_PORT) -i $(DECK_KEY)" \
 		--chmod=Du=rwx,Dg=rx,Do=rx,Fu=rwx,Fg=rx,Fo=rx \
 		--exclude='.git/' \
@@ -69,8 +69,8 @@ deploy-steamdeck: ## Deploy plugin build to steamdeck
 		--exclude='./submodule' \
 		--exclude='./test' \
  		./ $(DECK_USER)@$(DECK_HOST):$(DECK_HOME)/homebrew/plugins/$(PLUGIN_FOLDER)/
-	@ssh $(DECK_USER)@$(DECK_HOST) -p $(DECK_PORT) -i $(DECK_KEY) \
- 		'chmod -v 755 $(DECK_HOME)/homebrew/plugins/'
+	@ssh -t $(DECK_USER)@$(DECK_HOST) -p $(DECK_PORT) -i $(DECK_KEY) \
+ 		'sudo chmod -v 755 $(DECK_HOME)/homebrew/plugins/'
 
 restart-decky: ## Restart Decky on remote steamdeck
 	@echo "+ $@"
@@ -93,9 +93,9 @@ deploy-release: ## Deploy release to steamdeck and restart Decky
 set-loglevel: ## Set log level to info
 	@echo "+ $@"
 	@ssh -t $(DECK_USER)@$(DECK_HOST) -p $(DECK_PORT) -i $(DECK_KEY) \
-		'chmod -v 755 $(DECK_HOME)/homebrew/plugins/$(PLUGIN_FOLDER)/py_modules'
+		'sudo chmod -v 755 $(DECK_HOME)/homebrew/plugins/$(PLUGIN_FOLDER)/py_modules'
 	@ssh -t $(DECK_USER)@$(DECK_HOST) -p $(DECK_PORT) -i $(DECK_KEY) \
- 		"sed -i 's/logging.DEBUG/logging.INFO/' $(DECK_HOME)/homebrew/plugins/$(PLUGIN_FOLDER)/py_modules/config.py"
+ 		"sudo sed -i 's/logging.DEBUG/logging.INFO/' $(DECK_HOME)/homebrew/plugins/$(PLUGIN_FOLDER)/py_modules/config.py"
 
 it: ## Build all code, deploy it to steamdeck, restart Decky
 	@$(MAKE) build deploy
