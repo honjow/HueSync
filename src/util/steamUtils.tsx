@@ -4,6 +4,7 @@ import { FaSuperpowers } from "react-icons/fa";
 import { toaster } from "@decky/api";
 import { isNil } from 'lodash';
 import { SystemInfo } from "@decky/ui/dist/globals/steam-client/system";
+import { SuspendProgress } from "@decky/ui/dist/globals/steam-client/User";
 
 //#region Find SteamOS modules
 const findModule = (property: string) => {
@@ -103,13 +104,18 @@ export class SteamUtils {
     return false;
   }
 
+
+
   static RegisterForOnSuspendRequest(callback: () => void) {
     const hasSystemSuspendEvents = SteamUtils.hasSystemSuspendEvents();
     const hasUserSuspendEvents = SteamUtils.hasUserSuspendEvents();
     if (hasSystemSuspendEvents) {
       return SteamClient.System.RegisterForOnSuspendRequest(callback);
     } else if (hasUserSuspendEvents) {
-      return SteamClient.User.RegisterForPrepareForSystemSuspendProgress(callback);
+      return SteamClient.User.RegisterForPrepareForSystemSuspendProgress(
+        (_progress: SuspendProgress) => {
+          callback();
+        });
     }
     return null;
   }
@@ -120,7 +126,10 @@ export class SteamUtils {
     if (hasSystemSuspendEvents) {
       return SteamClient.System.RegisterForOnResumeFromSuspend(callback);
     } else if (hasUserSuspendEvents) {
-      return SteamClient.User.RegisterForResumeSuspendedGamesProgress(callback);
+      return SteamClient.User.RegisterForResumeSuspendedGamesProgress(
+        (_progress: SuspendProgress) => {
+          callback();
+        });
     }
     return null;
   }
