@@ -230,6 +230,21 @@ class AsusLEDDeviceHID:
                 secondary_color.B if secondary_color else 0,
             )
 
+        elif mode == RGBMode.Spiral:
+            # spiral
+            msg = rgb_set(
+                "all",
+                "spiral",
+                k_direction,
+                k_speed,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+            )
+
         else:
             return False
 

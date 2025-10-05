@@ -32,6 +32,7 @@ class AsusLEDDevice(BaseLEDDevice):
             RGBMode.Pulse,
             RGBMode.Duality,
             RGBMode.Rainbow,
+            RGBMode.Spiral,
         ]
 
     def _set_hardware_color(
@@ -106,6 +107,12 @@ class AsusLEDDevice(BaseLEDDevice):
                 mode=RGBMode.Duality,
                 color=True,
                 color2=True,
+                speed=True,
+            ),
+            RGBMode.Spiral: RGBModeCapabilities(
+                mode=RGBMode.Spiral,
+                color=False,
+                color2=False,
                 speed=True,
             ),
             RGBMode.Battery: RGBModeCapabilities(
