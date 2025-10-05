@@ -15,6 +15,7 @@ from devices.generic import GenericLEDDevice
 from devices.gpd import GPDLEDDevice
 from devices.led_device import LEDDevice
 from devices.legion_go import LegionGoLEDDevice
+from devices.legion_go_tablet import LegionGoTabletLEDDevice
 from devices.msi import MSILEDDevice
 from devices.onexplayer import OneXLEDDevice
 from utils import Color, RGBMode, RGBModeCapabilities
@@ -77,8 +78,13 @@ class LedControl:
             logger.info("Using Asus LED device")
             return AsusLEDDevice()
         elif SYS_VENDOR == "LENOVO":
-            logger.info("Using Legion Go LED device")
-            return LegionGoLEDDevice()
+            # Check if it's Legion Go (tablet mode) or Legion Go S
+            if PRODUCT_NAME in ["83E1", "83N0", "83N1"]:
+                logger.info("Using Legion Go (tablet mode) LED device")
+                return LegionGoTabletLEDDevice()
+            else:
+                logger.info("Using Legion Go S LED device")
+                return LegionGoLEDDevice()
         elif SYS_VENDOR == "Micro-Star International Co., Ltd.":
             logger.info("Using MSI LED device")
             return MSILEDDevice()
