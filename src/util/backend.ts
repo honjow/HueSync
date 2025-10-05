@@ -19,6 +19,11 @@ interface ApplyColorOptions {
   brightness?: number;
 }
 
+// Exported callable functions
+// export const getVersion = callable<[], string>("get_version");
+// export const getLatestVersion = callable<[], string>("get_latest_version");
+// export const updateLatest = callable<[], any>("update_latest");
+
 export class BackendData {
   private current_version = "";
   private latest_version = "";

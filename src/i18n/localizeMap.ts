@@ -90,38 +90,7 @@ function createLocalizeConstants<T extends readonly string[]>(keys: T) {
   }, {} as { [K in T[number]]: K });
 }
 
-const I18N_KEYS = [
-  "TITEL_SETTINGS",
-  "ENABLE_LED_CONTROL",
-  "LED_ON",
-  "LED_MODE",
-  "LED_MODE_DESC",
-  "LED_MODE_SOLID",
-  "LED_MODE_DISABLED",
-  "LED_MODE_RAINBOW",
-  "LED_MODE_PULSE",
-  "LED_MODE_SPIRAL",
-  "LED_MODE_DUALITY",
-  "LED_MODE_BATTERY",
-  "BRIGHTNESS",
-  "RED",
-  "GREEN",
-  "BLUE",
-  "HUE",
-  "SATURATION",
-  "VERSION",
-  "REINSTALL_PLUGIN",
-  "UPDATE_PLUGIN",
-  "INSTALLED_VERSION",
-  "LATEST_VERSION",
-  "SUSPEND_MODE",
-  "SUSPEND_MODE_DESC",
-  "SUSPEND_MODE_OEM",
-  "SUSPEND_MODE_OFF",
-  "SUSPEND_MODE_KEEP",
-] as const;
-
-export const L = createLocalizeConstants(I18N_KEYS);
+export const L = createLocalizeConstants(Object.keys(defaultMessages));
 
 export type LocalizeStrKey = keyof typeof L;
 
