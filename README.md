@@ -33,6 +33,7 @@ LED controller for handheld devices
   - Claw 7
 - Lenovo
   - Legion Go S
+  - Legion Go (Experimental)
 
 ### Additional Support
 Support for more Ayaneo devices through [ayaneo-platform](https://github.com/ShadowBlip/ayaneo-platform), can be obtained by installing the dkms module through [AUR](https://aur.archlinux.org/packages/ayaneo-platform-dkms-git). The latest ChimeraOS comes with it.

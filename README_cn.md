@@ -37,6 +37,7 @@
   - Claw 7
 - Lenovo
   - Legion Go S
+  - Legion Go (实验)
 
 ### 额外支持
 
