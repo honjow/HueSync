@@ -36,5 +36,10 @@
   "SUSPEND_MODE_DESC": "LED status during suspend",
   "SUSPEND_MODE_OEM": "OEM Default",
   "SUSPEND_MODE_OFF": "Off",
-  "SUSPEND_MODE_KEEP": "Keep"
+  "SUSPEND_MODE_KEEP": "Keep",
+  "SPEED": "Speed",
+  "SPEED_DESC": "Animation Speed",
+  "SPEED_LOW": "Slow",
+  "SPEED_MEDIUM": "Medium",
+  "SPEED_HIGH": "Fast"
 }

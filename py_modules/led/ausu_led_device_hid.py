@@ -130,6 +130,7 @@ class AsusLEDDeviceHID:
         secondary_color: Color | None = None,
         init: bool = False,
         global_init: bool = True,
+        speed: str | None = None,
     ) -> bool:
         if not self.is_ready():
             return False
@@ -148,11 +149,11 @@ class AsusLEDDeviceHID:
                 logger.error(f"Failed to send config_rgb command: {e}", exc_info=True)
 
         logger.debug(
-            f">>>> set_asus_color: mode={mode} color={main_color} secondary={secondary_color} init={init}"
+            f">>>> set_asus_color: mode={mode} color={main_color} secondary={secondary_color} init={init} speed={speed}"
         )
 
         k_direction = "left"
-        k_speed = "low"
+        k_speed = speed or "low"  # Use dynamic speed parameter, default to "low"
         k_brightness = "medium"
 
         if mode == RGBMode.Disabled:

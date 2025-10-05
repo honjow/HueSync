@@ -52,7 +52,7 @@ copy-ssh-key: ## Copy public ssh key to steamdeck
 deploy-steamdeck: ## Deploy plugin build to steamdeck
 	@echo "+ $@"
 	@ssh -t $(DECK_USER)@$(DECK_HOST) -p $(DECK_PORT) -i $(DECK_KEY) \
- 		'sudo chmod -R -v 755 $(DECK_HOME)/homebrew/plugins/ && mkdir -p $(DECK_HOME)/homebrew/plugins/$(PLUGIN_FOLDER)'
+ 		'sudo chmod -R -v 755 $(DECK_HOME)/homebrew/plugins/ && sudo mkdir -p $(DECK_HOME)/homebrew/plugins/$(PLUGIN_FOLDER)'
 	@ssh -t $(DECK_USER)@$(DECK_HOST) -p $(DECK_PORT) -i $(DECK_KEY) \
  		'sudo chown -R $(DECK_USER):$(DECK_USER) $(DECK_HOME)/homebrew/plugins/$(PLUGIN_FOLDER)'
 	@rsync -azp --delete --progress -e "ssh -p $(DECK_PORT) -i $(DECK_KEY)" \

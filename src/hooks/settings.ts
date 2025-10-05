@@ -10,6 +10,7 @@ export class SettingsData {
   public saturation2 = 100;
   public brightness2 = 100;
   public suspendMode = "";
+  public speed = "low";
 
   // RGB getters
   get red(): number {
@@ -52,6 +53,7 @@ export class SettingsData {
     this.saturation2 = source.saturation2;
     this.brightness2 = source.brightness2;
     this.suspendMode = source.suspendMode;
+    this.speed = source.speed;
   }
 
   public fromDict(dict: { [key: string]: any }) {
@@ -204,4 +206,7 @@ export class Setting {
 
   @Setting.settingProperty<string>("suspendMode")
   public static suspendMode: string;
+
+  @Setting.settingProperty<string>("speed")
+  public static speed: string;
 }

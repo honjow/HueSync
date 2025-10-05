@@ -41,6 +41,7 @@ class AsusLEDDevice(BaseLEDDevice):
         color: Color | None = None,
         color2: Color | None = None,
         init: bool = False,
+        speed: str | None = None,
     ) -> None:
         if not color:
             return
@@ -55,13 +56,13 @@ class AsusLEDDevice(BaseLEDDevice):
             if ledDevice.is_ready():
                 init = self._current_real_mode != mode or init
                 logger.debug(
-                    f"set_asus_color: mode={mode} color={color} secondary={color2} init={init}"
+                    f"set_asus_color: mode={mode} color={color} secondary={color2} init={init} speed={speed}"
                 )
                 if mode:
                     if init:
                         ledDevice.set_led_color(color, RGBMode.Disabled, init=True)
                     ledDevice.set_led_color(
-                        color, mode, init=init, secondary_color=color2
+                        color, mode, init=init, secondary_color=color2, speed=speed or "low"
                     )
                 self._current_real_mode = mode or RGBMode.Disabled
                 return

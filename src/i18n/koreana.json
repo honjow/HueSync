@@ -36,5 +36,10 @@
     "SUSPEND_MODE_DESC": "절전 모드 중 LED 상태",
     "SUSPEND_MODE_OEM": "OEM 기본값",
     "SUSPEND_MODE_OFF": "끄기",
-    "SUSPEND_MODE_KEEP": "유지"
+    "SUSPEND_MODE_KEEP": "유지",
+    "SPEED": "속도",
+    "SPEED_DESC": "애니메이션 속도",
+    "SPEED_LOW": "느림",
+    "SPEED_MEDIUM": "중간",
+    "SPEED_HIGH": "빠름"
 }

@@ -17,6 +17,7 @@ interface ApplyColorOptions {
   green2?: number;
   blue2?: number;
   brightness?: number;
+  speed?: string;
 }
 
 // Exported callable functions
@@ -67,7 +68,7 @@ export class Backend {
 
   private static applyColor(options: ApplyColorOptions = {}) {
     console.log(
-      `Applying color: mode=${options.mode} r=${options.red} g=${options.green} b=${options.blue} r2=${options.red2} g2=${options.green2} b2=${options.blue2} init=${options.isInit} brightness=${options.brightness}`,
+      `Applying color: mode=${options.mode} r=${options.red} g=${options.green} b=${options.blue} r2=${options.red2} g2=${options.green2} b2=${options.blue2} init=${options.isInit} brightness=${options.brightness} speed=${options.speed}`,
     );
     const {
       mode = "disabled",
@@ -79,6 +80,7 @@ export class Backend {
       blue2 = 0,
       isInit = false,
       brightness = 100,
+      speed = "low",
     } = options;
     call<
       [
@@ -91,9 +93,10 @@ export class Backend {
         b2: number,
         init: boolean,
         brightness: number,
+        speed: string,
       ],
       void
-    >("set_color", mode, red, green, blue, red2, green2, blue2, isInit, brightness);
+    >("set_color", mode, red, green, blue, red2, green2, blue2, isInit, brightness, speed);
   }
 
   public static throwSuspendEvt() {
@@ -148,6 +151,7 @@ export class Backend {
       blue2: Setting.blue2,
       isInit,
       brightness: Setting.brightness,
+      speed: Setting.speed,
     });
 
   };

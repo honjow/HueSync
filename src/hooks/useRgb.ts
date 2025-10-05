@@ -14,6 +14,8 @@ export const useRgb = () => {
     Setting.enableControl
   );
 
+  const [speed, setSpeed] = useState<string>(Setting.speed);
+
   useEffect(() => {
     const getData = async () => {
       // await Setting.loadSettingsData();
@@ -72,6 +74,12 @@ export const useRgb = () => {
     await Backend.applySettings({ isInit: true });
   };
 
+  const updateSpeed = async (newSpeed: string) => {
+    setSpeed(newSpeed);
+    Setting.speed = newSpeed;
+    await Backend.applySettings();
+  };
+
   return {
     hue,
     hue2,
@@ -83,5 +91,7 @@ export const useRgb = () => {
     updateRgbMode,
     enableControl,
     updateEnableControl,
+    speed,
+    updateSpeed,
   };
 };

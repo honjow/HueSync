@@ -36,5 +36,10 @@
     "SUSPEND_MODE_DESC": "LED състояние при заспиване",
     "SUSPEND_MODE_OEM": "OEM по подразбиране",
     "SUSPEND_MODE_OFF": "Изключено",
-    "SUSPEND_MODE_KEEP": "Запазване"
+    "SUSPEND_MODE_KEEP": "Запазване",
+    "SPEED": "Скорост",
+    "SPEED_DESC": "Скорост на анимацията",
+    "SPEED_LOW": "Бавна",
+    "SPEED_MEDIUM": "Средна",
+    "SPEED_HIGH": "Бърза"
 }

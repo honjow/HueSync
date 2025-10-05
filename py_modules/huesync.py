@@ -92,6 +92,7 @@ class LedControl:
         color2: Color | None = None,
         init: bool = False,
         brightness: int | None = None,
+        speed: str | None = None,
     ) -> None:
         """
         Set the color of the LED
@@ -102,6 +103,7 @@ class LedControl:
             color2,
             init=init,
             brightness=brightness,
+            speed=speed,
         )
 
     def get_suspend_mode(self) -> str | None:

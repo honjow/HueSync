@@ -24,13 +24,14 @@ class AllyLEDDevice(AsusLEDDevice):
         color2: Color | None = None,
         init: bool = False,
         brightness: int | None = None,
+        speed: str | None = None,
     ) -> None:
         if not color:
             return
         if mode == RGBMode.Solid:
             self._set_color_by_sysfs(color)
         else:
-            super().set_color(mode, color, color2, init, brightness=brightness)
+            super().set_color(mode, color, color2, init, brightness=brightness, speed=speed)
 
     def _set_color_by_sysfs(
         self,

@@ -36,5 +36,10 @@
     "SUSPEND_MODE_DESC": "สถานะ LED ระหว่างพักเครื่อง",
     "SUSPEND_MODE_OEM": "ค่าเริ่มต้น OEM",
     "SUSPEND_MODE_OFF": "ปิด",
-    "SUSPEND_MODE_KEEP": "คงไว้"
+    "SUSPEND_MODE_KEEP": "คงไว้",
+    "SPEED": "ความเร็ว",
+    "SPEED_DESC": "ความเร็วการเคลื่อนไหว",
+    "SPEED_LOW": "ช้า",
+    "SPEED_MEDIUM": "ปานกลาง",
+    "SPEED_HIGH": "เร็ว"
 }

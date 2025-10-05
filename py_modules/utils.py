@@ -28,6 +28,13 @@ class RGBMode(Enum):
     Battery = "battery"
 
 
+class RGBSpeed(Enum):
+    """RGB animation speed levels"""
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+
+
 @dataclass
 class RGBModeCapabilities:
     """

@@ -36,5 +36,10 @@
     "SUSPEND_MODE_DESC": "サスペンド中のLEDの状態",
     "SUSPEND_MODE_OEM": "OEMデフォルト",
     "SUSPEND_MODE_OFF": "オフ",
-    "SUSPEND_MODE_KEEP": "維持"
+    "SUSPEND_MODE_KEEP": "維持",
+    "SPEED": "速度",
+    "SPEED_DESC": "アニメーション速度",
+    "SPEED_LOW": "遅い",
+    "SPEED_MEDIUM": "中",
+    "SPEED_HIGH": "速い"
 }

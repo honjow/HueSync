@@ -36,5 +36,10 @@
   "SUSPEND_MODE_DESC": "睡眠期间 LED 灯的状态",
   "SUSPEND_MODE_OEM": "OEM 预设",
   "SUSPEND_MODE_OFF": "关闭",
-  "SUSPEND_MODE_KEEP": "保持"
+  "SUSPEND_MODE_KEEP": "保持",
+  "SPEED": "速度",
+  "SPEED_DESC": "动画速度",
+  "SPEED_LOW": "慢速",
+  "SPEED_MEDIUM": "中速",
+  "SPEED_HIGH": "快速"
 }
