@@ -211,7 +211,7 @@ class OneXLEDDeviceHID:
             cmd = self._cmd_queue.popleft()
             try:
                 cmd_hex = "".join([f"{x:02X}" for x in cmd])
-                logger.info(f"[WRITE] OXP HID write ({len(cmd)} bytes): {cmd_hex}")
+                logger.debug(f"[WRITE] OXP HID write ({len(cmd)} bytes): {cmd_hex}")
                 self.hid_device.write(cmd)
                 self._next_send = time.perf_counter() + self._write_delay
             except Exception as e:
@@ -304,7 +304,7 @@ class OneXLEDDeviceHID:
 
         msg = list(chain(prefix, LEDOption, chain(*rgbData), suffix))
         msg_hex = "".join([f"{x:02X}" for x in msg])
-        logger.info(f"msg={msg_hex}")
+        logger.debug(f"msg={msg_hex}")
         result: bytearray = bytearray(msg)
 
         if self.hid_device is None:
@@ -373,14 +373,14 @@ class OneXLEDDeviceHID:
         # 关键：不要初始化为当前值！那会阻止检测状态改变。
         # 相反，我们依赖 None != 任何值 会触发brightness命令的事实。
         if _global_prev_enabled is None:
-            logger.info(f"[INIT] First call detected, prev_enabled is None, will trigger brightness command")
+            logger.debug(f"[INIT] First call detected, prev_enabled is None, will trigger brightness command")
         if _global_prev_brightness is None:
-            logger.info(f"[INIT] First call detected, prev_brightness is None")
+            logger.debug(f"[INIT] First call detected, prev_brightness is None")
         if _global_prev_mode is None:
-            logger.info(f"[INIT] First call detected, prev_mode is None")
+            logger.debug(f"[INIT] First call detected, prev_mode is None")
         
-        logger.info(f"[STATE] Current: enabled={enabled}, brightness={brightness_level}, mode={mode}")
-        logger.info(f"[STATE] Global Previous: enabled={_global_prev_enabled}, brightness={_global_prev_brightness}, mode={_global_prev_mode}")
+        logger.debug(f"[STATE] Current: enabled={enabled}, brightness={brightness_level}, mode={mode}")
+        logger.debug(f"[STATE] Global Previous: enabled={_global_prev_enabled}, brightness={_global_prev_brightness}, mode={_global_prev_mode}")
         
         # CRITICAL: Send brightness/enable command when state changes OR first time
         # This matches HHD's behavior exactly (line 209-215 in hid_v1.py)
@@ -396,7 +396,7 @@ class OneXLEDDeviceHID:
                 # V2: gen_brightness(enabled, brightness_level)
                 brightness_cmd = gen_brightness(enabled, brightness_level)
             
-            logger.info(f"[BRIGHTNESS] Sending: enabled={enabled}, brightness={brightness_level} (was: enabled={_global_prev_enabled}, brightness={_global_prev_brightness})")
+            logger.debug(f"[BRIGHTNESS] Sending: enabled={enabled}, brightness={brightness_level} (was: enabled={_global_prev_enabled}, brightness={_global_prev_brightness})")
             self._queue_command(brightness_cmd)
             _global_prev_enabled = enabled
             _global_prev_brightness = brightness_level
@@ -420,7 +420,7 @@ class OneXLEDDeviceHID:
         if mode == _global_prev_mode and current_color == _global_prev_color:
             # Neither mode nor color changed
             # mode和颜色都未改变
-            logger.info(f"[SKIP] Mode and color unchanged: {mode}")
+            logger.debug(f"[SKIP] Mode and color unchanged: {mode}")
             return self._flush_queue()
 
         # Map RGBMode to hardware command
@@ -456,7 +456,7 @@ class OneXLEDDeviceHID:
         
         # Queue the color/mode command
         # 将颜色/模式命令加入队列
-        logger.info(f"[COLOR] Sending color/mode command for mode={mode}")
+        logger.debug(f"[COLOR] Sending color/mode command for mode={mode}")
         self._queue_command(cmd)
         
         # Update global state tracking (like HHD does at line 222-224)

@@ -84,7 +84,7 @@ class PulseEffect(SoftwareEffect):
                          1.0 表示大约2.5秒一个周期
                          0.25 表示大约10秒一个周期
             hold_time (float): 在最大和最小亮度处的维持时间（秒）
-            update_rate (float): 更新频率（Hz），默认20Hz
+            update_rate (float): 更新频率（Hz）
         """
         super().__init__()
         self.base_color = base_color

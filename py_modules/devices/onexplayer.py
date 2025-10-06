@@ -99,6 +99,13 @@ class OneXLEDDevice(BaseLEDDevice):
         #     color2=False,
         #     speed=True,
         # )
+
+        capabilities[RGBMode.Pulse] = RGBModeCapabilities(
+            mode=RGBMode.Pulse,
+            color=True,
+            color2=False,
+            speed=True,
+        )
         
         # Battery mode supports brightness control
         # 电池模式支持亮度控制
@@ -212,7 +219,7 @@ class OneXLEDDevice(BaseLEDDevice):
         # Try to use cached device first
         # 首先尝试使用缓存的设备
         if self._hid_device_cache and self._hid_device_cache.is_ready():
-            logger.info(f"set_onex_color_hid: using cached device, color={color}, mode={mode.value}, brightness_level={brightness_level}")
+            logger.debug(f"set_onex_color_hid: using cached device, color={color}, mode={mode.value}, brightness_level={brightness_level}")
             self._hid_device_cache.set_led_color_new(color, mode, brightness=brightness)
             return
         
