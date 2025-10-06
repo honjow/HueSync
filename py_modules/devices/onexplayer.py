@@ -58,7 +58,6 @@ class OneXLEDDevice(BaseLEDDevice):
         modes = [
             RGBMode.Disabled,
             RGBMode.Solid,
-            RGBMode.Rainbow,
         ]
         
         # Add OXP preset modes if device supports RGB
@@ -74,6 +73,7 @@ class OneXLEDDevice(BaseLEDDevice):
                 RGBMode.OXP_COLORFUL,
                 RGBMode.OXP_AURORA,
                 RGBMode.OXP_SUN,
+                RGBMode.OXP_CLASSIC,
             ])
         
         return modes
@@ -143,6 +143,17 @@ class OneXLEDDevice(BaseLEDDevice):
                 brightness_level=True,  # Hardware brightness level control
             )
         
+        # OXP Classic: Cherry red solid color (brand signature color)
+        # OXP经典：樱桃红纯色（品牌标志色）
+        capabilities[RGBMode.OXP_CLASSIC] = RGBModeCapabilities(
+            mode=RGBMode.OXP_CLASSIC,
+            color=False,  # Fixed cherry red color
+            color2=False,
+            speed=False,
+            brightness=False,
+            brightness_level=True,  # Hardware brightness level control
+        )
+        
         return capabilities
 
     def _set_hardware_color(
@@ -163,6 +174,14 @@ class OneXLEDDevice(BaseLEDDevice):
         """
         if not color:
             return
+        
+        # Handle OXP Classic mode: convert to Solid mode with cherry red
+        # 处理OXP经典模式：转换为樱桃红的Solid模式
+        if mode == RGBMode.OXP_CLASSIC:
+            mode = RGBMode.Solid
+            # Cherry red: RGB(183, 48, 0) = 0xB7, 0x30, 0x00
+            # 樱桃红：RGB(183, 48, 0) = 0xB7, 0x30, 0x00
+            color = Color(0xB7, 0x30, 0x00)
         
         # Use configuration if available, fallback to legacy detection
         # 如果配置可用则使用配置，否则回退到传统检测

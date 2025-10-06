@@ -55,5 +55,6 @@
     "LED_MODE_OXP_CYBERPUNK": "赛博朋克",
     "LED_MODE_OXP_COLORFUL": "缤纷多彩",
     "LED_MODE_OXP_AURORA": "绚丽极光",
-    "LED_MODE_OXP_SUN": "温暖骄阳"
+    "LED_MODE_OXP_SUN": "温暖骄阳",
+    "LED_MODE_OXP_CLASSIC": "OXP 经典"
 }

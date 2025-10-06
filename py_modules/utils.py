@@ -38,6 +38,7 @@ class RGBMode(Enum):
     OXP_COLORFUL = "oxp_colorful"
     OXP_AURORA = "oxp_aurora"
     OXP_SUN = "oxp_sun"
+    OXP_CLASSIC = "oxp_classic"  # OXP Cherry Red (0xB7, 0x30, 0x00)
 
 
 class RGBSpeed(Enum):
