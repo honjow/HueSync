@@ -423,6 +423,8 @@ class OneXLEDDeviceHID:
         # 如果禁用，我们已完成（亮度命令已处理）
         if not enabled:
             _global_prev_mode = mode  # Update mode tracking
+            _global_prev_color = None  # Reset color tracking
+            _global_prev_brightness = None  # Force brightness resend on next enable
             return self._flush_queue()
 
         # Check if we need to send color/mode command
@@ -476,6 +478,14 @@ class OneXLEDDeviceHID:
         # 将颜色/模式命令加入队列
         logger.debug(f"[COLOR] Sending color/mode command for mode={mode}")
         self._queue_command(cmd)
+        
+        # WORKAROUND: Hardware bug - first color command after disable is often ignored
+        # Send the command twice to ensure it's applied (HHD has same issue)
+        # 硬件bug的变通方案 - 禁用后的第一个颜色命令经常被忽略
+        # 发送两次命令以确保应用（HHD也有同样的问题）
+        if _global_prev_mode == RGBMode.Disabled:
+            logger.debug(f"[WORKAROUND] Sending color command twice after disabled->enabled transition")
+            self._queue_command(cmd)
         
         # Update global state tracking (like HHD does at line 222-224)
         # 更新全局状态跟踪（模仿HHD在222-224行的做法）
