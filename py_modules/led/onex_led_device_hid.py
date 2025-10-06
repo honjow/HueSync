@@ -480,12 +480,15 @@ class OneXLEDDeviceHID:
         self._queue_command(cmd)
         
         # WORKAROUND: Hardware bug - first color command after disable is often ignored
-        # Send the command twice to ensure it's applied (HHD has same issue)
+        # Must flush first command, wait for hardware to stabilize, then send second command
         # 硬件bug的变通方案 - 禁用后的第一个颜色命令经常被忽略
-        # 发送两次命令以确保应用（HHD也有同样的问题）
+        # 必须先flush第一个命令，等待硬件稳定，然后再发送第二个命令
         if _global_prev_mode == RGBMode.Disabled:
-            logger.debug(f"[WORKAROUND] Sending color command twice after disabled->enabled transition")
-            self._queue_command(cmd)
+            import time
+            logger.debug(f"[WORKAROUND] Flushing first command, waiting 100ms, then sending again")
+            self._flush_queue()  # Flush first command (brightness + color)
+            time.sleep(0.1)  # Wait 100ms for hardware to stabilize
+            self._queue_command(cmd)  # Queue second command
         
         # Update global state tracking (like HHD does at line 222-224)
         # 更新全局状态跟踪（模仿HHD在222-224行的做法）
