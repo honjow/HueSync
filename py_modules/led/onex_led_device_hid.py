@@ -8,6 +8,21 @@ import lib_hid as hid
 from config import logger
 from utils import Color, RGBMode
 
+# Global flag to track if full initialization has been done
+# This matches HHD's behavior (hid_v1.py line 103)
+# 全局标志跟踪是否已完成完整初始化
+# 这匹配HHD的行为（hid_v1.py第103行）
+_init_done = False
+
+# Global RGB state tracking (persistent across device instances)
+# This matches HHD's behavior where state persists in the long-running process
+# 全局RGB状态跟踪（跨设备实例持久化）
+# 这匹配HHD的行为，状态在长时间运行的进程中持久化
+_global_prev_enabled = None
+_global_prev_brightness = None
+_global_prev_mode = None
+_global_prev_color = None  # Track color changes in Solid mode
+
 """
 convert from https://github.com/Valkirie/HandheldCompanion/blob/main/HandheldCompanion/Devices/OneXPlayer/OneXPlayerOneXFly.cs 
 """
@@ -55,6 +70,12 @@ class OneXLEDDeviceHID:
         # 设备状态跟踪
         self._initialized = False
         self._protocol = Protocol.UNKNOWN
+        
+        # RGB state tracking (to detect when LED needs re-enabling)
+        # RGB状态跟踪（用于检测LED是否需要重新启用）
+        self._prev_enabled = None  # Track if LEDs were previously enabled
+        self._prev_brightness = None  # Track previous brightness
+        self._prev_mode = None  # Track previous mode to detect changes
 
     def is_ready(self) -> bool:
         if self.hid_device:
@@ -113,6 +134,16 @@ class OneXLEDDeviceHID:
         Send initialization commands to device.
         向设备发送初始化命令。
         
+        IMPORTANT: Matches HHD's behavior (hid_v1.py lines 131-142):
+        - Full INITIALIZE only sent once globally (first device)
+        - Subsequent devices only send gen_intercept(False)
+        - This prevents LED flashing and state reset
+        
+        重要：匹配HHD的行为（hid_v1.py 131-142行）：
+        - 完整初始化只全局发送一次（首个设备）
+        - 后续设备只发送gen_intercept(False)
+        - 这可以防止LED闪烁和状态重置
+        
         V1 protocol (X1 Mini) requires button mapping and intercept setup.
         V2 protocol (XFly) typically doesn't need initialization.
         
@@ -123,11 +154,21 @@ class OneXLEDDeviceHID:
             return
         
         if self._protocol == Protocol.X1_MINI:
-            from .hhd.oxp_hid_v1 import INITIALIZE
+            global _init_done
+            from .hhd.oxp_hid_v1 import INITIALIZE, gen_intercept
             
-            logger.info("Initializing X1 Mini device (HID v1)...")
-            for cmd in INITIALIZE:
-                self._queue_command(cmd)
+            if not _init_done:
+                # First time ever: send full initialization
+                # 首次：发送完整初始化
+                logger.info("First-time initialization of X1 Mini device (full INITIALIZE)")
+                for cmd in INITIALIZE:
+                    self._queue_command(cmd)
+                _init_done = True
+            else:
+                # Already initialized before: only send intercept
+                # 已经初始化过：只发送intercept
+                logger.info("X1 Mini device re-connection (gen_intercept only)")
+                self._queue_command(gen_intercept(False))
             
             # Flush initialization commands immediately
             # 立即发送初始化命令
@@ -170,11 +211,11 @@ class OneXLEDDeviceHID:
             cmd = self._cmd_queue.popleft()
             try:
                 cmd_hex = "".join([f"{x:02X}" for x in cmd])
-                logger.debug(f"OXP HID write: {cmd_hex}")
+                logger.info(f"[WRITE] OXP HID write ({len(cmd)} bytes): {cmd_hex}")
                 self.hid_device.write(cmd)
                 self._next_send = time.perf_counter() + self._write_delay
             except Exception as e:
-                logger.error(f"Failed to write command: {e}", exc_info=True)
+                logger.error(f"[WRITE] Failed to write command: {e}", exc_info=True)
                 return False
         
         return True
@@ -277,14 +318,23 @@ class OneXLEDDeviceHID:
         self,
         main_color: Color,
         mode: RGBMode,
+        brightness: int = 100,
     ) -> bool:
         """
         Set LED color and mode with improved protocol handling.
         使用改进的协议处理设置LED颜色和模式。
         
+        IMPORTANT: This method now sends brightness/enable command first
+        to ensure LEDs are enabled before setting colors. This fixes the
+        issue where HueSync can't control LEDs after HHD disables them.
+        
+        重要：此方法现在会先发送亮度/启用命令，确保LED被启用后再设置颜色。
+        这修复了HHD禁用LED后HueSync无法控制的问题。
+        
         Args:
             main_color: RGB color values
             mode: RGB mode (Disabled, Solid, Rainbow, or OXP presets)
+            brightness: Brightness level (0-100)
             
         Returns:
             bool: True if successful
@@ -293,18 +343,90 @@ class OneXLEDDeviceHID:
             return False
 
         if self._protocol == Protocol.X1_MINI:
-            from .hhd.oxp_hid_v1 import gen_rgb_mode, gen_rgb_solid
+            from .hhd.oxp_hid_v1 import gen_brightness, gen_rgb_mode, gen_rgb_solid
         else:
-            from .hhd.oxp_hid_v2 import gen_rgb_mode, gen_rgb_solid
+            from .hhd.oxp_hid_v2 import gen_brightness, gen_rgb_mode, gen_rgb_solid
+
+        # Determine if LEDs should be enabled
+        # 确定LED是否应该启用
+        enabled = mode != RGBMode.Disabled
+        
+        # Convert brightness to level
+        # 转换亮度到等级
+        brightness_val = round(brightness / 20)
+        brightness_level = "high"
+        if brightness_val <= 1:
+            brightness_level = "low"
+        elif brightness_val <= 3:
+            brightness_level = "medium"
+        
+        # Use global state tracking (persistent across device instances)
+        # This is CRITICAL - HHD's state persists because it's a long-running process
+        # 使用全局状态跟踪（跨设备实例持久化）
+        # 这是关键 - HHD的状态持久化因为它是长时间运行的进程
+        global _global_prev_enabled, _global_prev_brightness, _global_prev_mode, _global_prev_color
+        
+        # Initialize global state on first call
+        # CRITICAL: Don't initialize to current value! That would prevent detection of state change.
+        # Instead, we rely on the fact that None != any value will trigger the brightness command.
+        # 首次调用时初始化全局状态
+        # 关键：不要初始化为当前值！那会阻止检测状态改变。
+        # 相反，我们依赖 None != 任何值 会触发brightness命令的事实。
+        if _global_prev_enabled is None:
+            logger.info(f"[INIT] First call detected, prev_enabled is None, will trigger brightness command")
+        if _global_prev_brightness is None:
+            logger.info(f"[INIT] First call detected, prev_brightness is None")
+        if _global_prev_mode is None:
+            logger.info(f"[INIT] First call detected, prev_mode is None")
+        
+        logger.info(f"[STATE] Current: enabled={enabled}, brightness={brightness_level}, mode={mode}")
+        logger.info(f"[STATE] Global Previous: enabled={_global_prev_enabled}, brightness={_global_prev_brightness}, mode={_global_prev_mode}")
+        
+        # CRITICAL: Send brightness/enable command when state changes OR first time
+        # This matches HHD's behavior exactly (line 209-215 in hid_v1.py)
+        # 关键：在状态改变或首次调用时发送亮度/启用命令
+        # 这完全匹配HHD的行为（hid_v1.py的209-215行）
+        if (_global_prev_enabled != enabled or 
+            _global_prev_brightness != brightness_level):
+            
+            if self._protocol == Protocol.X1_MINI:
+                # V1: gen_brightness(side, enabled, brightness_level)
+                brightness_cmd = gen_brightness(0, enabled, brightness_level)
+            else:
+                # V2: gen_brightness(enabled, brightness_level)
+                brightness_cmd = gen_brightness(enabled, brightness_level)
+            
+            logger.info(f"[BRIGHTNESS] Sending: enabled={enabled}, brightness={brightness_level} (was: enabled={_global_prev_enabled}, brightness={_global_prev_brightness})")
+            self._queue_command(brightness_cmd)
+            _global_prev_enabled = enabled
+            _global_prev_brightness = brightness_level
+
+        # If disabling, we're done (brightness command already handles it)
+        # 如果禁用，我们已完成（亮度命令已处理）
+        if not enabled:
+            _global_prev_mode = mode  # Update mode tracking
+            return self._flush_queue()
+
+        # Check if we need to send color/mode command
+        # For Solid mode: send if mode OR color changed
+        # For preset modes: send if mode changed
+        # This matches HHD's behavior (line 217 in hid_v1.py checks `stick != self.prev_stick`)
+        # 检查是否需要发送颜色/模式命令
+        # 对于Solid模式：如果mode或颜色改变则发送
+        # 对于预设模式：如果mode改变则发送
+        # 这匹配HHD的行为（hid_v1.py第217行检查`stick != self.prev_stick`）
+        current_color = (main_color.R, main_color.G, main_color.B) if mode == RGBMode.Solid else None
+        
+        if mode == _global_prev_mode and current_color == _global_prev_color:
+            # Neither mode nor color changed
+            # mode和颜色都未改变
+            logger.info(f"[SKIP] Mode and color unchanged: {mode}")
+            return self._flush_queue()
 
         # Map RGBMode to hardware command
         # 将RGBMode映射到硬件命令
-        if mode == RGBMode.Disabled:
-            cmd: bytes = gen_rgb_solid(0, 0, 0)
-        elif mode == RGBMode.Solid:
+        if mode == RGBMode.Solid:
             cmd: bytes = gen_rgb_solid(main_color.R, main_color.G, main_color.B)
-        elif mode == RGBMode.Rainbow:
-            cmd: bytes = gen_rgb_mode("neon")
         # OXP Preset modes
         # OXP预设模式
         elif mode == RGBMode.OXP_MONSTER_WOKE:
@@ -332,7 +454,18 @@ class OneXLEDDeviceHID:
         if self.hid_device is None:
             return False
         
-        # Use command queue for reliable delivery
-        # 使用命令队列确保可靠传输
+        # Queue the color/mode command
+        # 将颜色/模式命令加入队列
+        logger.info(f"[COLOR] Sending color/mode command for mode={mode}")
         self._queue_command(cmd)
+        
+        # Update global state tracking (like HHD does at line 222-224)
+        # 更新全局状态跟踪（模仿HHD在222-224行的做法）
+        _global_prev_mode = mode
+        _global_prev_color = current_color
+        _global_prev_brightness = brightness_level
+        _global_prev_enabled = enabled
+        
+        # Flush all commands with proper delays
+        # 按适当延迟发送所有命令
         return self._flush_queue()

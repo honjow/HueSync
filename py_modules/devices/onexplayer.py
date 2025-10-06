@@ -41,6 +41,10 @@ class OneXLEDDevice(BaseLEDDevice):
             )
         else:
             logger.warning(f"Unknown OneXPlayer model: {PRODUCT_NAME}")
+        
+        # Cache HID device instance to avoid re-initialization
+        # 缓存HID设备实例以避免重复初始化
+        self._hid_device_cache = None
 
     @property
     def hardware_supported_modes(self) -> list[RGBMode]:
@@ -89,12 +93,12 @@ class OneXLEDDevice(BaseLEDDevice):
         
         # Rainbow mode supports speed control
         # Rainbow模式支持速度控制
-        capabilities[RGBMode.Rainbow] = RGBModeCapabilities(
-            mode=RGBMode.Rainbow,
-            color=False,
-            color2=False,
-            speed=True,
-        )
+        # capabilities[RGBMode.Rainbow] = RGBModeCapabilities(
+        #     mode=RGBMode.Rainbow,
+        #     color=False,
+        #     color2=False,
+        #     speed=True,
+        # )
         
         # Battery mode supports brightness control
         # 电池模式支持亮度控制
@@ -176,13 +180,28 @@ class OneXLEDDevice(BaseLEDDevice):
         Set RGB color via HID protocol with retry logic.
         通过HID协议设置RGB颜色，带重试逻辑。
         
+        IMPORTANT: Uses cached device instance to avoid re-initialization.
+        This prevents LED flashing and maintains state across calls.
+        
+        重要：使用缓存的设备实例以避免重复初始化。
+        这可以防止LED闪烁并在调用之间保持状态。
+        
         Args:
             color: RGB color
             mode: RGB mode (defaults to Solid if None)
         """
         if mode is None:
             mode = RGBMode.Solid
-            
+        
+        # Try to use cached device first
+        # 首先尝试使用缓存的设备
+        if self._hid_device_cache and self._hid_device_cache.is_ready():
+            logger.info(f"set_onex_color_hid: using cached device, color={color}, mode={mode.value}")
+            self._hid_device_cache.set_led_color_new(color, mode, brightness=100)
+            return
+        
+        # If no cache or device not ready, create/recreate device
+        # 如果没有缓存或设备未就绪，创建/重建设备
         max_retries = 3
         retry_delay = 1  # seconds
         for retry in range(max_retries + 1):
@@ -198,8 +217,13 @@ class OneXLEDDevice(BaseLEDDevice):
                 [XFLY_USAGE, X1_MINI_USAGE],
             )
             if ledDevice.is_ready():
-                logger.info(f"set_onex_color_hid: color={color}, mode={mode.value}")
-                ledDevice.set_led_color_new(color, mode)
+                logger.info(f"set_onex_color_hid: created new device, color={color}, mode={mode.value}")
+                # Cache the device instance for future calls
+                # 缓存设备实例供未来调用使用
+                self._hid_device_cache = ledDevice
+                # Pass brightness=100 (high) to enable LEDs properly
+                # 传递brightness=100（高亮度）以正确启用LED
+                ledDevice.set_led_color_new(color, mode, brightness=100)
                 return
             logger.info("set_onex_color_hid: device not ready")
 
