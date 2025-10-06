@@ -100,22 +100,22 @@ class OneXLEDDevice(BaseLEDDevice):
         #     speed=True,
         # )
 
-        capabilities[RGBMode.Pulse] = RGBModeCapabilities(
-            mode=RGBMode.Pulse,
-            color=True,
-            color2=False,
-            speed=True,
-        )
+        # capabilities[RGBMode.Pulse] = RGBModeCapabilities(
+        #     mode=RGBMode.Pulse,
+        #     color=True,
+        #     color2=False,
+        #     speed=True,
+        # )
         
         # Battery mode supports brightness control
         # 电池模式支持亮度控制
-        capabilities[RGBMode.Battery] = RGBModeCapabilities(
-            mode=RGBMode.Battery,
-            color=False,
-            color2=False,
-            speed=False,
-            brightness=True,
-        )
+        # capabilities[RGBMode.Battery] = RGBModeCapabilities(
+        #     mode=RGBMode.Battery,
+        #     color=False,
+        #     color2=False,
+        #     speed=False,
+        #     brightness=True,
+        # )
         
         # OXP preset modes: hardware animations with hardware brightness level control
         # Note: brightness_level (not HSV brightness) will be controlled separately
