@@ -215,10 +215,28 @@ class OneXLEDDeviceHID:
                 self.hid_device.write(cmd)
                 self._next_send = time.perf_counter() + self._write_delay
             except Exception as e:
-                logger.error(f"[WRITE] Failed to write command: {e}", exc_info=True)
+                logger.error(f"[WRITE] Failed to write command: {e}, closing device for reconnection", exc_info=True)
+                # Close the device so it can be reopened on next call
+                # 关闭设备以便下次调用时重新打开
+                self._close_device()
                 return False
         
         return True
+    
+    def _close_device(self):
+        """
+        Close the HID device and reset state.
+        关闭HID设备并重置状态。
+        """
+        if self.hid_device:
+            try:
+                self.hid_device.close()
+            except Exception as e:
+                logger.warning(f"Error closing HID device: {e}")
+            self.hid_device = None
+        self._initialized = False
+        # Clear command queue
+        self._cmd_queue.clear()
 
     def set_led_brightness(self, brightness: int) -> bool:
         # OneXFly brightness range is: 0 - 4 range, 0 is off, convert from 0 - 100 % range

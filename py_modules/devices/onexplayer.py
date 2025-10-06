@@ -220,8 +220,14 @@ class OneXLEDDevice(BaseLEDDevice):
         # 首先尝试使用缓存的设备
         if self._hid_device_cache and self._hid_device_cache.is_ready():
             logger.debug(f"set_onex_color_hid: using cached device, color={color}, mode={mode.value}, brightness_level={brightness_level}")
-            self._hid_device_cache.set_led_color_new(color, mode, brightness=brightness)
-            return
+            success = self._hid_device_cache.set_led_color_new(color, mode, brightness=brightness)
+            if success:
+                return
+            else:
+                # Device write failed (possibly disconnected), clear cache and recreate
+                # 设备写入失败（可能断开连接），清除缓存并重新创建
+                logger.warning("Cached device write failed, clearing cache and recreating device")
+                self._hid_device_cache = None
         
         # If no cache or device not ready, create/recreate device
         # 如果没有缓存或设备未就绪，创建/重建设备
