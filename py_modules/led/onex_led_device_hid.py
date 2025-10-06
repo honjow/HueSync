@@ -18,7 +18,11 @@ _init_done = False
 # This matches HHD's behavior where state persists in the long-running process
 # 全局RGB状态跟踪（跨设备实例持久化）
 # 这匹配HHD的行为，状态在长时间运行的进程中持久化
-_global_prev_enabled = None
+# IMPORTANT: Initialize enabled to False to handle case where HHD disabled LEDs
+# This ensures we always send enable=True command on first run
+# 重要：初始化enabled为False以处理HHD禁用LED的情况
+# 这确保第一次运行时总是发送enable=True命令
+_global_prev_enabled = False
 _global_prev_brightness = None
 _global_prev_mode = None
 _global_prev_color = None  # Track color changes in Solid mode
@@ -365,9 +369,21 @@ class OneXLEDDeviceHID:
         else:
             from .hhd.oxp_hid_v2 import gen_brightness, gen_rgb_mode, gen_rgb_solid
 
-        # Determine if LEDs should be enabled
-        # 确定LED是否应该启用
-        enabled = mode != RGBMode.Disabled
+        # WORKAROUND: Use solid black instead of true disabled mode
+        # This avoids hardware state transition issues when re-enabling
+        # 变通方案：使用纯黑solid模式代替真正的禁用模式
+        # 这避免了重新启用时的硬件状态转换问题
+        original_mode = mode  # Save original mode for tracking
+        is_disabled_mode = mode == RGBMode.Disabled
+        if is_disabled_mode:
+            # Keep LEDs enabled, but set to black
+            # 保持LED启用，但设置为黑色
+            logger.debug(f"[WORKAROUND] Converting Disabled mode to Solid Black")
+            enabled = True
+            mode = RGBMode.Solid
+            main_color = Color(0, 0, 0)
+        else:
+            enabled = True
         
         # Convert brightness to level
         # 转换亮度到等级
@@ -401,11 +417,13 @@ class OneXLEDDeviceHID:
         logger.debug(f"[STATE] Global Previous: enabled={_global_prev_enabled}, brightness={_global_prev_brightness}, mode={_global_prev_mode}")
         
         # CRITICAL: Send brightness/enable command when state changes OR first time
-        # This matches HHD's behavior exactly (line 209-215 in hid_v1.py)
-        # 关键：在状态改变或首次调用时发送亮度/启用命令
-        # 这完全匹配HHD的行为（hid_v1.py的209-215行）
+        # ALSO send when mode changes - HHD might have changed hardware state behind our back
+        # 关键：在状态改变、首次调用、或模式改变时发送亮度/启用命令
+        # 模式改变时也要发送 - HHD可能在我们不知道的情况下改变了硬件状态
+        mode_changed = _global_prev_mode != original_mode
         if (_global_prev_enabled != enabled or 
-            _global_prev_brightness != brightness_level):
+            _global_prev_brightness != brightness_level or
+            mode_changed):
             
             if self._protocol == Protocol.X1_MINI:
                 # V1: gen_brightness(side, enabled, brightness_level)
@@ -414,18 +432,22 @@ class OneXLEDDeviceHID:
                 # V2: gen_brightness(enabled, brightness_level)
                 brightness_cmd = gen_brightness(enabled, brightness_level)
             
-            logger.debug(f"[BRIGHTNESS] Sending: enabled={enabled}, brightness={brightness_level} (was: enabled={_global_prev_enabled}, brightness={_global_prev_brightness})")
+            reason = []
+            if _global_prev_enabled != enabled:
+                reason.append(f"enabled changed from {_global_prev_enabled} to {enabled}")
+            if _global_prev_brightness != brightness_level:
+                reason.append(f"brightness changed from {_global_prev_brightness} to {brightness_level}")
+            if mode_changed:
+                reason.append(f"mode changed from {_global_prev_mode} to {original_mode}")
+            logger.debug(f"[BRIGHTNESS] Sending: enabled={enabled}, brightness={brightness_level} (reason: {', '.join(reason)})")
             self._queue_command(brightness_cmd)
             _global_prev_enabled = enabled
             _global_prev_brightness = brightness_level
 
-        # If disabling, we're done (brightness command already handles it)
-        # 如果禁用，我们已完成（亮度命令已处理）
-        if not enabled:
-            _global_prev_mode = mode  # Update mode tracking
-            _global_prev_color = None  # Reset color tracking
-            _global_prev_brightness = None  # Force brightness resend on next enable
-            return self._flush_queue()
+        # Note: We no longer have true disabled mode (using black solid instead)
+        # So enabled is always True at this point
+        # 注意：我们不再有真正的禁用模式（使用黑色solid代替）
+        # 所以此时enabled总是True
 
         # Check if we need to send color/mode command
         # For Solid mode: send if mode OR color changed
@@ -479,20 +501,22 @@ class OneXLEDDeviceHID:
         logger.debug(f"[COLOR] Sending color/mode command for mode={mode}")
         self._queue_command(cmd)
         
-        # WORKAROUND: Hardware bug - first color command after disable is often ignored
-        # Must flush first command, wait for hardware to stabilize, then send second command
-        # 硬件bug的变通方案 - 禁用后的第一个颜色命令经常被忽略
-        # 必须先flush第一个命令，等待硬件稳定，然后再发送第二个命令
-        if _global_prev_mode == RGBMode.Disabled:
+        # WORKAROUND: If mode changed, HHD might have disabled hardware behind our back
+        # Hardware needs time + duplicate command to reliably recover
+        # 变通方案：如果模式改变，HHD可能在后台禁用了硬件
+        # 硬件需要时间 + 重复命令才能可靠恢复
+        if mode_changed:
             import time
-            logger.debug(f"[WORKAROUND] Flushing first command, waiting 100ms, then sending again")
-            self._flush_queue()  # Flush first command (brightness + color)
-            time.sleep(0.1)  # Wait 100ms for hardware to stabilize
-            self._queue_command(cmd)  # Queue second command
+            logger.debug(f"[WORKAROUND] Mode changed, flushing + waiting + resending to ensure hardware responds")
+            self._flush_queue()  # Send brightness + first color command
+            time.sleep(0.1)  # Wait for hardware stabilization
+            self._queue_command(cmd)  # Send color command again
         
         # Update global state tracking (like HHD does at line 222-224)
+        # IMPORTANT: Save original mode (before Disabled->Solid conversion) for proper state tracking
         # 更新全局状态跟踪（模仿HHD在222-224行的做法）
-        _global_prev_mode = mode
+        # 重要：保存原始mode（Disabled->Solid转换之前的）以正确跟踪状态
+        _global_prev_mode = original_mode  # Use original mode, not converted
         _global_prev_color = current_color
         _global_prev_brightness = brightness_level
         _global_prev_enabled = enabled
