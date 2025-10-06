@@ -43,6 +43,7 @@ class Plugin:
         init: bool = False,
         brightness: int | None = None,
         speed: str | None = None,
+        brightness_level: str | None = None,
     ):
         try:
             from utils import Color, RGBMode
@@ -60,7 +61,7 @@ class Plugin:
                 else None
             )
             self.ledControl.set_color(
-                rgb_mode, color, color2, init=init, brightness=brightness, speed=speed
+                rgb_mode, color, color2, init=init, brightness=brightness, speed=speed, brightness_level=brightness_level
             )
             return True
         except Exception as e:
@@ -164,6 +165,7 @@ class Plugin:
                     "color2": cap.color2,
                     "speed": cap.speed,
                     "brightness": cap.brightness,
+                    "brightness_level": cap.brightness_level,
                 }
                 for mode, cap in capabilities.items()
             }

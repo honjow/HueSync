@@ -110,8 +110,10 @@ class OneXLEDDevice(BaseLEDDevice):
             brightness=True,
         )
         
-        # All OXP preset modes support brightness control
-        # 所有OXP预设模式都支持亮度控制
+        # OXP preset modes: hardware animations with hardware brightness level control
+        # Note: brightness_level (not HSV brightness) will be controlled separately
+        # OXP预设模式：硬件动画效果，支持硬件亮度级别控制
+        # 注意：brightness_level（不是HSV亮度）将单独控制
         oxp_modes = [
             RGBMode.OXP_MONSTER_WOKE,
             RGBMode.OXP_FLOWING,
@@ -130,7 +132,8 @@ class OneXLEDDevice(BaseLEDDevice):
                 color=False,
                 color2=False,
                 speed=False,
-                brightness=True,
+                brightness=False,  # HSV brightness not applicable for hardware presets
+                brightness_level=True,  # Hardware brightness level control
             )
         
         return capabilities
@@ -142,6 +145,7 @@ class OneXLEDDevice(BaseLEDDevice):
         color2: Color | None = None,
         init: bool = False,
         speed: str | None = None,
+        brightness_level: str | None = None,
     ) -> None:
         """
         Set hardware RGB color with protocol-aware routing.
@@ -157,25 +161,25 @@ class OneXLEDDevice(BaseLEDDevice):
         # 如果配置可用则使用配置，否则回退到传统检测
         if self._config:
             if self._config.protocol == OXPProtocol.SERIAL:
-                self.set_onex_color_serial(color, mode)
+                self.set_onex_color_serial(color, mode, brightness_level)
             elif self._config.protocol == OXPProtocol.MIXED:
                 # F1 series: HID for sticks, Serial for secondary zone
                 # F1系列：HID控制摇杆，串口控制副区域
-                self.set_onex_color_hid(color, mode)
+                self.set_onex_color_hid(color, mode, brightness_level)
                 if self._config.rgb_secondary and color2:
-                    self.set_onex_color_serial(color2, mode)
+                    self.set_onex_color_serial(color2, mode, brightness_level)
             else:
                 # HID_V1, HID_V2, HID_V1_G1
-                self.set_onex_color_hid(color, mode)
+                self.set_onex_color_hid(color, mode, brightness_level)
         else:
             # Legacy fallback
             # 传统回退
             if "ONEXPLAYER X1" in PRODUCT_NAME:
-                self.set_onex_color_serial(color, mode)
+                self.set_onex_color_serial(color, mode, brightness_level)
             else:
-                self.set_onex_color_hid(color, mode)
+                self.set_onex_color_hid(color, mode, brightness_level)
 
-    def set_onex_color_hid(self, color: Color, mode: RGBMode | None = None) -> None:
+    def set_onex_color_hid(self, color: Color, mode: RGBMode | None = None, brightness_level: str | None = None) -> None:
         """
         Set RGB color via HID protocol with retry logic.
         通过HID协议设置RGB颜色，带重试逻辑。
@@ -193,11 +197,23 @@ class OneXLEDDevice(BaseLEDDevice):
         if mode is None:
             mode = RGBMode.Solid
         
+        # Convert brightness_level to brightness value (0-100)
+        # Default to "high" (100) if not specified
+        # 将brightness_level转换为亮度值（0-100）
+        # 如果未指定则默认为"high"（100）
+        brightness = 100  # Default to high
+        if brightness_level == "low":
+            brightness = 33
+        elif brightness_level == "medium":
+            brightness = 66
+        elif brightness_level == "high":
+            brightness = 100
+        
         # Try to use cached device first
         # 首先尝试使用缓存的设备
         if self._hid_device_cache and self._hid_device_cache.is_ready():
-            logger.info(f"set_onex_color_hid: using cached device, color={color}, mode={mode.value}")
-            self._hid_device_cache.set_led_color_new(color, mode, brightness=100)
+            logger.info(f"set_onex_color_hid: using cached device, color={color}, mode={mode.value}, brightness_level={brightness_level}")
+            self._hid_device_cache.set_led_color_new(color, mode, brightness=brightness)
             return
         
         # If no cache or device not ready, create/recreate device
@@ -217,19 +233,17 @@ class OneXLEDDevice(BaseLEDDevice):
                 [XFLY_USAGE, X1_MINI_USAGE],
             )
             if ledDevice.is_ready():
-                logger.info(f"set_onex_color_hid: created new device, color={color}, mode={mode.value}")
+                logger.info(f"set_onex_color_hid: created new device, color={color}, mode={mode.value}, brightness_level={brightness_level}")
                 # Cache the device instance for future calls
                 # 缓存设备实例供未来调用使用
                 self._hid_device_cache = ledDevice
-                # Pass brightness=100 (high) to enable LEDs properly
-                # 传递brightness=100（高亮度）以正确启用LED
-                ledDevice.set_led_color_new(color, mode, brightness=100)
+                ledDevice.set_led_color_new(color, mode, brightness=brightness)
                 return
             logger.info("set_onex_color_hid: device not ready")
 
         logger.warning("Failed to set color after all retries")
 
-    def set_onex_color_serial(self, color: Color, mode: RGBMode | None = None) -> None:
+    def set_onex_color_serial(self, color: Color, mode: RGBMode | None = None, brightness_level: str | None = None) -> None:
         """
         Set RGB color via Serial protocol.
         通过串口协议设置RGB颜色。

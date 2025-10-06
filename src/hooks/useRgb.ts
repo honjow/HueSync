@@ -15,6 +15,7 @@ export const useRgb = () => {
   );
 
   const [speed, setSpeed] = useState<string>(Setting.speed);
+  const [brightnessLevel, setBrightnessLevel] = useState<string>(Setting.brightnessLevel);
 
   useEffect(() => {
     const getData = async () => {
@@ -80,6 +81,12 @@ export const useRgb = () => {
     await Backend.applySettings();
   };
 
+  const updateBrightnessLevel = async (newBrightnessLevel: string) => {
+    setBrightnessLevel(newBrightnessLevel);
+    Setting.brightnessLevel = newBrightnessLevel;
+    await Backend.applySettings();
+  };
+
   return {
     hue,
     hue2,
@@ -93,5 +100,7 @@ export const useRgb = () => {
     updateEnableControl,
     speed,
     updateSpeed,
+    brightnessLevel,
+    updateBrightnessLevel,
   };
 };

@@ -3,3 +3,4 @@ export * from './SlowSliderField';
 export * from './suspendMode';
 export * from './actionButtonItem';
 export * from './SpeedControl';
+export * from './BrightnessLevelControl';

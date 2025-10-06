@@ -18,6 +18,7 @@ class LEDDevice(ABC):
         init: bool = False,
         brightness: int | None = None,
         speed: str | None = None,
+        brightness_level: str | None = None,
     ):
         pass
 
@@ -101,6 +102,7 @@ class BaseLEDDevice(LEDDevice):
         color2: Color | None = None,
         init: bool = False,
         speed: str | None = None,
+        brightness_level: str | None = None,
     ) -> None:
         """
         Subclasses should override this method to implement hardware lighting control
@@ -116,6 +118,7 @@ class BaseLEDDevice(LEDDevice):
         init: bool = False,
         brightness: int | None = None,
         speed: str | None = None,
+        brightness_level: str | None = None,
     ):
         """
         Default implementation for setting color.
@@ -132,7 +135,7 @@ class BaseLEDDevice(LEDDevice):
             try:
                 logger.info(f"use hardware control: mode={mode}")
                 self.stop_effects()
-                self._set_hardware_color(mode, color, color2, init, speed)
+                self._set_hardware_color(mode, color, color2, init, speed, brightness_level)
                 return
             except Exception as e:
                 logger.error(e, exc_info=True)

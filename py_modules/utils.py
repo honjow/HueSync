@@ -55,10 +55,11 @@ class RGBModeCapabilities:
     """
 
     mode: RGBMode
-    color: bool = False  # Whether the mode supports setting a primary color
-    color2: bool = False  # Whether the mode supports setting a secondary color
+    color: bool = False  # Whether the mode supports setting a primary color (HSV color)
+    color2: bool = False  # Whether the mode supports setting a secondary color (HSV color)
     speed: bool = False  # Whether the mode supports adjusting animation speed
-    brightness: bool = False  # Whether the mode supports adjusting brightness
+    brightness: bool = False  # Whether the mode supports adjusting HSV brightness (V value)
+    brightness_level: bool = False  # Whether the mode supports hardware brightness level (low/medium/high)
 
 
 class Color:

@@ -7,7 +7,7 @@ import {
 import { FC, useMemo } from "react";
 import { localizationManager, localizeStrEnum } from "../i18n";
 import { useRgb } from "../hooks";
-import { SlowSliderField, SpeedControl } from ".";
+import { SlowSliderField, SpeedControl, BrightnessLevelControl } from ".";
 import { Setting } from "../hooks/settings";
 
 interface ColorControlsProps {
@@ -179,6 +179,8 @@ export const RGBComponent: FC = () => {
     updateEnableControl,
     speed,
     updateSpeed,
+    brightnessLevel,
+    updateBrightnessLevel,
   } = useRgb();
 
   const modes = useMemo(() => {
@@ -201,6 +203,7 @@ export const RGBComponent: FC = () => {
         color2: false,
         speed: false,
         brightness: false,
+        brightness_level: false,
       }
     );
   }, [rgbMode]);
@@ -251,7 +254,14 @@ export const RGBComponent: FC = () => {
             />
           )}
           {currentModeCapabilities.speed && (
-            <SpeedControl speed={speed} onChange={updateSpeed} />
+            <PanelSectionRow>
+              <SpeedControl speed={speed} onChange={updateSpeed} />
+            </PanelSectionRow>
+          )}
+          {currentModeCapabilities.brightness_level && (
+            <PanelSectionRow>
+              <BrightnessLevelControl brightnessLevel={brightnessLevel} onChange={updateBrightnessLevel} />
+            </PanelSectionRow>
           )}
         </>
       )}
