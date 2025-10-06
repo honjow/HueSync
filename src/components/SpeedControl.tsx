@@ -1,5 +1,5 @@
 import { FC } from "react";
-import { SingleDropdownOption, DropdownItem, PanelSectionRow } from "@decky/ui";
+import { SingleDropdownOption, DropdownItem } from "@decky/ui";
 import { localizationManager, localizeStrEnum } from "../i18n";
 
 interface SpeedControlProps {
@@ -24,17 +24,15 @@ export const SpeedControl: FC<SpeedControlProps> = ({ speed, onChange }) => {
   ];
 
   return (
-    <PanelSectionRow>
-      <DropdownItem
-        label={localizationManager.getString(localizeStrEnum.SPEED) || "Speed"}
-        strDefaultLabel={localizationManager.getString(localizeStrEnum.SPEED_DESC) || "Animation Speed"}
-        selectedOption={speedOptions.find((opt) => opt.data === speed)?.data}
-        rgOptions={speedOptions}
-        onChange={(option) => {
-          onChange(option.data as string);
-        }}
-      />
-    </PanelSectionRow>
+    <DropdownItem
+      label={localizationManager.getString(localizeStrEnum.SPEED) || "Speed"}
+      strDefaultLabel={localizationManager.getString(localizeStrEnum.SPEED_DESC) || "Animation Speed"}
+      selectedOption={speedOptions.find((opt) => opt.data === speed)?.data}
+      rgOptions={speedOptions}
+      onChange={(option) => {
+        onChange(option.data as string);
+      }}
+    />
   );
 };
 
