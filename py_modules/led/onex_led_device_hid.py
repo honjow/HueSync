@@ -1,3 +1,5 @@
+import time
+from collections import deque
 from enum import Enum
 from itertools import chain, repeat
 from typing import Sequence
@@ -42,6 +44,17 @@ class OneXLEDDeviceHID:
         self._usage = usage
         self.interface = interface
         self.hid_device = None
+        
+        # Command queue system for reliable command delivery
+        # 命令队列系统，确保可靠的命令传输
+        self._cmd_queue = deque(maxlen=10)
+        self._next_send = 0
+        self._write_delay = 0.05  # 50ms delay between commands
+        
+        # Device state tracking
+        # 设备状态跟踪
+        self._initialized = False
+        self._protocol = Protocol.UNKNOWN
 
     def is_ready(self) -> bool:
         if self.hid_device:
@@ -66,18 +79,105 @@ class OneXLEDDeviceHID:
                 and device["usage"] in self._usage
             ):
                 self.hid_device = hid.Device(path=device["path"])
-                logger.debug(
-                    f"Found device: {device}, \npath: {device['path']}, \ninterface: {device['interface_number']}"
+                logger.info(
+                    f"Found OneXPlayer device: VID={device['vendor_id']:#06x}, "
+                    f"PID={device['product_id']:#06x}, path={device['path']}"
                 )
+                
+                # Detect protocol and initialize device
+                # 检测协议并初始化设备
+                self._protocol = self._check_protocol()
+                self._initialize_device()
+                
                 return True
         return False
 
     def _check_protocol(self) -> Protocol:
-        if self._vid == X1_MINI_VID and self._pid == X1_MINI_PID:
+        """
+        Detect HID protocol version based on VID/PID.
+        根据VID/PID检测HID协议版本。
+        
+        Returns:
+            Protocol: Detected protocol (X1_MINI=v1, XFLY=v2, UNKNOWN)
+        """
+        # Check if any VID/PID matches X1 Mini (v1 protocol)
+        if X1_MINI_VID in self._vid and X1_MINI_PID in self._pid:
             return Protocol.X1_MINI
-        if self._vid == XFLY_VID and self._pid == XFLY_PID:
+        # Check if any VID/PID matches XFly (v2 protocol)
+        if XFLY_VID in self._vid and XFLY_PID in self._pid:
             return Protocol.XFLY
         return Protocol.UNKNOWN
+    
+    def _initialize_device(self) -> None:
+        """
+        Send initialization commands to device.
+        向设备发送初始化命令。
+        
+        V1 protocol (X1 Mini) requires button mapping and intercept setup.
+        V2 protocol (XFly) typically doesn't need initialization.
+        
+        V1协议（X1 Mini）需要按键映射和拦截设置。
+        V2协议（XFly）通常不需要初始化。
+        """
+        if self._initialized:
+            return
+        
+        if self._protocol == Protocol.X1_MINI:
+            from .hhd.oxp_hid_v1 import INITIALIZE
+            
+            logger.info("Initializing X1 Mini device (HID v1)...")
+            for cmd in INITIALIZE:
+                self._queue_command(cmd)
+            
+            # Flush initialization commands immediately
+            # 立即发送初始化命令
+            self._flush_queue()
+            logger.info("X1 Mini initialization complete")
+        else:
+            logger.info(f"No initialization needed for protocol: {self._protocol}")
+        
+        self._initialized = True
+    
+    def _queue_command(self, cmd: bytes) -> None:
+        """
+        Add command to queue for sending.
+        将命令添加到发送队列。
+        
+        Args:
+            cmd: Command bytes to send
+        """
+        self._cmd_queue.append(cmd)
+    
+    def _flush_queue(self) -> bool:
+        """
+        Send all queued commands with proper delays.
+        按适当延迟发送所有排队的命令。
+        
+        Returns:
+            bool: True if all commands sent successfully
+        """
+        if not self.hid_device:
+            return False
+        
+        while self._cmd_queue:
+            # Wait for minimum delay between commands
+            # 等待命令之间的最小延迟
+            curr = time.perf_counter()
+            if curr < self._next_send:
+                time.sleep(self._next_send - curr)
+            
+            # Send command
+            cmd = self._cmd_queue.popleft()
+            try:
+                cmd_hex = "".join([f"{x:02X}" for x in cmd])
+                logger.debug(f"OXP HID write: {cmd_hex}")
+                self.hid_device.write(cmd)
+                self._next_send = time.perf_counter() + self._write_delay
+            except Exception as e:
+                logger.error(f"Failed to write command: {e}", exc_info=True)
+                return False
+        
+        return True
 
     def set_led_brightness(self, brightness: int) -> bool:
         # OneXFly brightness range is: 0 - 4 range, 0 is off, convert from 0 - 100 % range
@@ -96,6 +196,16 @@ class OneXLEDDeviceHID:
         return True
 
     def set_led_brightness_new(self, brightness: int) -> bool:
+        """
+        Set LED brightness with protocol-aware command generation.
+        使用协议感知的命令生成设置LED亮度。
+        
+        Args:
+            brightness: Brightness level (0-100)
+            
+        Returns:
+            bool: True if successful
+        """
         brightness = round(brightness / 20)
         enabled = True
         brightness_level = "high"
@@ -109,7 +219,7 @@ class OneXLEDDeviceHID:
             case _:
                 brightness_level = "high"
 
-        if self._check_protocol() == Protocol.X1_MINI:
+        if self._protocol == Protocol.X1_MINI:
             from .hhd.oxp_hid_v1 import gen_brightness
 
             cmd: bytes = gen_brightness(0, enabled, brightness_level)
@@ -120,10 +230,11 @@ class OneXLEDDeviceHID:
 
         if self.hid_device is None:
             return False
-        cmd_hex = "".join([f"{x:02X}" for x in cmd])
-        logger.info(f"cmd={cmd_hex}")
-        self.hid_device.write(cmd)
-        return True
+        
+        # Use command queue for reliable delivery
+        # 使用命令队列确保可靠传输
+        self._queue_command(cmd)
+        return self._flush_queue()
 
     def set_led_color(
         self,
@@ -167,26 +278,61 @@ class OneXLEDDeviceHID:
         main_color: Color,
         mode: RGBMode,
     ) -> bool:
+        """
+        Set LED color and mode with improved protocol handling.
+        使用改进的协议处理设置LED颜色和模式。
+        
+        Args:
+            main_color: RGB color values
+            mode: RGB mode (Disabled, Solid, Rainbow, or OXP presets)
+            
+        Returns:
+            bool: True if successful
+        """
         if not self.is_ready():
             return False
 
-        if self._check_protocol() == Protocol.X1_MINI:
+        if self._protocol == Protocol.X1_MINI:
             from .hhd.oxp_hid_v1 import gen_rgb_mode, gen_rgb_solid
         else:
             from .hhd.oxp_hid_v2 import gen_rgb_mode, gen_rgb_solid
 
+        # Map RGBMode to hardware command
+        # 将RGBMode映射到硬件命令
         if mode == RGBMode.Disabled:
             cmd: bytes = gen_rgb_solid(0, 0, 0)
         elif mode == RGBMode.Solid:
             cmd: bytes = gen_rgb_solid(main_color.R, main_color.G, main_color.B)
         elif mode == RGBMode.Rainbow:
             cmd: bytes = gen_rgb_mode("neon")
+        # OXP Preset modes
+        # OXP预设模式
+        elif mode == RGBMode.OXP_MONSTER_WOKE:
+            cmd: bytes = gen_rgb_mode("monster_woke")
+        elif mode == RGBMode.OXP_FLOWING:
+            cmd: bytes = gen_rgb_mode("flowing")
+        elif mode == RGBMode.OXP_SUNSET:
+            cmd: bytes = gen_rgb_mode("sunset")
+        elif mode == RGBMode.OXP_NEON:
+            cmd: bytes = gen_rgb_mode("neon")
+        elif mode == RGBMode.OXP_DREAMY:
+            cmd: bytes = gen_rgb_mode("dreamy")
+        elif mode == RGBMode.OXP_CYBERPUNK:
+            cmd: bytes = gen_rgb_mode("cyberpunk")
+        elif mode == RGBMode.OXP_COLORFUL:
+            cmd: bytes = gen_rgb_mode("colorful")
+        elif mode == RGBMode.OXP_AURORA:
+            cmd: bytes = gen_rgb_mode("aurora")
+        elif mode == RGBMode.OXP_SUN:
+            cmd: bytes = gen_rgb_mode("sun")
         else:
+            logger.warning(f"Unsupported mode: {mode}")
             return False
 
         if self.hid_device is None:
             return False
-        cmd_hex = "".join([f"{x:02X}" for x in cmd])
-        logger.info(f"cmd={cmd_hex}")
-        self.hid_device.write(cmd)
-        return True
+        
+        # Use command queue for reliable delivery
+        # 使用命令队列确保可靠传输
+        self._queue_command(cmd)
+        return self._flush_queue()

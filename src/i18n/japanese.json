@@ -29,9 +29,9 @@
     "LAST_CHECK_TIME": "最終確認",
     "CLICK_TO_CHECK": "更新を確認するにはクリックしてください",
     "JUST_NOW": "たった今",
-    "MINUTES_AGO": "{{minutes}} 分前",
-    "HOURS_AGO": "{{hours}} 時間前",
-    "DAYS_AGO": "{{days}} 日前",
+    "MINUTES_AGO": "{{ minutes }}分前",
+    "HOURS_AGO": "{{ hours }}時間前",
+    "DAYS_AGO": "{{ days }}日前",
     "SUSPEND_MODE": "サスペンドモード",
     "SUSPEND_MODE_DESC": "サスペンド中のLEDの状態",
     "SUSPEND_MODE_OEM": "OEMデフォルト",
@@ -41,5 +41,14 @@
     "SPEED_DESC": "アニメーション速度",
     "SPEED_LOW": "遅い",
     "SPEED_MEDIUM": "中",
-    "SPEED_HIGH": "速い"
+    "SPEED_HIGH": "速い",
+    "LED_MODE_OXP_MONSTER_WOKE": "Monster Woke",
+    "LED_MODE_OXP_FLOWING": "Flowing",
+    "LED_MODE_OXP_SUNSET": "Sunset",
+    "LED_MODE_OXP_NEON": "Neon",
+    "LED_MODE_OXP_DREAMY": "Dreamy",
+    "LED_MODE_OXP_CYBERPUNK": "Cyberpunk",
+    "LED_MODE_OXP_COLORFUL": "Colorful",
+    "LED_MODE_OXP_AURORA": "Aurora",
+    "LED_MODE_OXP_SUN": "Sun"
 }

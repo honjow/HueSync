@@ -29,9 +29,9 @@
     "LAST_CHECK_TIME": "Ultimo controllo",
     "CLICK_TO_CHECK": "Clicca per controllare gli aggiornamenti",
     "JUST_NOW": "proprio ora",
-    "MINUTES_AGO": "{{minutes}} minuti fa",
-    "HOURS_AGO": "{{hours}} ore fa",
-    "DAYS_AGO": "{{days}} giorni fa",
+    "MINUTES_AGO": "{{ minutes }}minuti fa",
+    "HOURS_AGO": "{{ hours }}ore fa",
+    "DAYS_AGO": "{{ days }}giorni fa",
     "SUSPEND_MODE": "Modalità sospensione",
     "SUSPEND_MODE_DESC": "Stato LED in sospensione",
     "SUSPEND_MODE_OEM": "Predefinito OEM",
@@ -41,5 +41,14 @@
     "SPEED_DESC": "Velocità animazione",
     "SPEED_LOW": "Lenta",
     "SPEED_MEDIUM": "Media",
-    "SPEED_HIGH": "Veloce"
+    "SPEED_HIGH": "Veloce",
+    "LED_MODE_OXP_MONSTER_WOKE": "Monster Woke",
+    "LED_MODE_OXP_FLOWING": "Flowing",
+    "LED_MODE_OXP_SUNSET": "Sunset",
+    "LED_MODE_OXP_NEON": "Neon",
+    "LED_MODE_OXP_DREAMY": "Dreamy",
+    "LED_MODE_OXP_CYBERPUNK": "Cyberpunk",
+    "LED_MODE_OXP_COLORFUL": "Colorful",
+    "LED_MODE_OXP_AURORA": "Aurora",
+    "LED_MODE_OXP_SUN": "Sun"
 }

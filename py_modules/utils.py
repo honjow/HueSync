@@ -26,6 +26,18 @@ class RGBMode(Enum):
     Spiral = "spiral"  # Rotating effect
     Duality = "duality"
     Battery = "battery"
+    
+    # OneXPlayer/AOKZOE preset modes
+    # OneXPlayer/AOKZOE预设模式
+    OXP_MONSTER_WOKE = "oxp_monster_woke"
+    OXP_FLOWING = "oxp_flowing"
+    OXP_SUNSET = "oxp_sunset"
+    OXP_NEON = "oxp_neon"
+    OXP_DREAMY = "oxp_dreamy"
+    OXP_CYBERPUNK = "oxp_cyberpunk"
+    OXP_COLORFUL = "oxp_colorful"
+    OXP_AURORA = "oxp_aurora"
+    OXP_SUN = "oxp_sun"
 
 
 class RGBSpeed(Enum):

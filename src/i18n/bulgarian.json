@@ -29,9 +29,9 @@
     "LAST_CHECK_TIME": "Последна проверка",
     "CLICK_TO_CHECK": "Кликнете за проверка на актуализации",
     "JUST_NOW": "току-що",
-    "MINUTES_AGO": "преди {{minutes}} минути",
-    "HOURS_AGO": "преди {{hours}} часа",
-    "DAYS_AGO": "преди {{days}} дни",
+    "MINUTES_AGO": "преди  {{ minutes }}минути",
+    "HOURS_AGO": "преди  {{ hours }}часа",
+    "DAYS_AGO": "преди  {{ days }}дни",
     "SUSPEND_MODE": "Режим на заспиване",
     "SUSPEND_MODE_DESC": "LED състояние при заспиване",
     "SUSPEND_MODE_OEM": "OEM по подразбиране",
@@ -41,5 +41,14 @@
     "SPEED_DESC": "Скорост на анимацията",
     "SPEED_LOW": "Бавна",
     "SPEED_MEDIUM": "Средна",
-    "SPEED_HIGH": "Бърза"
+    "SPEED_HIGH": "Бърза",
+    "LED_MODE_OXP_MONSTER_WOKE": "Monster Woke",
+    "LED_MODE_OXP_FLOWING": "Flowing",
+    "LED_MODE_OXP_SUNSET": "Sunset",
+    "LED_MODE_OXP_NEON": "Neon",
+    "LED_MODE_OXP_DREAMY": "Dreamy",
+    "LED_MODE_OXP_CYBERPUNK": "Cyberpunk",
+    "LED_MODE_OXP_COLORFUL": "Colorful",
+    "LED_MODE_OXP_AURORA": "Aurora",
+    "LED_MODE_OXP_SUN": "Sun"
 }
