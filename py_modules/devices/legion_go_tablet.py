@@ -14,11 +14,17 @@ class LegionGoTabletLEDDevice(BaseLEDDevice):
     支持左右可拆卸控制器的同步RGB控制。
     
     Supported models:
-    - Legion Go (83E1)
-    - Legion Go 2 (83N0, 83N1)
+    - Legion Go (83E1) - PID: 0x6182-0x6185 (xinput/dinput/dual_dinput/fps modes)
+    - Legion Go 2/1 with 2025 Firmware (83N0, 83N1) - PID: 0x61EB-0x61EE
     
     Note: This is for Legion Go tablet mode, not Legion Go S.
     注意：这是为Legion Go平板模式设计的，不是Legion Go S。
+    
+    Device modes (by PID):
+    - 0x6182/0x61EB: xinput mode (default)
+    - 0x6183/0x61EC: dinput mode
+    - 0x6184/0x61ED: dual_dinput mode
+    - 0x6185/0x61EE: fps mode
     """
 
     def __init__(self):
@@ -78,12 +84,22 @@ class LegionGoTabletLEDDevice(BaseLEDDevice):
 
         try:
             # Legion Go uses a receiver device for wireless communication
-            # VID/PID need to be verified on actual hardware
+            # Based on HHD reverse engineering - confirmed parameters
             ledDevice = LegionGoTabletHID(
                 vid=[0x17EF],  # Lenovo VID
-                pid=[0x6182],  # Legion Go receiver PID (may need adjustment)
-                usage_page=[0xFF00],  # May need adjustment based on actual device
-                usage=[0x0001],       # May need adjustment based on actual device
+                # Support all controller modes and firmware versions
+                pid=[
+                    0x6182,  # xinput mode (Legion Go 1)
+                    0x6183,  # dinput mode
+                    0x6184,  # dual_dinput mode
+                    0x6185,  # fps mode
+                    0x61EB,  # xinput mode (Legion Go 2/1 with 2025 Firmware)
+                    0x61EC,  # dinput mode (2025 Firmware)
+                    0x61ED,  # dual_dinput mode (2025 Firmware)
+                    0x61EE,  # fps mode (2025 Firmware)
+                ],
+                usage_page=[0xFFA0],  # Confirmed: 0xFFA0 (not 0xFF00)
+                usage=[0x0001],
             )
             
             if ledDevice.is_ready():

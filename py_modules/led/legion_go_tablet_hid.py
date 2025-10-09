@@ -8,6 +8,21 @@ from utils import Color, RGBMode
 Controller = Literal["left", "right"]
 LegionRgbMode = Literal["solid", "pulse", "dynamic", "spiral"]
 
+# Lenovo VID and Legion Go PIDs (based on HHD reverse engineering)
+LEN_VID = 0x17EF
+LEN_PIDS = {
+    # Legion Go 1
+    0x6182: "xinput",
+    0x6183: "dinput",
+    0x6184: "dual_dinput",
+    0x6185: "fps",
+    # Legion Go 2/1 with 2025 Firmware
+    0x61EB: "xinput",
+    0x61EC: "dinput",
+    0x61ED: "dual_dinput",
+    0x61EE: "fps",
+}
+
 
 def _get_controller(c: Controller) -> int:
     """
@@ -188,7 +203,7 @@ def rgb_multi_load_settings(
         red, green, blue: Color values (0-255)
         brightness: Brightness (0.0-1.0)
         speed: Animation speed (0.0-1.0)
-        init: Whether to load profile (always True for compatibility)
+        init: Whether to load profile (ignored - always loads for old firmware compatibility)
         
     Returns:
         list[bytes]: List of commands to send in sequence
@@ -199,7 +214,9 @@ def rgb_multi_load_settings(
         rgb_set_profile("right", profile, mode, red, green, blue, brightness, speed),
     ]
 
-    # Always load and enable (old firmware has issues with conditional loading)
+    # Always load and enable for compatibility
+    # Note: Old firmware has issues with conditional loading,
+    # so we always send load and enable commands (based on HHD implementation)
     return [
         *base,
         rgb_load_profile("left", profile),
@@ -231,6 +248,12 @@ class LegionGoTabletHID:
     Supports RGB control for left and right detachable controllers
     through a wireless receiver interface.
     通过无线接收器接口支持左右可拆卸控制器的RGB控制。
+    
+    Device Parameters (confirmed via HHD reverse engineering):
+    - VID: 0x17EF (Lenovo)
+    - PIDs: 0x6182-0x6185 (Legion Go 1), 0x61EB-0x61EE (2025 Firmware)
+    - Usage Page: 0xFFA0 (NOT 0xFF00)
+    - Usage: 0x0001
     """
 
     def __init__(
@@ -248,6 +271,7 @@ class LegionGoTabletHID:
         self.interface = interface
         self.hid_device = None
         self.prev_mode = None
+        self.detected_mode = None  # Track detected controller mode
 
     def is_ready(self) -> bool:
         """
@@ -280,9 +304,17 @@ class LegionGoTabletHID:
             ):
                 self.hid_device = hid.Device(path=device["path"])
                 self.prev_mode = None  # Reset for new device
+                
+                # Track detected controller mode
+                pid = device["product_id"]
+                self.detected_mode = LEN_PIDS.get(pid, "unknown")
+                
                 logger.info(
-                    f"Found Legion Go device: path={device['path']}, "
-                    f"interface={device['interface_number']}"
+                    f"Found Legion Go device: "
+                    f"PID=0x{pid:04X} (mode={self.detected_mode}), "
+                    f"path={device['path']}, "
+                    f"interface={device['interface_number']}, "
+                    f"usage_page=0x{device['usage_page']:04X}"
                 )
                 return True
                 
@@ -334,7 +366,8 @@ class LegionGoTabletHID:
                 legion_mode = "solid"
                 
         elif mode == RGBMode.Rainbow:
-            legion_mode = "dynamic"  # Legion Go calls it "dynamic" not "rainbow"
+            # Legion Go firmware calls this mode "dynamic" not "rainbow"
+            legion_mode = "dynamic"
             
         elif mode == RGBMode.Pulse:
             legion_mode = "pulse"
@@ -351,6 +384,9 @@ class LegionGoTabletHID:
             brightness_f = brightness / 100.0  # Convert 0-100 to 0.0-1.0
             speed_f = _speed_to_value(speed)
             
+            # Track mode change for init logic
+            mode_changed = self.prev_mode != mode
+            
             reps = rgb_multi_load_settings(
                 mode=legion_mode,
                 profile=3,  # Use profile 3
@@ -359,7 +395,7 @@ class LegionGoTabletHID:
                 blue=color.B,
                 brightness=brightness_f,
                 speed=speed_f,
-                init=(self.prev_mode != mode) or init,
+                init=mode_changed or init,
             )
             self.prev_mode = mode
 
@@ -372,7 +408,10 @@ class LegionGoTabletHID:
                     logger.error(f"Failed to write command: {e}", exc_info=True)
                     return False
                     
-            logger.info(f"Successfully set Legion Go RGB to mode={mode}")
+            logger.info(
+                f"Successfully set Legion Go RGB: mode={mode}, "
+                f"controller_mode={self.detected_mode}"
+            )
             return True
         
         return False
