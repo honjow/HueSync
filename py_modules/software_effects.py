@@ -199,7 +199,15 @@ class RainbowEffect(SoftwareEffect):
             time.sleep(self.sleep_time)
 
 
-class DualityEffect(SoftwareEffect):
+class GradientEffect(SoftwareEffect):
+    """
+    Dual-color gradient transition effect
+    双色渐变过渡效果
+    
+    Smoothly transitions between two colors in a continuous cycle.
+    在两个颜色之间平滑循环渐变。
+    """
+    
     def __init__(
         self,
         color1: Color,
@@ -210,7 +218,7 @@ class DualityEffect(SoftwareEffect):
         update_rate: float = 50.0,  # Update rate | 更新频率
     ):
         """
-        初始化双色过渡效果
+        初始化双色渐变过渡效果
 
         Args:
             color1: 第一个颜色
@@ -289,6 +297,143 @@ class DualityEffect(SoftwareEffect):
             time.sleep(
                 self.sleep_time
             )  # According to configured update rate | 根据设置的更新频率
+
+
+class DualityEffect(SoftwareEffect):
+    """
+    Dual-color alternating pulse effect
+    双色交替呼吸效果
+    
+    Alternates between two colors with breathing animation.
+    两个颜色交替进行呼吸动画。
+    
+    Cycle: Color1 (dark→bright→dark) → Color2 (dark→bright→dark) → repeat
+    周期：颜色1（暗→亮→暗）→ 颜色2（暗→亮→暗）→ 重复
+    """
+    
+    def __init__(
+        self,
+        color1: Color,
+        color2: Color,
+        set_color_callback: Callable[[Color], None],
+        speed: float = 0.6,
+        hold_time: float = 0.5,
+        switch_delay: float = 0.2,
+        update_rate: float = 50.0,
+    ):
+        """
+        初始化双色交替呼吸效果
+
+        Args:
+            color1: 第一个颜色
+            color2: 第二个颜色
+            set_color_callback: 设置颜色的回调函数
+            speed: 呼吸速度，默认为 0.6
+                  1.0 表示每秒约2.5个周期
+                  0.6 表示每秒约1.5个周期
+            hold_time: 在最亮和最暗处停留的时间（秒）
+            switch_delay: 两个颜色之间切换的延迟时间（秒）
+            update_rate: 更新频率（Hz）
+        """
+        super().__init__()
+        self.color1 = color1
+        self.color2 = color2
+        self.set_color_callback = set_color_callback
+        self.speed = speed
+        self.hold_time = hold_time
+        self.switch_delay = switch_delay
+        self.update_rate = update_rate
+        self._current_color_index = 0  # 0 for color1, 1 for color2
+
+    def _apply_brightness(self, color: Color, brightness: float) -> Color:
+        """Apply brightness value to color"""
+        return Color(
+            int(color.R * brightness),
+            int(color.G * brightness),
+            int(color.B * brightness),
+        )
+
+    def _pulse_once(self, color: Color) -> None:
+        """
+        Perform one complete pulse cycle for a single color
+        对单个颜色执行一次完整的呼吸周期
+        
+        Cycle: dark(0%) → bright(100%) → hold → dark(0%) → hold
+        周期: 暗(0%) → 亮(100%) → 停留 → 暗(0%) → 停留
+        """
+        sleep_time = 1.0 / self.update_rate
+        state = "up"  # State: up(rising), hold_high, down(falling), hold_low
+        hold_end = 0
+        phase = 3 * math.pi / 2  # Start from minimum (dark)
+        
+        while self._running and state != "done":
+            current_time = time.time()
+            
+            if state == "up":
+                # Rising phase | 上升阶段
+                phase = (phase + self.speed * math.pi * sleep_time) % (2 * math.pi)
+                brightness = (math.sin(phase) + 1) / 2
+                if brightness > 0.99:  # Reached maximum
+                    state = "hold_high"
+                    hold_end = current_time + self.hold_time
+                    brightness = 1.0
+                    
+            elif state == "hold_high":
+                # Hold at maximum brightness | 保持最大亮度
+                brightness = 1.0
+                if current_time >= hold_end:
+                    state = "down"
+                    phase = math.pi / 2  # Start falling from maximum
+                    
+            elif state == "down":
+                # Falling phase | 下降阶段
+                phase = (phase + self.speed * math.pi * sleep_time) % (2 * math.pi)
+                brightness = (math.sin(phase) + 1) / 2
+                if brightness < 0.01:  # Reached minimum
+                    state = "hold_low"
+                    hold_end = current_time + self.hold_time
+                    brightness = 0.0
+                    
+            elif state == "hold_low":
+                # Hold at minimum brightness | 保持最小亮度
+                brightness = 0.0
+                if current_time >= hold_end:
+                    state = "done"
+                    brightness = 0.0
+            
+            # Apply brightness to color and set | 应用亮度并设置颜色
+            current_color = self._apply_brightness(color, brightness)
+            self.set_color_callback(current_color)
+            time.sleep(sleep_time)
+
+    def _run(self):
+        """
+        Run dual-color alternating pulse effect
+        运行双色交替呼吸效果
+        """
+        while self._running:
+            # Pulse color1 | 颜色1呼吸
+            self._pulse_once(self.color1)
+            
+            if not self._running:
+                break
+                
+            # Delay between color switches | 颜色切换延迟
+            if self.switch_delay > 0:
+                time.sleep(self.switch_delay)
+            
+            if not self._running:
+                break
+            
+            # Pulse color2 | 颜色2呼吸
+            self._pulse_once(self.color2)
+            
+            if not self._running:
+                break
+                
+            # Delay before repeating | 重复前的延迟
+            if self.switch_delay > 0:
+                time.sleep(self.switch_delay)
 
 
 class BatteryEffect(SoftwareEffect):

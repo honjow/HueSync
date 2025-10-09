@@ -10,6 +10,7 @@
     "LED_MODE_PULSE": "เต้นตามจังหวะ",
     "LED_MODE_SPIRAL": "เกลียว",
     "LED_MODE_DUALITY": "สองสี",
+    "LED_MODE_GRADIENT": "Gradient",
     "LED_MODE_BATTERY": "เต้นตามจังหวะ",
     "BRIGHTNESS": "ความสว่าง",
     "RED": "สีแดง",

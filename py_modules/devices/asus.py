@@ -111,6 +111,12 @@ class AsusLEDDevice(BaseLEDDevice):
                 color2=True,
                 speed=True,
             ),
+            RGBMode.Gradient: RGBModeCapabilities(
+                mode=RGBMode.Gradient,
+                color=True,
+                color2=True,
+                speed=True,
+            ),
             RGBMode.Spiral: RGBModeCapabilities(
                 mode=RGBMode.Spiral,
                 color=False,

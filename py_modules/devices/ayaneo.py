@@ -96,4 +96,10 @@ class AyaNeoLEDDevice(BaseLEDDevice):
             color2=True,
             speed=True,
         )
+        capabilities[RGBMode.Gradient] = RGBModeCapabilities(
+            mode=RGBMode.Gradient,
+            color=True,
+            color2=True,
+            speed=True,
+        )
         return capabilities

@@ -107,6 +107,12 @@ class MSILEDDevice(BaseLEDDevice):
                 color2=True,
                 speed=True,
             ),
+            RGBMode.Gradient: RGBModeCapabilities(
+                mode=RGBMode.Gradient,
+                color=True,
+                color2=True,
+                speed=True,
+            ),
             RGBMode.Battery: RGBModeCapabilities(
                 mode=RGBMode.Battery,
                 color=False,

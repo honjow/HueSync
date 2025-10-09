@@ -22,9 +22,10 @@ class RGBMode(Enum):
     Disabled = "disabled"
     Solid = "solid"
     Rainbow = "rainbow"
-    Pulse = "pulse"  # Breathing effect
-    Spiral = "spiral"  # Rotating effect
-    Duality = "duality"
+    Pulse = "pulse"  # Breathing effect | 呼吸效果
+    Spiral = "spiral"  # Rotating effect | 旋转效果
+    Duality = "duality"  # Dual-color alternating pulse | 双色交替呼吸
+    Gradient = "gradient"  # Dual-color gradient transition | 双色渐变过渡
     Battery = "battery"
     
     # OneXPlayer/AOKZOE preset modes

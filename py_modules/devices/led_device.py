@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Optional
 
 from config import logger
-from software_effects import BatteryEffect, DualityEffect, PulseEffect, RainbowEffect
+from software_effects import BatteryEffect, DualityEffect, GradientEffect, PulseEffect, RainbowEffect
 from utils import Color, RGBMode, RGBModeCapabilities
 
 
@@ -75,7 +75,7 @@ class BaseLEDDevice(LEDDevice):
         self._current_color: Color | None = None
         self._current_mode: RGBMode = RGBMode.Solid
         self._current_effect: Optional[
-            PulseEffect | RainbowEffect | DualityEffect | BatteryEffect
+            PulseEffect | RainbowEffect | DualityEffect | GradientEffect | BatteryEffect
         ] = None
 
     @property
@@ -191,8 +191,12 @@ class BaseLEDDevice(LEDDevice):
             self._current_effect = RainbowEffect(self._set_solid_color)
             self._current_effect.start()
         elif mode == RGBMode.Duality and color and color2:
-            # Create and start dual-color transition effect | 创建并启动双色过渡效果
+            # Create and start dual-color alternating pulse effect | 创建并启动双色交替呼吸效果
             self._current_effect = DualityEffect(color, color2, self._set_solid_color)
+            self._current_effect.start()
+        elif mode == RGBMode.Gradient and color and color2:
+            # Create and start dual-color gradient transition effect | 创建并启动双色渐变过渡效果
+            self._current_effect = GradientEffect(color, color2, self._set_solid_color)
             self._current_effect.start()
         elif mode == RGBMode.Battery:
             # Create and start battery status effect | 创建并启动电池状态灯效果
