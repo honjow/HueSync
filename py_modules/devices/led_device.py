@@ -6,6 +6,33 @@ from software_effects import BatteryEffect, DualityEffect, GradientEffect, Pulse
 from utils import Color, RGBMode, RGBModeCapabilities
 
 
+# Speed mapping for software effects
+# 软件灯效的速度映射
+EFFECT_SPEED_MAPPING = {
+    RGBMode.Pulse: {"low": 0.3, "medium": 0.6, "high": 1.2},
+    RGBMode.Rainbow: {"low": 0.5, "medium": 1.0, "high": 2.0},
+    RGBMode.Duality: {"low": 0.3, "medium": 0.6, "high": 1.2},
+    RGBMode.Gradient: {"low": 0.1, "medium": 0.2, "high": 0.4},
+}
+
+
+def _get_effect_speed(mode: RGBMode, speed: str | None) -> float:
+    """
+    Get appropriate speed value for the given effect mode
+    获取给定灯效模式的合适速度值
+    
+    Args:
+        mode: RGB mode
+        speed: Speed level ("low", "medium", "high") or None
+        
+    Returns:
+        float: Speed value for the effect
+    """
+    mapping = EFFECT_SPEED_MAPPING.get(mode, {})
+    default_speed = mapping.get("medium", 1.0)
+    return mapping.get(speed or "medium", default_speed)
+
+
 class LEDDevice(ABC):
     """Base abstract class for all LED devices"""
 
@@ -184,19 +211,23 @@ class BaseLEDDevice(LEDDevice):
         # Use software implementation | 使用软件实现
         if mode == RGBMode.Pulse and color:
             # Create and start breathing effect | 创建并启动呼吸灯效果
-            self._current_effect = PulseEffect(color, self._set_solid_color)
+            effect_speed = _get_effect_speed(RGBMode.Pulse, speed)
+            self._current_effect = PulseEffect(color, self._set_solid_color, speed=effect_speed)
             self._current_effect.start()
         elif mode == RGBMode.Rainbow:
             # Create and start rainbow effect | 创建并启动彩虹灯效果
-            self._current_effect = RainbowEffect(self._set_solid_color)
+            effect_speed = _get_effect_speed(RGBMode.Rainbow, speed)
+            self._current_effect = RainbowEffect(self._set_solid_color, speed=effect_speed)
             self._current_effect.start()
         elif mode == RGBMode.Duality and color and color2:
             # Create and start dual-color alternating pulse effect | 创建并启动双色交替呼吸效果
-            self._current_effect = DualityEffect(color, color2, self._set_solid_color)
+            effect_speed = _get_effect_speed(RGBMode.Duality, speed)
+            self._current_effect = DualityEffect(color, color2, self._set_solid_color, speed=effect_speed)
             self._current_effect.start()
         elif mode == RGBMode.Gradient and color and color2:
             # Create and start dual-color gradient transition effect | 创建并启动双色渐变过渡效果
-            self._current_effect = GradientEffect(color, color2, self._set_solid_color)
+            effect_speed = _get_effect_speed(RGBMode.Gradient, speed)
+            self._current_effect = GradientEffect(color, color2, self._set_solid_color, speed=effect_speed)
             self._current_effect.start()
         elif mode == RGBMode.Battery:
             # Create and start battery status effect | 创建并启动电池状态灯效果
