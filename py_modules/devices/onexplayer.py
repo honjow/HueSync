@@ -163,7 +163,8 @@ class OneXLEDDevice(BaseLEDDevice):
         color2: Color | None = None,
         init: bool = False,
         speed: str | None = None,
-        brightness_level: str | None = None,
+        brightness_level: str | None = None,  # OneXPlayer uses this parameter
+        **kwargs,  # Accept other future parameters
     ) -> None:
         """
         Set hardware RGB color with protocol-aware routing.
@@ -171,6 +172,9 @@ class OneXLEDDevice(BaseLEDDevice):
         
         Supports HID, Serial, and Mixed (HID+Serial) protocols.
         支持HID、串口和混合（HID+串口）协议。
+        
+        Args:
+            brightness_level: Hardware brightness level ("low", "medium", "high") - used by OXP preset modes
         """
         if not color:
             return

@@ -42,7 +42,7 @@ class AsusLEDDevice(BaseLEDDevice):
         color2: Color | None = None,
         init: bool = False,
         speed: str | None = None,
-        brightness_level: str | None = None,
+        **kwargs,  # Accept brightness_level and other future parameters
     ) -> None:
         if not color:
             return

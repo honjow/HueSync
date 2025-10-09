@@ -19,7 +19,21 @@ class LEDDevice(ABC):
         brightness: int | None = None,
         speed: str | None = None,
         brightness_level: str | None = None,
+        **kwargs,  # Accept any additional parameters for future extension
     ):
+        """
+        Set LED color and mode.
+        
+        Args:
+            mode: RGB mode to set
+            color: Primary color
+            color2: Secondary color (for dual-color modes)
+            init: Whether this is an initialization call
+            brightness: Software brightness (0-100, for HSV-based modes)
+            speed: Animation speed ("low", "medium", "high")
+            brightness_level: Hardware brightness level ("low", "medium", "high")
+            **kwargs: Additional parameters for future extension
+        """
         pass
 
     @abstractmethod
@@ -103,10 +117,20 @@ class BaseLEDDevice(LEDDevice):
         init: bool = False,
         speed: str | None = None,
         brightness_level: str | None = None,
+        **kwargs,  # Accept any additional parameters for future extension
     ) -> None:
         """
         Subclasses should override this method to implement hardware lighting control
         子类应该重写此方法，实现硬件灯效控制
+        
+        Args:
+            mode: RGB mode to set
+            color: Primary color
+            color2: Secondary color (for dual-color modes)
+            init: Whether this is an initialization call
+            speed: Animation speed ("low", "medium", "high")
+            brightness_level: Hardware brightness level ("low", "medium", "high")
+            **kwargs: Additional parameters for future extension
         """
         raise NotImplementedError
 
@@ -119,10 +143,21 @@ class BaseLEDDevice(LEDDevice):
         brightness: int | None = None,
         speed: str | None = None,
         brightness_level: str | None = None,
+        **kwargs,  # Accept any additional parameters for future extension
     ):
         """
         Default implementation for setting color.
         Subclasses should override hardware_supported_modes and _set_hardware_color.
+        
+        Args:
+            mode: RGB mode to set
+            color: Primary color
+            color2: Secondary color (for dual-color modes)
+            init: Whether this is an initialization call
+            brightness: Software brightness (0-100, for HSV-based modes)
+            speed: Animation speed ("low", "medium", "high")
+            brightness_level: Hardware brightness level ("low", "medium", "high")
+            **kwargs: Additional parameters for future extension
         """
         if not color:
             return
@@ -135,7 +170,7 @@ class BaseLEDDevice(LEDDevice):
             try:
                 logger.info(f"use hardware control: mode={mode}")
                 self.stop_effects()
-                self._set_hardware_color(mode, color, color2, init, speed, brightness_level)
+                self._set_hardware_color(mode, color, color2, init, speed, brightness_level, **kwargs)
                 return
             except Exception as e:
                 logger.error(e, exc_info=True)
