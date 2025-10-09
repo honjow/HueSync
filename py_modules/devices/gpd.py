@@ -29,6 +29,8 @@ class GPDLEDDevice(BaseLEDDevice):
         color: Color | None = None,
         color2: Color | None = None,
         init: bool = False,
+        speed: str | None = None,
+        brightness_level: str | None = None,
     ) -> None:
         if not color:
             return

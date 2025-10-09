@@ -63,6 +63,7 @@ class LegionGoTabletLEDDevice(BaseLEDDevice):
         color2: Color | None = None,
         init: bool = False,
         speed: str | None = None,
+        brightness_level: str | None = None,
     ) -> None:
         """
         Set hardware RGB color and mode on Legion Go controllers.
