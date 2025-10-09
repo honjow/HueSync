@@ -170,7 +170,7 @@ class BaseLEDDevice(LEDDevice):
             try:
                 logger.info(f"use hardware control: mode={mode}")
                 self.stop_effects()
-                self._set_hardware_color(mode, color, color2, init, speed, brightness_level, **kwargs)
+                self._set_hardware_color(mode, color, color2, init, speed=speed, brightness_level=brightness_level, **kwargs)
                 return
             except Exception as e:
                 logger.error(e, exc_info=True)

@@ -93,7 +93,7 @@ class MSILEDDeviceHID:
                 if self.addr is None:
                     ver = (self.device_info or {}).get("release_number", 0x0)
                     major = ver >> 8
-                    logger.info(
+                    logger.debug(
                         f"Device version: {ver:#04x}, major: {major}, addr: {self.addr}"
                     )
                     if (
