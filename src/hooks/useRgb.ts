@@ -18,16 +18,21 @@ export const useRgb = () => {
   const [brightnessLevel, setBrightnessLevel] = useState<string>(Setting.brightnessLevel);
 
   useEffect(() => {
-    const getData = async () => {
-      // await Setting.loadSettingsData();
-      // setHue(Setting.hue);
-      // setHue2(Setting.hue2);
-      // setSaturation(Setting.saturation);
-      // setBrightness(Setting.brightness);
-      // setRgbMode(Setting.mode);
-      // setEnableControl(Setting.enableControl);
+    // Listen for configuration changes | 监听配置变更
+    const unsubscribe = Setting.onSettingChange(() => {
+      setHue(Setting.hue);
+      setHue2(Setting.hue2);
+      setSaturation(Setting.saturation);
+      setBrightness(Setting.brightness);
+      setRgbMode(Setting.mode);
+      setEnableControl(Setting.enableControl);
+      setSpeed(Setting.speed);
+      setBrightnessLevel(Setting.brightnessLevel);
+    });
+
+    return () => {
+      unsubscribe();
     };
-    getData();
   }, []);
 
   const setHsv = async (

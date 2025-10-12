@@ -7,8 +7,8 @@ import { FC } from "react";
 import { FaLightbulb } from "react-icons/fa";
 
 import { localizeStrEnum, localizationManager } from "./i18n";
-import { RGBComponent, SuspendModeComponent, PowerLedControl } from "./components";
-import { Backend } from "./util";
+import { RGBComponent, SuspendModeComponent, PowerLedControl, PerAppControl, AcStateControl } from "./components";
+import { Backend, RunningApps, ACStateManager } from "./util";
 import { Setting } from "./hooks";
 import { MoreComponent } from "./components/more";
 import { SteamUtils } from "./util/steamUtils";
@@ -20,6 +20,8 @@ const Content: FC = () => {
       <PanelSection
         title={localizationManager.getString(localizeStrEnum.TITEL_SETTINGS)}
       >
+        <PerAppControl />
+        <AcStateControl />
         <RGBComponent />
         <SuspendModeComponent />
         <PowerLedControl />
@@ -34,6 +36,25 @@ export default definePlugin(() => {
     await localizationManager.init();
     await Backend.init();
     await Setting.init();
+    
+    // Register app and AC state monitoring
+    RunningApps.register();
+    ACStateManager.register();
+    
+    // Listen for app changes
+    RunningApps.listenActiveChange((newAppId, oldAppId) => {
+      console.log(`[HueSync] App changed: ${oldAppId} -> ${newAppId}`);
+      Backend.applySettings({ isInit: false });
+      Setting.notifyChange();
+    });
+    
+    // Listen for AC state changes
+    ACStateManager.onACStateChange(() => {
+      console.log(`[HueSync] AC state changed`);
+      Backend.applySettings({ isInit: false });
+      Setting.notifyChange();
+    });
+    
     Backend.applySettings({ isInit: true });
   }
 
@@ -77,6 +98,9 @@ export default definePlugin(() => {
     title: <div className={staticClasses.Title}>HueSync</div>,
     content: <Content />,
     icon: <FaLightbulb />,
-    onDismount() { },
+    onDismount() {
+      RunningApps.unregister();
+      ACStateManager.unregister();
+    },
   };
 });

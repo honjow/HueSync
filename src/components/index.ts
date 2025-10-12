@@ -5,3 +5,5 @@ export * from './actionButtonItem';
 export * from './SpeedControl';
 export * from './BrightnessLevelControl';
 export * from './PowerLedControl';
+export * from './PerAppControl';
+export * from './AcStateControl';

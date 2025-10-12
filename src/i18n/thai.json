@@ -61,5 +61,13 @@
     "LED_MODE_OXP_COLORFUL": "Colorful",
     "LED_MODE_OXP_AURORA": "Aurora",
     "LED_MODE_OXP_SUN": "Warm Sun",
-    "LED_MODE_OXP_CLASSIC": "OXP Classic"
+    "LED_MODE_OXP_CLASSIC": "OXP Classic",
+    "USE_PERGAME_PROFILE": "ใช้โปรไฟล์สำหรับเกมแต่ละเกม",
+    "USE_PERACMODE_PROFILE": "สลับโปรไฟล์ตามโหมดพลังงาน",
+    "USING": "กำลังใช้",
+    "DEFAULT": "ค่าเริ่มต้น",
+    "PROFILE": "โปรไฟล์",
+    "AC_MODE": "โหมดเสียบปลั๊ก",
+    "BAT_MODE": "โหมดแบตเตอรี่",
+    "UNKNOWN": "ไม่ทราบ"
 }

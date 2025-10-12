@@ -61,5 +61,13 @@
     "LED_MODE_OXP_COLORFUL": "五彩斑斕",
     "LED_MODE_OXP_AURORA": "綺麗極光",
     "LED_MODE_OXP_SUN": "冬日暖陽",
-    "LED_MODE_OXP_CLASSIC": "OXP 經典"
+    "LED_MODE_OXP_CLASSIC": "OXP 經典",
+    "USE_PERGAME_PROFILE": "使用遊戲獨立配置",
+    "USE_PERACMODE_PROFILE": "根據電源模式切換配置",
+    "USING": "使用",
+    "DEFAULT": "預設",
+    "PROFILE": "配置",
+    "AC_MODE": "插電模式",
+    "BAT_MODE": "電池模式",
+    "UNKNOWN": "未知"
 }

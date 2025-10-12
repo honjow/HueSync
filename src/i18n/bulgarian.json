@@ -61,5 +61,13 @@
     "LED_MODE_OXP_COLORFUL": "Colorful",
     "LED_MODE_OXP_AURORA": "Aurora",
     "LED_MODE_OXP_SUN": "Warm Sun",
-    "LED_MODE_OXP_CLASSIC": "OXP Classic"
+    "LED_MODE_OXP_CLASSIC": "OXP Classic",
+    "USE_PERGAME_PROFILE": "Използване на профил за всяка игра",
+    "USE_PERACMODE_PROFILE": "Превключване на профила според захранването",
+    "USING": "Използва се ",
+    "DEFAULT": "По подразбиране",
+    "PROFILE": " Профил",
+    "AC_MODE": "Режим на захранване",
+    "BAT_MODE": "Режим на батерия",
+    "UNKNOWN": "Неизвестно"
 }
