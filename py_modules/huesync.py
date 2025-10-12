@@ -167,3 +167,61 @@ class LedControl:
                 每个功能支持情况描述该模式支持的特性（颜色、亮度等）。
         """
         return self.device.get_mode_capabilities()
+
+    def get_device_capabilities(self) -> dict:
+        """
+        Get device hardware capabilities.
+        获取设备硬件能力。
+
+        Returns:
+            dict: Device capabilities
+            {
+                "power_led": bool,  # Whether power LED control is supported
+            }
+        """
+        return {
+            "power_led": (
+                hasattr(self.device, 'set_power_light') and 
+                hasattr(self.device, 'get_power_light') and
+                getattr(self.device, '_power_led_available', False)
+            ),
+        }
+
+    def set_power_light(self, enabled: bool) -> bool:
+        """
+        Set power LED state (Legion Go series only).
+        设置电源灯状态（仅 Legion Go 系列）。
+
+        Args:
+            enabled (bool): True to turn on, False to turn off
+
+        Returns:
+            bool: True if successful, False if not supported or failed
+        """
+        if hasattr(self.device, 'set_power_light'):
+            try:
+                return self.device.set_power_light(enabled)
+            except Exception as e:
+                logger.error(f"Failed to set power light: {e}", exc_info=True)
+                return False
+        else:
+            logger.debug("Power LED control not supported on this device")
+            return False
+
+    def get_power_light(self) -> bool | None:
+        """
+        Get power LED state (Legion Go series only).
+        获取电源灯状态（仅 Legion Go 系列）。
+
+        Returns:
+            bool | None: True if on, False if off, None if not supported or failed
+        """
+        if hasattr(self.device, 'get_power_light'):
+            try:
+                return self.device.get_power_light()
+            except Exception as e:
+                logger.error(f"Failed to get power light: {e}", exc_info=True)
+                return None
+        else:
+            logger.debug("Power LED control not supported on this device")
+            return None

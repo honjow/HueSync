@@ -173,6 +173,59 @@ class Plugin:
             logger.error(e, exc_info=True)
             return {}
 
+    async def get_device_capabilities(self):
+        """
+        Get device hardware capabilities.
+        获取设备硬件能力。
+
+        Returns:
+            dict: Device capabilities including power_led support
+        """
+        try:
+            return self.ledControl.get_device_capabilities()
+        except Exception as e:
+            logger.error(f"Failed to get device capabilities: {e}", exc_info=True)
+            return {"power_led": False}
+
+    async def set_power_light(self, enabled: bool):
+        """
+        Set power LED state.
+        设置电源灯状态。
+
+        Args:
+            enabled (bool): True to turn on, False to turn off
+
+        Returns:
+            bool: True if successful, False otherwise
+        """
+        try:
+            success = self.ledControl.set_power_light(enabled)
+            if success:
+                logger.info(f"Power LED set to: {'ON' if enabled else 'OFF'}")
+            else:
+                logger.warning(f"Failed to set power LED to: {'ON' if enabled else 'OFF'}")
+            return success
+        except Exception as e:
+            logger.error(f"Failed to set power light: {e}", exc_info=True)
+            return False
+
+    async def get_power_light(self):
+        """
+        Get power LED state.
+        获取电源灯状态。
+
+        Returns:
+            bool | None: True if on, False if off, None if not supported or failed
+        """
+        try:
+            status = self.ledControl.get_power_light()
+            if status is not None:
+                logger.debug(f"Power LED status: {'ON' if status else 'OFF'}")
+            return status
+        except Exception as e:
+            logger.error(f"Failed to get power light: {e}", exc_info=True)
+            return None
+
     # Function called first during the unload process, utilize this to handle your plugin being removed
     async def _unload(self):
         decky.logger.info("Goodbye World!")
