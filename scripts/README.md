@@ -119,8 +119,8 @@ EC 寄存器转储 (0x10-0x20):
 ```
 py_modules/devices/
   ├── legion_power_led_mixin.py    # 电源灯控制 Mixin
-  ├── legion_go.py                 # Legion Go (继承 Mixin)
-  └── legion_go_tablet.py          # Legion Go S (继承 Mixin)
+  ├── legion_go_s.py               # Legion Go S (继承 Mixin)
+  └── legion_go_tablet.py          # Legion Go (继承 Mixin)
 ```
 
 **使用方法:**
