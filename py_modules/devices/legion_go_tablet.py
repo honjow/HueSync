@@ -3,12 +3,14 @@ from led.legion_go_tablet_hid import LegionGoTabletHID
 from utils import Color, RGBMode, RGBModeCapabilities
 
 from .led_device import BaseLEDDevice
+from .legion_power_led_mixin import LegionPowerLEDMixin
 
 
-class LegionGoTabletLEDDevice(BaseLEDDevice):
+class LegionGoTabletLEDDevice(LegionPowerLEDMixin, BaseLEDDevice):
     """
     LegionGoTabletLEDDevice provides RGB control for Legion Go tablet mode controllers.
     Supports left and right detachable controllers with synchronized RGB control.
+    Includes controller RGB control (via HID) and power LED control (via EC).
     
     为Legion Go平板模式控制器提供RGB控制。
     支持左右可拆卸控制器的同步RGB控制。
@@ -16,9 +18,10 @@ class LegionGoTabletLEDDevice(BaseLEDDevice):
     Supported models:
     - Legion Go (83E1) - PID: 0x6182-0x6185 (xinput/dinput/dual_dinput/fps modes)
     - Legion Go 2/1 with 2025 Firmware (83N0, 83N1) - PID: 0x61EB-0x61EE
+    - Legion Go S (83L3, 83N6, 83Q2, 83Q3) - Uses different EC register for power LED
     
-    Note: This is for Legion Go tablet mode, not Legion Go S.
-    注意：这是为Legion Go平板模式设计的，不是Legion Go S。
+    Note: This is for Legion Go tablet mode, including Legion Go S.
+    注意：这适用于 Legion Go 平板模式，包括 Legion Go S。
     
     Device modes (by PID):
     - 0x6182/0x61EB: xinput mode (default)
@@ -26,6 +29,13 @@ class LegionGoTabletLEDDevice(BaseLEDDevice):
     - 0x6184/0x61ED: dual_dinput mode
     - 0x6185/0x61EE: fps mode
     """
+    
+    # Power LED configuration for Legion Go S
+    # EC register offset and bit position for power LED control
+    # Reference: DSDT analysis from hwinfo/devices/legion_go_s/acpi/QCCN17WW
+    # Note: Legion Go S uses different register than original Legion Go
+    POWER_LED_OFFSET = 0x10  # LPBL field in EC memory
+    POWER_LED_BIT = 6        # Bit 6 controls power LED
 
     def __init__(self):
         super().__init__()

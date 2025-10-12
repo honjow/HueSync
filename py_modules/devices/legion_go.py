@@ -3,6 +3,7 @@ from led.legion_led_device_hid import LegionGoLEDDeviceHID
 from utils import Color, RGBMode, RGBModeCapabilities
 
 from .led_device import BaseLEDDevice
+from .legion_power_led_mixin import LegionPowerLEDMixin
 
 GOS_VID = 0x1A86
 GOS_XINPUT = 0xE310
@@ -12,10 +13,19 @@ GOS_PIDS = {
 }
 
 
-class LegionGoLEDDevice(BaseLEDDevice):
+class LegionGoLEDDevice(LegionPowerLEDMixin, BaseLEDDevice):
     """
     LegionGoLEDDevice provides control for Legion Go LED devices.
+    Includes joystick RGB control (via HID) and power LED control (via EC).
+    
+    Supported models: 83E1, 83N0, 83N1
     """
+    
+    # Power LED configuration for Legion Go
+    # EC register offset and bit position for power LED control
+    # Reference: DSDT analysis from hwinfo/devices/legion_go/acpi-N3CN29WW
+    POWER_LED_OFFSET = 0x52  # LEDP field in EC memory
+    POWER_LED_BIT = 5        # Bit 5 controls power LED
 
     def __init__(self):
         super().__init__()
