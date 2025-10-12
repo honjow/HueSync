@@ -4,3 +4,4 @@ export * from './suspendMode';
 export * from './actionButtonItem';
 export * from './SpeedControl';
 export * from './BrightnessLevelControl';
+export * from './PowerLedControl';
