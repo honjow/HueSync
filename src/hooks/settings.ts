@@ -12,6 +12,8 @@ export class SettingsData {
   public suspendMode = "";
   public speed = "low";
   public brightnessLevel = "high";
+  public powerLedEnabled = true;
+  public powerLedSuspendOff = false;
 
   // RGB getters
   get red(): number {
@@ -56,6 +58,8 @@ export class SettingsData {
     this.suspendMode = source.suspendMode;
     this.speed = source.speed;
     this.brightnessLevel = source.brightnessLevel;
+    this.powerLedEnabled = source.powerLedEnabled;
+    this.powerLedSuspendOff = source.powerLedSuspendOff;
   }
 
   public fromDict(dict: { [key: string]: any }) {
@@ -214,4 +218,10 @@ export class Setting {
 
   @Setting.settingProperty<string>("brightnessLevel")
   public static brightnessLevel: string;
+
+  @Setting.settingProperty<boolean>("powerLedEnabled")
+  public static powerLedEnabled: boolean;
+
+  @Setting.settingProperty<boolean>("powerLedSuspendOff")
+  public static powerLedSuspendOff: boolean;
 }

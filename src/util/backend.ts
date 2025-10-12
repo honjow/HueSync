@@ -190,6 +190,25 @@ export class Backend {
     >;
   }
 
+  // get_device_capabilities
+  public static async getDeviceCapabilities(): Promise<{
+    power_led: boolean;
+  }> {
+    return (await call("get_device_capabilities")) as {
+      power_led: boolean;
+    };
+  }
+
+  // set_power_light
+  public static async setPowerLight(enabled: boolean): Promise<boolean> {
+    return (await call("set_power_light", enabled)) as boolean;
+  }
+
+  // get_power_light
+  public static async getPowerLight(): Promise<boolean | null> {
+    return (await call("get_power_light")) as boolean | null;
+  }
+
   // log_info
   public static logInfo(message: string) {
     return call("log_info", message);
