@@ -61,15 +61,27 @@ export class AppRgbData {
   public overwrite: boolean = false;
   public acStateOverwrite: boolean = false;
   public defaultSetting: RgbSetting = new RgbSetting();
-  public acSetting: RgbSetting = new RgbSetting();
-  public batSetting: RgbSetting = new RgbSetting();
+  public acSetting: RgbSetting | null = null;
+  public batSetting: RgbSetting | null = null;
 
   public deepCopy(source: AppRgbData) {
     this.overwrite = source.overwrite;
     this.acStateOverwrite = source.acStateOverwrite;
     this.defaultSetting.deepCopy(source.defaultSetting);
-    this.acSetting.deepCopy(source.acSetting);
-    this.batSetting.deepCopy(source.batSetting);
+    
+    if (source.acSetting !== null) {
+      this.acSetting = new RgbSetting();
+      this.acSetting.deepCopy(source.acSetting);
+    } else {
+      this.acSetting = null;
+    }
+    
+    if (source.batSetting !== null) {
+      this.batSetting = new RgbSetting();
+      this.batSetting.deepCopy(source.batSetting);
+    } else {
+      this.batSetting = null;
+    }
   }
 }
 
@@ -124,12 +136,14 @@ export class SettingsData {
         if (appData.defaultSetting) {
           Object.assign(this.perApp[appId].defaultSetting, appData.defaultSetting);
         }
-        // Load AC setting
+        // Load AC setting (only if exists in saved data)
         if (appData.acSetting) {
+          this.perApp[appId].acSetting = new RgbSetting();
           Object.assign(this.perApp[appId].acSetting, appData.acSetting);
         }
-        // Load battery setting
+        // Load battery setting (only if exists in saved data)
         if (appData.batSetting) {
+          this.perApp[appId].batSetting = new RgbSetting();
           Object.assign(this.perApp[appId].batSetting, appData.batSetting);
         }
       });
@@ -157,8 +171,11 @@ export class SettingsData {
     if (dict.speed !== undefined) oldSettings.speed = dict.speed;
     if (dict.brightnessLevel !== undefined) oldSettings.brightnessLevel = dict.brightnessLevel;
     
-    // Copy to AC and battery settings as well
+    // For old format migration, keep AC and battery settings as copies of default
+    // This preserves the old behavior for existing users
+    defaultApp.acSetting = new RgbSetting();
     defaultApp.acSetting.deepCopy(oldSettings);
+    defaultApp.batSetting = new RgbSetting();
     defaultApp.batSetting.deepCopy(oldSettings);
     
     this.perApp = { "0": defaultApp };
@@ -207,16 +224,11 @@ export class Setting {
     if (!(appId in this._settingsData.perApp)) {
       this._settingsData.perApp[appId] = new AppRgbData();
       
-      // Copy from default if exists
+      // Copy only defaultSetting from DEFAULT_APP if exists
+      // acSetting and batSetting remain null until user enables acStateOverwrite
       if (DEFAULT_APP in this._settingsData.perApp) {
         this._settingsData.perApp[appId].defaultSetting.deepCopy(
           this._settingsData.perApp[DEFAULT_APP].defaultSetting
-        );
-        this._settingsData.perApp[appId].acSetting.deepCopy(
-          this._settingsData.perApp[DEFAULT_APP].acSetting
-        );
-        this._settingsData.perApp[appId].batSetting.deepCopy(
-          this._settingsData.perApp[DEFAULT_APP].batSetting
         );
       }
     }
@@ -241,9 +253,11 @@ export class Setting {
     
     // Return setting based on AC state
     if (ACStateManager.getACState() === EACState.Connected) {
-      return appData.acSetting;
+      // If acSetting is null (never configured), fallback to defaultSetting
+      return appData.acSetting !== null ? appData.acSetting : appData.defaultSetting;
     } else {
-      return appData.batSetting;
+      // If batSetting is null (never configured), fallback to defaultSetting
+      return appData.batSetting !== null ? appData.batSetting : appData.defaultSetting;
     }
   }
 
@@ -272,7 +286,22 @@ export class Setting {
 
   static setACStateOverWrite(acStateOverwrite: boolean) {
     if (this.appACStateOverWrite() !== acStateOverwrite) {
-      this._settingsData.perApp[this.ensureAppID()].acStateOverwrite = acStateOverwrite;
+      const appId = this.ensureAppID();
+      const appData = this._settingsData.perApp[appId];
+      
+      // When enabling acStateOverwrite for the first time, copy from defaultSetting if null
+      if (acStateOverwrite) {
+        if (appData.acSetting === null) {
+          appData.acSetting = new RgbSetting();
+          appData.acSetting.deepCopy(appData.defaultSetting);
+        }
+        if (appData.batSetting === null) {
+          appData.batSetting = new RgbSetting();
+          appData.batSetting.deepCopy(appData.defaultSetting);
+        }
+      }
+      
+      appData.acStateOverwrite = acStateOverwrite;
       this.saveSettingsData();
       Backend.applySettings();
     }
