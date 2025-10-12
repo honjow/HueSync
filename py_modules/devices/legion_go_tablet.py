@@ -18,10 +18,9 @@ class LegionGoTabletLEDDevice(LegionPowerLEDMixin, BaseLEDDevice):
     Supported models:
     - Legion Go (83E1) - PID: 0x6182-0x6185 (xinput/dinput/dual_dinput/fps modes)
     - Legion Go 2/1 with 2025 Firmware (83N0, 83N1) - PID: 0x61EB-0x61EE
-    - Legion Go S (83L3, 83N6, 83Q2, 83Q3) - Uses different EC register for power LED
     
-    Note: This is for Legion Go tablet mode, including Legion Go S.
-    注意：这适用于 Legion Go 平板模式，包括 Legion Go S。
+    Note: This is for Legion Go tablet mode
+    注意：这适用于 Legion Go 平板模式
     
     Device modes (by PID):
     - 0x6182/0x61EB: xinput mode (default)
@@ -30,12 +29,11 @@ class LegionGoTabletLEDDevice(LegionPowerLEDMixin, BaseLEDDevice):
     - 0x6185/0x61EE: fps mode
     """
     
-    # Power LED configuration for Legion Go S
+    # Power LED configuration for Legion Go
     # EC register offset and bit position for power LED control
-    # Reference: DSDT analysis from hwinfo/devices/legion_go_s/acpi/QCCN17WW
-    # Note: Legion Go S uses different register than original Legion Go
-    POWER_LED_OFFSET = 0x10  # LPBL field in EC memory
-    POWER_LED_BIT = 6        # Bit 6 controls power LED
+    # Reference: DSDT analysis from hwinfo/devices/legion_go/acpi-N3CN29WW
+    POWER_LED_OFFSET = 0x52  # LEDP field in EC memory
+    POWER_LED_BIT = 5        # Bit 5 controls power LED
 
     def __init__(self):
         super().__init__()

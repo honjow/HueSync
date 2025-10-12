@@ -21,11 +21,11 @@ class LegionGoLEDDevice(LegionPowerLEDMixin, BaseLEDDevice):
     Supported models: 83E1, 83N0, 83N1
     """
     
-    # Power LED configuration for Legion Go
+    # Power LED configuration for Legion Go S
     # EC register offset and bit position for power LED control
-    # Reference: DSDT analysis from hwinfo/devices/legion_go/acpi-N3CN29WW
-    POWER_LED_OFFSET = 0x52  # LEDP field in EC memory
-    POWER_LED_BIT = 5        # Bit 5 controls power LED
+    # Reference: DSDT analysis from hwinfo/devices/legion_go_s/acpi/QCCN17WW
+    POWER_LED_OFFSET = 0x10  # LPBL field in EC memory
+    POWER_LED_BIT = 6        # Bit 6 controls power LED
 
     def __init__(self):
         super().__init__()
