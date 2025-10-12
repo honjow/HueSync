@@ -14,7 +14,7 @@ from devices.ayaneo import AyaNeoLEDDevice
 from devices.generic import GenericLEDDevice
 from devices.gpd import GPDLEDDevice
 from devices.led_device import LEDDevice
-from devices.legion_go import LegionGoLEDDevice
+from devices.legion_go_s import LegionGoSLEDDevice
 from devices.legion_go_tablet import LegionGoTabletLEDDevice
 from devices.msi import MSILEDDevice
 from devices.onexplayer import OneXLEDDevice
@@ -84,7 +84,7 @@ class LedControl:
                 return LegionGoTabletLEDDevice()
             else:
                 logger.info("Using Legion Go S LED device")
-                return LegionGoLEDDevice()
+                return LegionGoSLEDDevice()
         elif SYS_VENDOR == "Micro-Star International Co., Ltd.":
             logger.info("Using MSI LED device")
             return MSILEDDevice()
