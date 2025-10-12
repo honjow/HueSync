@@ -4,3 +4,6 @@
 [submodule "py_modules/submodule/pyhidapi"]
 	path = py_modules/submodule/pyhidapi
 	url = https://github.com/apmorton/pyhidapi.git
+[submodule "submodule/pyhidapi"]
+	path = submodule/pyhidapi
+	url = https://github.com/apmorton/pyhidapi.git
