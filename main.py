@@ -4,7 +4,6 @@ import decky
 from settings import SettingsManager
 
 try:
-    import update
     from config import CONFIG_KEY, logger
     from huesync import LedControl
 
@@ -92,27 +91,27 @@ class Plugin:
     async def resume(self):
         self.ledControl.resume()
 
-    async def update_latest(self):
-        logger.info("Updating latest")
-        try:
-            return update.update_latest()
-        except Exception as e:
-            logger.error(e, exc_info=True)
-            return False
+    # async def update_latest(self):
+    #     logger.info("Updating latest")
+    #     try:
+    #         return update.update_latest()
+    #     except Exception as e:
+    #         logger.error(e, exc_info=True)
+    #         return False
 
-    async def get_version(self):
-        try:
-            return update.get_version()
-        except Exception as e:
-            logger.error(e, exc_info=True)
-            return ""
+    # async def get_version(self):
+    #     try:
+    #         return update.get_version()
+    #     except Exception as e:
+    #         logger.error(e, exc_info=True)
+    #         return ""
 
-    async def get_latest_version(self):
-        try:
-            return update.get_latest_version()
-        except Exception as e:
-            logger.error(e, exc_info=True)
-            return ""
+    # async def get_latest_version(self):
+    #     try:
+    #         return update.get_latest_version()
+    #     except Exception as e:
+    #         logger.error(e, exc_info=True)
+    #         return ""
 
     async def log_info(self, message: str):
         try:

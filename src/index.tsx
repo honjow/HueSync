@@ -10,7 +10,6 @@ import { localizeStrEnum, localizationManager } from "./i18n";
 import { RGBComponent, SuspendModeComponent, PowerLedControl, PerAppControl, AcStateControl } from "./components";
 import { Backend, RunningApps, ACStateManager } from "./util";
 import { Setting } from "./hooks";
-import { MoreComponent } from "./components/more";
 import { SteamUtils } from "./util/steamUtils";
 
 const Content: FC = () => {
@@ -26,7 +25,6 @@ const Content: FC = () => {
         <SuspendModeComponent />
         <PowerLedControl />
       </PanelSection>
-      <MoreComponent />
     </div>
   );
 };

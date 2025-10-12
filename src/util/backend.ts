@@ -31,15 +31,7 @@ export class BackendData {
   private latest_version = "";
 
   public async init() {
-    await call<[], string>("get_version").then((result) => {
-      console.info("current_version = " + result);
-      this.current_version = result;
-    });
-
-    await call<[], string>("get_latest_version").then((result) => {
-      console.info("latest_version = " + result);
-      this.latest_version = result;
-    });
+    
   }
 
   public getCurrentVersion() {
@@ -120,14 +112,6 @@ export class Backend {
     await call("set_suspend_mode", mode);
   }
 
-  public static async getLatestVersion(): Promise<string> {
-    return (await call("get_latest_version")) as string;
-  }
-
-  // updateLatest
-  public static async updateLatest() {
-    await call("update_latest");
-  }
 
   // is_support_suspend_mode
   public static async isSupportSuspendMode(): Promise<boolean> {
