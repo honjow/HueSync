@@ -110,70 +110,80 @@ EC 寄存器转储 (0x10-0x20):
 ...
 ```
 
-## 集成到 Decky 插件
+## 集成到 HueSync
 
-在 `main.py` 中添加电源灯控制方法:
+### ✅ 已集成方案 (推荐)
+
+电源灯控制功能已通过 **Mixin 模式**集成到 HueSync 的设备类中:
+
+```
+py_modules/devices/
+  ├── legion_power_led_mixin.py    # 电源灯控制 Mixin
+  ├── legion_go.py                 # Legion Go (继承 Mixin)
+  └── legion_go_tablet.py          # Legion Go S (继承 Mixin)
+```
+
+**使用方法:**
 
 ```python
-import subprocess
+from devices.legion_go import LegionGoLEDDevice
+from devices.legion_go_tablet import LegionGoTabletLEDDevice
 
+# 初始化设备 (自动检测电源灯支持)
+device = LegionGoLEDDevice()  # 或 LegionGoTabletLEDDevice()
+
+# 控制摇杆/平板灯 (现有功能)
+device.set_color(mode=RGBMode.Solid, color=Color(255, 0, 0))
+
+# 控制电源灯 (新功能)
+device.set_power_light(True)   # 开灯
+device.set_power_light(False)  # 关灯
+
+# 查询电源灯状态
+status = device.get_power_light()  # True/False/None
+if status is not None:
+    print(f"Power LED is {'ON' if status else 'OFF'}")
+```
+
+**在插件中集成:**
+
+```python
+# main.py
 class Plugin:
     async def set_power_light(self, enabled: bool):
         """设置电源灯状态"""
         try:
-            script_path = os.path.join(
-                decky.DECKY_PLUGIN_DIR, 
-                "scripts", 
-                "legion_power_light.py"
-            )
-            cmd = ["python3", script_path, "on" if enabled else "off"]
-            result = subprocess.run(
-                cmd, 
-                capture_output=True, 
-                text=True,
-                check=False
-            )
-            
-            if result.returncode == 0:
-                logger.info(f"Power light set to: {'on' if enabled else 'off'}")
-                return True
-            else:
-                logger.error(f"Failed to set power light: {result.stderr}")
-                return False
-                
+            # 直接调用设备类的方法,无需 subprocess
+            success = self.led_control.device.set_power_light(enabled)
+            if success:
+                logger.info(f"Power LED set to: {'ON' if enabled else 'OFF'}")
+            return success
         except Exception as e:
-            logger.error(e, exc_info=True)
+            logger.error(f"Failed to set power light: {e}", exc_info=True)
             return False
     
     async def get_power_light(self):
         """获取电源灯状态"""
         try:
-            script_path = os.path.join(
-                decky.DECKY_PLUGIN_DIR,
-                "scripts",
-                "legion_power_light.py"
-            )
-            cmd = ["python3", script_path, "info"]
-            result = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                check=False
-            )
-            
-            if result.returncode == 0:
-                # 从输出中解析状态
-                if "开启" in result.stdout:
-                    return True
-                elif "关闭" in result.stdout:
-                    return False
-            
-            return None
-            
+            status = self.led_control.device.get_power_light()
+            return status
         except Exception as e:
-            logger.error(e, exc_info=True)
+            logger.error(f"Failed to get power light: {e}", exc_info=True)
             return None
 ```
+
+**优势:**
+- ✅ 零性能开销 - 无 subprocess 调用
+- ✅ 代码复用 - 使用现有的 EC 类和 portio 库
+- ✅ 自动检测 - 自动识别设备型号和 EC 配置
+- ✅ 优雅降级 - 不支持的设备不影响主功能
+- ✅ 统一管理 - 所有灯光控制在同一个设备类中
+
+---
+
+### 🔧 独立脚本方案 (备用)
+
+如果需要在命令行独立使用,可以使用本目录下的 `legion_power_light.py` 脚本:
 
 ## 系统要求
 
