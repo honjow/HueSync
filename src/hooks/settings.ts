@@ -276,6 +276,7 @@ export class Setting {
       this._settingsData.perApp[appId].overwrite = overwrite;
       this.saveSettingsData();
       Backend.applySettings();
+      this.notifyChange();
     }
   }
 
@@ -304,6 +305,7 @@ export class Setting {
       appData.acStateOverwrite = acStateOverwrite;
       this.saveSettingsData();
       Backend.applySettings();
+      this.notifyChange();
     }
   }
 
