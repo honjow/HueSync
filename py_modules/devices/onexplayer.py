@@ -233,9 +233,9 @@ class OneXLEDDevice(BaseLEDDevice):
         # 如果未指定则默认为"high"（100）
         brightness = 100  # Default to high
         if brightness_level == "low":
-            brightness = 33
+            brightness = 25
         elif brightness_level == "medium":
-            brightness = 66
+            brightness = 60
         elif brightness_level == "high":
             brightness = 100
         
