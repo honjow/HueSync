@@ -102,6 +102,12 @@ ONEXPLAYER_CONFIGS = {
         protocol=OXPProtocol.HID_V1,
         rgb=True,
     ),
+
+    "ONEXPLAYER X1Air": OXPConfig(
+        name="ONEXPLAYER X1 Air",
+        protocol=OXPProtocol.HID_V1,
+        rgb=True,
+    ),
     
     # ========== X1 Series (Serial) ==========
     "ONEXPLAYER X1 A": OXPConfig(
