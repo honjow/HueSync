@@ -27,10 +27,10 @@ _global_prev_brightness = None
 _global_prev_mode = None
 _global_prev_color = None  # Track color changes in Solid mode
 
-# Note: Secondary zone does NOT use state tracking to avoid complexity
-# Just send commands every time - hardware can handle it
-# 注意：次要区域不使用状态跟踪以避免复杂性
-# 每次都发送命令 - 硬件可以处理
+# Secondary zone state tracking (to avoid redundant commands)
+# 次要区域状态跟踪（避免冗余命令）
+_global_prev_secondary_enabled = None
+_global_prev_secondary_color = None
 
 """
 convert from https://github.com/Valkirie/HandheldCompanion/blob/main/HandheldCompanion/Devices/OneXPlayer/OneXPlayerOneXFly.cs 
@@ -420,9 +420,12 @@ class OneXLEDDeviceHID:
         # 主灯区域控制
         # ============================================================
         
+        # Track mode changes for workaround logic
+        # 跟踪模式变化用于workaround逻辑
+        mode_changed = _global_prev_mode != original_mode
+        
         # Check if primary zone state changed
         # 检查主灯区域状态是否改变
-        mode_changed = _global_prev_mode != original_mode
         primary_state_changed = (
             _global_prev_enabled != enabled or 
             _global_prev_brightness != brightness_level or
@@ -430,14 +433,7 @@ class OneXLEDDeviceHID:
         )
         
         if primary_state_changed:
-            reason = []
-            if _global_prev_enabled != enabled:
-                reason.append(f"enabled changed from {_global_prev_enabled} to {enabled}")
-            if _global_prev_brightness != brightness_level:
-                reason.append(f"brightness changed from {_global_prev_brightness} to {brightness_level}")
-            if mode_changed:
-                reason.append(f"mode changed from {_global_prev_mode} to {original_mode}")
-            logger.debug(f"[PRIMARY] Sending brightness: enabled={enabled}, brightness={brightness_level} (reason: {', '.join(reason)})")
+            logger.debug(f"[PRIMARY] Sending brightness: enabled={enabled}, brightness={brightness_level}")
             
             if self._protocol == Protocol.X1_MINI:
                 # V1: gen_brightness(side, enabled, brightness_level)
@@ -523,34 +519,43 @@ class OneXLEDDeviceHID:
             logger.debug(f"[PRIMARY] No change in color/mode, skipping primary zone command")
         
         # ============================================================
-        # SECONDARY ZONE CONTROL (Independent, No State Tracking)
-        # 次要灯区域控制（独立，无状态跟踪）
+        # SECONDARY ZONE CONTROL (Independent)
+        # 次要灯区域控制（独立）
         # ============================================================
         
         # Only process secondary zone if device supports it (V1 protocol only)
         # 仅在设备支持时处理次要灯区域（仅V1协议）
         if self._protocol == Protocol.X1_MINI:
-            # Simple logic: always send commands based on current state
-            # No state tracking to avoid complexity and bugs
-            # 简单逻辑：总是根据当前状态发送命令
-            # 不使用状态跟踪以避免复杂性和bug
+            global _global_prev_secondary_enabled, _global_prev_secondary_color
             
-            # Always send brightness/enable command
-            # 总是发送亮度/启用命令
-            self._queue_command(gen_brightness(0x03, secondary_enabled, "high"))
-            self._queue_command(gen_brightness(0x04, secondary_enabled, "high"))
-            logger.debug(f"[SECONDARY] Setting enabled={secondary_enabled}")
+            # Track secondary zone state changes
+            # 跟踪副区域状态变化
+            secondary_enabled_changed = _global_prev_secondary_enabled != secondary_enabled
             
-            # Send color command if zone is enabled and has color
-            # 如果区域已启用并且有颜色，发送颜色命令
-            if secondary_enabled and secondary_color:
+            # Convert secondary_color to tuple for comparison
+            # 将副区域颜色转换为元组用于比较
+            secondary_color_tuple = (secondary_color.R, secondary_color.G, secondary_color.B) if secondary_color else None
+            secondary_color_changed = _global_prev_secondary_color != secondary_color_tuple
+            
+            # Send brightness/enable command only if enabled state changed
+            # 只在启用状态改变时发送亮度/启用命令
+            if secondary_enabled_changed:
+                self._queue_command(gen_brightness(0x03, secondary_enabled, "high"))
+                self._queue_command(gen_brightness(0x04, secondary_enabled, "high"))
+                logger.debug(f"[SECONDARY] Enabled changed: {_global_prev_secondary_enabled} -> {secondary_enabled}")
+                _global_prev_secondary_enabled = secondary_enabled
+            
+            # Send color command if zone is enabled and color changed
+            # 只在区域启用且颜色改变时发送颜色命令
+            if secondary_enabled and secondary_color and secondary_color_changed:
                 self._queue_command(gen_rgb_solid(secondary_color.R, secondary_color.G, secondary_color.B, side=0x03))
                 self._queue_command(gen_rgb_solid(secondary_color.R, secondary_color.G, secondary_color.B, side=0x04))
-                logger.info(f"[SECONDARY] Sending color: R={secondary_color.R}, G={secondary_color.G}, B={secondary_color.B}")
+                logger.info(f"[SECONDARY] Color changed: {_global_prev_secondary_color} -> ({secondary_color.R}, {secondary_color.G}, {secondary_color.B})")
+                _global_prev_secondary_color = secondary_color_tuple
             elif not secondary_enabled:
                 logger.debug(f"[SECONDARY] Zone disabled, skipping color command")
-            else:
-                logger.debug(f"[SECONDARY] No color provided, skipping color command")
+            elif not secondary_color_changed:
+                logger.debug(f"[SECONDARY] Color unchanged, skipping color command")
         
         # Flush all commands with proper delays
         # 按适当延迟发送所有命令
