@@ -587,6 +587,11 @@ class OneXLEDDeviceHID:
             secondary_color_tuple = (secondary_color.R, secondary_color.G, secondary_color.B) if secondary_color else None
             secondary_color_changed = _global_prev_secondary_color != secondary_color_tuple
             
+            # If primary zone changed, wait for hardware to process it before sending secondary zone commands
+            # 如果主区域改变了，等待硬件处理完成后再发送副区域命令
+            if primary_state_changed or primary_color_changed:
+                self._queue_delay(0.3)
+            
             # Send brightness/enable command only if enabled state changed
             # 只在启用状态改变时发送亮度/启用命令
             if secondary_enabled_changed:
