@@ -8,6 +8,16 @@ import lib_hid as hid
 from config import logger
 from utils import Color, RGBMode
 
+
+class DelayMarker:
+    """
+    Marker to insert custom delay in command queue.
+    用于在命令队列中插入自定义延迟的标记。
+    """
+    def __init__(self, duration: float):
+        self.duration = duration
+
+
 # Global flag to track if full initialization has been done
 # This matches HHD's behavior (hid_v1.py line 103)
 # 全局标志跟踪是否已完成完整初始化
@@ -70,10 +80,12 @@ class OneXLEDDeviceHID:
         self.hid_device = None
         
         # Command queue system for reliable command delivery
+        # Supports both command bytes and DelayMarker for variable delays
         # 命令队列系统，确保可靠的命令传输
-        self._cmd_queue = deque(maxlen=10)
+        # 支持命令字节和DelayMarker以实现可变延迟
+        self._cmd_queue = deque(maxlen=20)  # Increased capacity for markers
         self._next_send = 0
-        self._write_delay = 0.05  # 50ms delay between commands
+        self._default_delay = 0.05  # 50ms default delay between commands
         
         # Device state tracking
         # 设备状态跟踪
@@ -188,15 +200,34 @@ class OneXLEDDeviceHID:
         
         self._initialized = True
     
-    def _queue_command(self, cmd: bytes) -> None:
+    def _queue_command(self, cmd: bytes, delay: float | None = None) -> None:
         """
-        Add command to queue for sending.
-        将命令添加到发送队列。
+        Add command to queue for sending with optional custom delay.
+        将命令添加到发送队列，可选自定义延迟。
         
         Args:
             cmd: Command bytes to send
+            delay: Custom delay AFTER this command (seconds).
+                   If None, use default delay between commands.
+                   If > 0, insert a DelayMarker after this command.
         """
         self._cmd_queue.append(cmd)
+        
+        # Insert delay marker if custom delay specified
+        # 如果指定了自定义延迟，插入延迟标记
+        if delay is not None and delay > 0:
+            self._cmd_queue.append(DelayMarker(delay))
+    
+    def _queue_delay(self, duration: float) -> None:
+        """
+        Insert a standalone delay marker into queue.
+        在队列中插入独立的延迟标记。
+        
+        Args:
+            duration: Delay duration in seconds
+        """
+        if duration > 0:
+            self._cmd_queue.append(DelayMarker(duration))
     
     def _flush_queue(self) -> bool:
         """
@@ -210,6 +241,19 @@ class OneXLEDDeviceHID:
             return False
         
         while self._cmd_queue:
+            item = self._cmd_queue.popleft()
+            
+            # Handle delay marker
+            # 处理延迟标记
+            if isinstance(item, DelayMarker):
+                logger.debug(f"[DELAY] Waiting {item.duration}s")
+                time.sleep(item.duration)
+                continue
+            
+            # Handle command
+            # 处理命令
+            cmd = item
+            
             # Wait for minimum delay between commands
             # 等待命令之间的最小延迟
             curr = time.perf_counter()
@@ -217,12 +261,11 @@ class OneXLEDDeviceHID:
                 time.sleep(self._next_send - curr)
             
             # Send command
-            cmd = self._cmd_queue.popleft()
             try:
                 cmd_hex = "".join([f"{x:02X}" for x in cmd])
                 logger.debug(f"[WRITE] OXP HID write ({len(cmd)} bytes): {cmd_hex}")
                 self.hid_device.write(cmd)
-                self._next_send = time.perf_counter() + self._write_delay
+                self._next_send = time.perf_counter() + self._default_delay
             except Exception as e:
                 logger.error(f"[WRITE] Failed to write command: {e}, closing device for reconnection", exc_info=True)
                 # Close the device so it can be reopened on next call
@@ -502,7 +545,6 @@ class OneXLEDDeviceHID:
                 # WORKAROUND: If mode changed, resend command for hardware stability
                 # 变通方案：如果模式改变，重发命令以确保硬件稳定性
                 if mode_changed:
-                    import time
                     logger.debug(f"[WORKAROUND] Mode changed, flushing + waiting + resending")
                     self._flush_queue()
                     time.sleep(0.1)
@@ -539,10 +581,11 @@ class OneXLEDDeviceHID:
             
             # Send brightness/enable command only if enabled state changed
             # 只在启用状态改变时发送亮度/启用命令
-            if secondary_enabled_changed:
+            if secondary_enabled_changed or True:
                 self._queue_command(gen_brightness(0x03, secondary_enabled, "high"))
                 self._queue_command(gen_brightness(0x04, secondary_enabled, "high"))
-                logger.debug(f"[SECONDARY] Enabled changed: {_global_prev_secondary_enabled} -> {secondary_enabled}")
+                self._queue_delay(0.5)
+                logger.info(f"[SECONDARY] Enabled changed: {_global_prev_secondary_enabled} -> {secondary_enabled}")
                 _global_prev_secondary_enabled = secondary_enabled
             
             # Send color command if zone is enabled and color changed

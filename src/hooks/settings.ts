@@ -358,7 +358,7 @@ export class Setting {
   }
 
   public static async saveSettingsData() {
-    Logger.info(`HueSync: saveSettingsData: ${JSON.stringify(this.settingsData)}`);
+    Logger.debug(`HueSync: saveSettingsData: ${JSON.stringify(this.settingsData)}`);
     await Backend.setSettings(this.settingsData);
   }
 
