@@ -302,17 +302,17 @@ class OneXLEDDevice(BaseLEDDevice):
             mode = RGBMode.Solid
         
         # Convert brightness_level to brightness value (0-100)
-        # For Solid/Disabled modes: always use "high" since they use HSV brightness
+        # For Solid/Disabled modes: always use "medium" since they use HSV brightness
         # For OXP preset modes (including OXP_CLASSIC): use the brightness_level parameter
         # 将brightness_level转换为亮度值（0-100）
-        # Solid/Disabled模式：固定使用"high"，因为它们使用HSV亮度控制
+        # Solid/Disabled模式：固定使用"medium"，因为它们使用HSV亮度控制
         # OXP预设模式（包括OXP_CLASSIC）：使用brightness_level参数
         brightness = 100  # Default to high
         if mode == RGBMode.Solid or mode == RGBMode.Disabled:
-            # Solid mode uses HSV brightness, always use max hardware brightness level
-            # Solid模式使用HSV亮度，始终使用最大硬件亮度级别
-            brightness_level = "high"
-            brightness = 100
+            # Solid mode uses HSV brightness, use medium hardware brightness level
+            # Solid模式使用HSV亮度，使用中等硬件亮度级别
+            brightness_level = "medium"
+            brightness = 60
         elif brightness_level == "low":
             brightness = 25
         elif brightness_level == "medium":

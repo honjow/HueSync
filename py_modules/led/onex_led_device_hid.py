@@ -475,23 +475,6 @@ class OneXLEDDeviceHID:
             mode_changed
         )
         
-        if primary_state_changed:
-            logger.debug(f"[PRIMARY] Sending brightness: enabled={enabled}, brightness={brightness_level}")
-            
-            if self._protocol == Protocol.X1_MINI:
-                # V1: gen_brightness(side, enabled, brightness_level)
-                # Use side=0 for all primary zones (left + right controllers)
-                # V1：gen_brightness(side, enabled, brightness_level)
-                # 使用 side=0 控制所有主区域（左右手柄）
-                self._queue_command(gen_brightness(0, enabled, brightness_level))
-            else:
-                # V2: gen_brightness(enabled, brightness_level)
-                brightness_cmd = gen_brightness(enabled, brightness_level)
-                self._queue_command(brightness_cmd)
-            
-            _global_prev_enabled = enabled
-            _global_prev_brightness = brightness_level
-
         # Check if we need to send color/mode command for primary zone
         # For Solid mode: send if mode OR color changed
         # For preset modes: send if mode changed
@@ -501,74 +484,147 @@ class OneXLEDDeviceHID:
         current_color = (main_color.R, main_color.G, main_color.B) if mode == RGBMode.Solid else None
         primary_color_changed = (mode != _global_prev_mode) or (current_color != _global_prev_color)
         
-        if primary_color_changed:
-            # Map RGBMode to hardware command
-            # 将RGBMode映射到硬件命令
-            if mode == RGBMode.Solid:
-                if self._protocol == Protocol.X1_MINI:
-                    cmd: bytes = gen_rgb_solid(main_color.R, main_color.G, main_color.B, side=0x00)
-                else:
-                    cmd: bytes = gen_rgb_solid(main_color.R, main_color.G, main_color.B)
-            # OXP Preset modes
-            # OXP预设模式
-            elif mode == RGBMode.OXP_MONSTER_WOKE:
-                cmd: bytes = gen_rgb_mode("monster_woke")
-            elif mode == RGBMode.OXP_FLOWING:
-                cmd: bytes = gen_rgb_mode("flowing")
-            elif mode == RGBMode.OXP_SUNSET:
-                cmd: bytes = gen_rgb_mode("sunset")
-            elif mode == RGBMode.OXP_NEON:
-                cmd: bytes = gen_rgb_mode("neon")
-            elif mode == RGBMode.OXP_DREAMY:
-                cmd: bytes = gen_rgb_mode("dreamy")
-            elif mode == RGBMode.OXP_CYBERPUNK:
-                cmd: bytes = gen_rgb_mode("cyberpunk")
-            elif mode == RGBMode.OXP_COLORFUL:
-                cmd: bytes = gen_rgb_mode("colorful")
-            elif mode == RGBMode.OXP_AURORA:
-                cmd: bytes = gen_rgb_mode("aurora")
-            elif mode == RGBMode.OXP_SUN:
-                cmd: bytes = gen_rgb_mode("sun")
-            else:
-                logger.warning(f"Unsupported mode: {mode}")
-                # Don't return False here, continue to handle secondary zone
-                # 不在这里返回False，继续处理次要灯区域
-                cmd = None
-
-            if cmd is not None:
-                if self.hid_device is None:
-                    return False
-                
-                logger.debug(f"[PRIMARY] Sending color/mode command for mode={mode}")
-                
-                # WORKAROUND: Hardware timing requirement
-                # If brightness/enable command was sent (primary_state_changed), 
-                # hardware needs ≥200ms to process before accepting color/mode command
-                # This is critical for Solid mode variants (Solid/Disabled/OXP_CLASSIC)
-                # where mode is same but color/brightness may differ
-                # 变通方案：硬件时序要求
-                # 如果发送了亮度/启用命令（primary_state_changed），
-                # 硬件需要≥200ms来处理后才能接受颜色/模式命令
-                # 这对Solid模式变体（Solid/Disabled/OXP_CLASSIC）至关重要
-                # 这些模式相同但颜色/亮度可能不同
-                if primary_state_changed:
-                    self._queue_delay(0.3)  # 300ms for safety margin (>200ms minimum)
-                    logger.debug(f"[WORKAROUND] Primary state changed, adding 300ms delay for hardware processing")
-                
-                self._queue_command(cmd)
+        # Check if we can use color-first optimization
+        # Only when enabled state is unchanged (brightness level change only)
+        # 检查是否可以使用颜色优先优化
+        # 仅当enabled状态未改变时（仅亮度级别改变）
+        color_first_eligible = (
+            primary_state_changed and 
+            primary_color_changed and 
+            _global_prev_enabled == enabled and
+            mode == RGBMode.Solid  # Only for Solid mode
+        )
+        
+        if color_first_eligible:
+            # OPTIMIZATION: Color-first strategy
+            # Send color command before brightness to reduce visible intermediate state
+            # 优化：颜色优先策略
+            # 在亮度之前发送颜色命令以减少可见的中间状态
+            logger.debug(f"[OPTIMIZATION] Using color-first strategy (enabled unchanged, brightness: {_global_prev_brightness} -> {brightness_level})")
             
-            # Update global state tracking
-            # FIX: Store converted mode (Solid) instead of original_mode (Disabled)
-            # This prevents mode_changed from always being True when in Disabled mode
-            # 更新全局状态跟踪
-            # 修复：存储转换后的模式（Solid）而不是原始模式（Disabled）
-            # 这防止Disabled模式下mode_changed总是为True
-            _global_prev_mode = mode  # FIX: was original_mode
-            _global_prev_color = current_color
-            _global_prev_brightness = brightness_level
+            if self.hid_device is None:
+                return False
+            
+            # Step 1: Send color command first
+            # 步骤1：先发送颜色命令
+            if self._protocol == Protocol.X1_MINI:
+                cmd: bytes = gen_rgb_solid(main_color.R, main_color.G, main_color.B, side=0x00)
+            else:
+                cmd: bytes = gen_rgb_solid(main_color.R, main_color.G, main_color.B)
+            
+            logger.debug(f"[PRIMARY] Sending color first: R={main_color.R}, G={main_color.G}, B={main_color.B}")
+            self._queue_command(cmd)
+            
+            # Step 2: Add delay for hardware processing
+            # 步骤2：添加延迟等待硬件处理
+            self._queue_delay(0.25)
+            logger.debug(f"[OPTIMIZATION] Adding 250ms delay before brightness command")
+            
+            # Step 3: Send brightness command
+            # 步骤3：发送亮度命令
+            logger.debug(f"[PRIMARY] Sending brightness after color: enabled={enabled}, brightness={brightness_level}")
+            if self._protocol == Protocol.X1_MINI:
+                self._queue_command(gen_brightness(0, enabled, brightness_level))
+            else:
+                brightness_cmd = gen_brightness(enabled, brightness_level)
+                self._queue_command(brightness_cmd)
+            
+            # Update global state
+            # 更新全局状态
             _global_prev_enabled = enabled
+            _global_prev_brightness = brightness_level
+            _global_prev_mode = mode
+            _global_prev_color = current_color
+            
         else:
-            logger.debug(f"[PRIMARY] No change in color/mode, skipping primary zone command")
+            # Original logic: brightness first, then color
+            # 原始逻辑：先亮度后颜色
+            
+            if primary_state_changed:
+                logger.debug(f"[PRIMARY] Sending brightness: enabled={enabled}, brightness={brightness_level}")
+                
+                if self._protocol == Protocol.X1_MINI:
+                    # V1: gen_brightness(side, enabled, brightness_level)
+                    # Use side=0 for all primary zones (left + right controllers)
+                    # V1：gen_brightness(side, enabled, brightness_level)
+                    # 使用 side=0 控制所有主区域（左右手柄）
+                    self._queue_command(gen_brightness(0, enabled, brightness_level))
+                else:
+                    # V2: gen_brightness(enabled, brightness_level)
+                    brightness_cmd = gen_brightness(enabled, brightness_level)
+                    self._queue_command(brightness_cmd)
+                
+                _global_prev_enabled = enabled
+                _global_prev_brightness = brightness_level
+
+            if primary_color_changed:
+                # Map RGBMode to hardware command
+                # 将RGBMode映射到硬件命令
+                if mode == RGBMode.Solid:
+                    if self._protocol == Protocol.X1_MINI:
+                        cmd: bytes = gen_rgb_solid(main_color.R, main_color.G, main_color.B, side=0x00)
+                    else:
+                        cmd: bytes = gen_rgb_solid(main_color.R, main_color.G, main_color.B)
+                # OXP Preset modes
+                # OXP预设模式
+                elif mode == RGBMode.OXP_MONSTER_WOKE:
+                    cmd: bytes = gen_rgb_mode("monster_woke")
+                elif mode == RGBMode.OXP_FLOWING:
+                    cmd: bytes = gen_rgb_mode("flowing")
+                elif mode == RGBMode.OXP_SUNSET:
+                    cmd: bytes = gen_rgb_mode("sunset")
+                elif mode == RGBMode.OXP_NEON:
+                    cmd: bytes = gen_rgb_mode("neon")
+                elif mode == RGBMode.OXP_DREAMY:
+                    cmd: bytes = gen_rgb_mode("dreamy")
+                elif mode == RGBMode.OXP_CYBERPUNK:
+                    cmd: bytes = gen_rgb_mode("cyberpunk")
+                elif mode == RGBMode.OXP_COLORFUL:
+                    cmd: bytes = gen_rgb_mode("colorful")
+                elif mode == RGBMode.OXP_AURORA:
+                    cmd: bytes = gen_rgb_mode("aurora")
+                elif mode == RGBMode.OXP_SUN:
+                    cmd: bytes = gen_rgb_mode("sun")
+                else:
+                    logger.warning(f"Unsupported mode: {mode}")
+                    # Don't return False here, continue to handle secondary zone
+                    # 不在这里返回False，继续处理次要灯区域
+                    cmd = None
+
+                if cmd is not None:
+                    if self.hid_device is None:
+                        return False
+                    
+                    logger.debug(f"[PRIMARY] Sending color/mode command for mode={mode}")
+                    
+                    # WORKAROUND: Hardware timing requirement
+                    # If brightness/enable command was sent (primary_state_changed), 
+                    # hardware needs ≥200ms to process before accepting color/mode command
+                    # This is critical for Solid mode variants (Solid/Disabled/OXP_CLASSIC)
+                    # where mode is same but color/brightness may differ
+                    # 变通方案：硬件时序要求
+                    # 如果发送了亮度/启用命令（primary_state_changed），
+                    # 硬件需要≥200ms来处理后才能接受颜色/模式命令
+                    # 这对Solid模式变体（Solid/Disabled/OXP_CLASSIC）至关重要
+                    # 这些模式相同但颜色/亮度可能不同
+                    if primary_state_changed:
+                        self._queue_delay(0.3)  # 300ms for safety margin (>200ms minimum)
+                        logger.debug(f"[WORKAROUND] Primary state changed, adding 300ms delay for hardware processing")
+                    
+                    self._queue_command(cmd)
+                
+                # Update global state tracking
+                # FIX: Store converted mode (Solid) instead of original_mode (Disabled)
+                # This prevents mode_changed from always being True when in Disabled mode
+                # 更新全局状态跟踪
+                # 修复：存储转换后的模式（Solid）而不是原始模式（Disabled）
+                # 这防止Disabled模式下mode_changed总是为True
+                _global_prev_mode = mode  # FIX: was original_mode
+                _global_prev_color = current_color
+                _global_prev_brightness = brightness_level
+                _global_prev_enabled = enabled
+            else:
+                logger.debug(f"[PRIMARY] No change in color/mode, skipping primary zone command")
         
         # ============================================================
         # SECONDARY ZONE CONTROL (Independent)
