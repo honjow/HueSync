@@ -69,5 +69,10 @@
     "PROFILE": "โปรไฟล์",
     "AC_MODE": "โหมดเสียบปลั๊ก",
     "BAT_MODE": "โหมดแบตเตอรี่",
-    "UNKNOWN": "ไม่ทราบ"
+    "UNKNOWN": "ไม่ทราบ",
+    "ZONE_PRIMARY_NAME": "จอยสติ๊ก",
+    "ZONE_SECONDARY_CENTER_NAME": "โซนกลาง",
+    "ZONE_SECONDARY_FRONT_PANEL_NAME": "แผงหน้า",
+    "ZONE_SECONDARY_GENERIC_NAME": "โซนรอง",
+    "RGB_BASIC_SETTINGS": "การควบคุมไฟ"
 }

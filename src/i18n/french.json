@@ -69,5 +69,10 @@
     "PROFILE": " Profil",
     "AC_MODE": "Mode secteur",
     "BAT_MODE": "Mode batterie",
-    "UNKNOWN": "Inconnu"
+    "UNKNOWN": "Inconnu",
+    "ZONE_PRIMARY_NAME": "Joysticks",
+    "ZONE_SECONDARY_CENTER_NAME": "Zone centrale",
+    "ZONE_SECONDARY_FRONT_PANEL_NAME": "Panneau avant",
+    "ZONE_SECONDARY_GENERIC_NAME": "Zone secondaire",
+    "RGB_BASIC_SETTINGS": "Contrôle d'éclairage"
 }

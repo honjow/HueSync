@@ -69,5 +69,10 @@
     "PROFILE": " 프로필",
     "AC_MODE": "AC 전원 모드",
     "BAT_MODE": "배터리 모드",
-    "UNKNOWN": "알 수 없음"
+    "UNKNOWN": "알 수 없음",
+    "ZONE_PRIMARY_NAME": "조이스틱",
+    "ZONE_SECONDARY_CENTER_NAME": "센터 영역",
+    "ZONE_SECONDARY_FRONT_PANEL_NAME": "전면 패널",
+    "ZONE_SECONDARY_GENERIC_NAME": "보조 영역",
+    "RGB_BASIC_SETTINGS": "조명 제어"
 }

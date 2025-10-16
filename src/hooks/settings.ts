@@ -1,4 +1,4 @@
-import { Backend, hsvToRgb, Logger, RGBMode, RGBModeCapabilities, RunningApps, ACStateManager, EACState, DEFAULT_APP } from "../util";
+import { Backend, hsvToRgb, Logger, RGBMode, RGBModeCapabilities, RunningApps, ACStateManager, EACState, DEFAULT_APP, DeviceCapabilities } from "../util";
 
 export class RgbSetting {
   public enableControl = false;
@@ -9,6 +9,9 @@ export class RgbSetting {
   public hue2 = 0;
   public saturation2 = 100;
   public brightness2 = 100;
+  public secondaryZoneHue = 0;
+  public secondaryZoneSaturation = 100;
+  public secondaryZoneBrightness = 100;
   public speed = "low";
   public brightnessLevel = "high";
 
@@ -21,6 +24,9 @@ export class RgbSetting {
     this.hue2 = source.hue2;
     this.saturation2 = source.saturation2;
     this.brightness2 = source.brightness2;
+    this.secondaryZoneHue = source.secondaryZoneHue;
+    this.secondaryZoneSaturation = source.secondaryZoneSaturation;
+    this.secondaryZoneBrightness = source.secondaryZoneBrightness;
     this.speed = source.speed;
     this.brightnessLevel = source.brightnessLevel;
   }
@@ -53,6 +59,21 @@ export class RgbSetting {
 
   get blue2(): number {
     const [, , b] = hsvToRgb(this.hue2, this.saturation2, this.brightness2);
+    return b;
+  }
+
+  get secondaryZoneRed(): number {
+    const [r] = hsvToRgb(this.secondaryZoneHue, this.secondaryZoneSaturation, this.secondaryZoneBrightness);
+    return r;
+  }
+
+  get secondaryZoneGreen(): number {
+    const [, g] = hsvToRgb(this.secondaryZoneHue, this.secondaryZoneSaturation, this.secondaryZoneBrightness);
+    return g;
+  }
+
+  get secondaryZoneBlue(): number {
+    const [, , b] = hsvToRgb(this.secondaryZoneHue, this.secondaryZoneSaturation, this.secondaryZoneBrightness);
     return b;
   }
 }
@@ -188,6 +209,7 @@ export class Setting {
   // Static members | 静态成员
   public static isSupportSuspendMode: boolean = false;
   public static modeCapabilities: Record<string, RGBModeCapabilities> = {};
+  public static deviceCapabilities: DeviceCapabilities | null = null;
 
   // Event system for configuration changes | 配置变更事件系统
   private static settingChangeEvent = new EventTarget();
@@ -317,13 +339,15 @@ export class Setting {
       this._settingsData.perApp[DEFAULT_APP] = new AppRgbData();
     }
 
-    const [isSupportSuspendMode, modeCapabilities] = await Promise.all([
+    const [isSupportSuspendMode, modeCapabilities, deviceCapabilities] = await Promise.all([
       Backend.isSupportSuspendMode(),
       Backend.getModeCapabilities(),
+      Backend.getDeviceCapabilities(),
     ]);
 
     this.isSupportSuspendMode = isSupportSuspendMode;
     this.modeCapabilities = modeCapabilities;
+    this.deviceCapabilities = deviceCapabilities;
   }
 
   public static async loadSettingsData() {
@@ -435,6 +459,24 @@ export class Setting {
 
   @Setting.readonlyProperty<number>("blue2")
   public static blue2: number;
+
+  @Setting.settingProperty<number>("secondaryZoneHue")
+  public static secondaryZoneHue: number;
+
+  @Setting.settingProperty<number>("secondaryZoneSaturation")
+  public static secondaryZoneSaturation: number;
+
+  @Setting.settingProperty<number>("secondaryZoneBrightness")
+  public static secondaryZoneBrightness: number;
+
+  @Setting.readonlyProperty<number>("secondaryZoneRed")
+  public static secondaryZoneRed: number;
+
+  @Setting.readonlyProperty<number>("secondaryZoneGreen")
+  public static secondaryZoneGreen: number;
+
+  @Setting.readonlyProperty<number>("secondaryZoneBlue")
+  public static secondaryZoneBlue: number;
 
   @Setting.settingProperty<string>("speed")
   public static speed: string;

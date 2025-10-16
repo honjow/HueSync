@@ -96,6 +96,7 @@ class LedControl:
         mode: RGBMode | None = None,
         color: Color | None = None,
         color2: Color | None = None,
+        zone_colors: dict[str, Color] | None = None,
         init: bool = False,
         brightness: int | None = None,
         speed: str | None = None,
@@ -108,6 +109,7 @@ class LedControl:
             mode or RGBMode.Solid,
             color,
             color2,
+            zone_colors=zone_colors,
             init=init,
             brightness=brightness,
             speed=speed,
@@ -176,16 +178,25 @@ class LedControl:
         Returns:
             dict: Device capabilities
             {
+                "zones": [{"id": "primary", "name_key": "ZONE_PRIMARY_NAME"}],
                 "power_led": bool,  # Whether power LED control is supported
+                "suspend_mode": bool,  # Whether suspend mode control is supported
             }
         """
-        return {
-            "power_led": (
+        # Get base capabilities from device
+        # 从设备获取基础能力
+        base_caps = self.device.get_device_capabilities()
+        
+        # Add legacy power_led check for backward compatibility
+        # 为向后兼容性添加传统的power_led检查
+        if "power_led" not in base_caps:
+            base_caps["power_led"] = (
                 hasattr(self.device, 'set_power_light') and 
                 hasattr(self.device, 'get_power_light') and
                 getattr(self.device, '_power_led_available', False)
-            ),
-        }
+            )
+        
+        return base_caps
 
     def set_power_light(self, enabled: bool) -> bool:
         """

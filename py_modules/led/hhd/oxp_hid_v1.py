@@ -110,7 +110,7 @@ def gen_brightness(
     }
     bc = brightness_map.get(brightness, 0x04)
     
-    return gen_cmd(0xB8, [0xFD, 0x00, 0x02, int(enabled), 0x05, bc])
+    return gen_cmd(0xB8, [0xFD, side, 0x02, int(enabled), 0x05, bc])
 
 
 def gen_rgb_solid(r: int, g: int, b: int, side: int = 0x00) -> bytes:

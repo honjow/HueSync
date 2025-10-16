@@ -69,5 +69,10 @@
     "PROFILE": " Профил",
     "AC_MODE": "Режим на захранване",
     "BAT_MODE": "Режим на батерия",
-    "UNKNOWN": "Неизвестно"
+    "UNKNOWN": "Неизвестно",
+    "ZONE_PRIMARY_NAME": "Джойстици",
+    "ZONE_SECONDARY_CENTER_NAME": "Централна зона",
+    "ZONE_SECONDARY_FRONT_PANEL_NAME": "Преден панел",
+    "ZONE_SECONDARY_GENERIC_NAME": "Вторична зона",
+    "RGB_BASIC_SETTINGS": "Контрол на осветлението"
 }
