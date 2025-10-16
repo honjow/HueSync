@@ -542,16 +542,18 @@ class OneXLEDDeviceHID:
                 logger.debug(f"[PRIMARY] Sending color/mode command for mode={mode}")
                 
                 # WORKAROUND: Hardware timing requirement
-                # When mode changes, brightness command is sent first (Line 486)
-                # Hardware needs ≥200ms to process brightness/enable state change
-                # before accepting color/mode command
+                # If brightness/enable command was sent (primary_state_changed), 
+                # hardware needs ≥200ms to process before accepting color/mode command
+                # This is critical for Solid mode variants (Solid/Disabled/OXP_CLASSIC)
+                # where mode is same but color/brightness may differ
                 # 变通方案：硬件时序要求
-                # 模式改变时，先发送亮度命令（Line 486）
-                # 硬件需要≥200ms来处理亮度/启用状态改变
-                # 然后才能接受颜色/模式命令
-                if mode_changed:
+                # 如果发送了亮度/启用命令（primary_state_changed），
+                # 硬件需要≥200ms来处理后才能接受颜色/模式命令
+                # 这对Solid模式变体（Solid/Disabled/OXP_CLASSIC）至关重要
+                # 这些模式相同但颜色/亮度可能不同
+                if primary_state_changed:
                     self._queue_delay(0.3)  # 300ms for safety margin (>200ms minimum)
-                    logger.debug(f"[WORKAROUND] Mode changed, adding 300ms delay for hardware processing")
+                    logger.debug(f"[WORKAROUND] Primary state changed, adding 300ms delay for hardware processing")
                 
                 self._queue_command(cmd)
             
