@@ -421,16 +421,14 @@ class OneXLEDDeviceHID:
         else:
             from .hhd.oxp_hid_v2 import gen_brightness, gen_rgb_mode, gen_rgb_solid
 
-        # WORKAROUND: Use solid black instead of true disabled mode
-        # This avoids hardware state transition issues when re-enabling
-        # 变通方案：使用纯黑solid模式代替真正的禁用模式
-        # 这避免了重新启用时的硬件状态转换问题
+        # TEST: Re-enable Solid Black workaround to verify enabled=True behavior
+        # 测试：重新启用Solid Black workaround以验证enabled=True的行为
         original_mode = mode  # Save original mode for tracking
         is_disabled_mode = mode == RGBMode.Disabled
         if is_disabled_mode:
-            # Keep LEDs enabled, but set to black
-            # 保持LED启用，但设置为黑色
-            logger.debug(f"[WORKAROUND] Converting Disabled mode to Solid Black")
+            # Solid Black workaround: enabled=True with black color
+            # Solid Black变通方案：enabled=True配合黑色
+            logger.debug(f"[TEST] Using Solid Black workaround (enabled=True, color=0,0,0)")
             enabled = True
             mode = RGBMode.Solid
             main_color = Color(0, 0, 0)
@@ -464,8 +462,10 @@ class OneXLEDDeviceHID:
         # ============================================================
         
         # Track mode changes for workaround logic
+        # FIX: Compare with converted mode (Solid) instead of original_mode (Disabled)
         # 跟踪模式变化用于workaround逻辑
-        mode_changed = _global_prev_mode != original_mode
+        # 修复：与转换后的模式（Solid）比较而不是原始模式（Disabled）
+        mode_changed = _global_prev_mode != mode  # FIX: was original_mode
         
         # Check if primary zone state changed
         # 检查主灯区域状态是否改变
@@ -540,20 +540,28 @@ class OneXLEDDeviceHID:
                     return False
                 
                 logger.debug(f"[PRIMARY] Sending color/mode command for mode={mode}")
-                self._queue_command(cmd)
                 
-                # WORKAROUND: If mode changed, resend command for hardware stability
-                # 变通方案：如果模式改变，重发命令以确保硬件稳定性
+                # WORKAROUND: Hardware timing requirement
+                # When mode changes, brightness command is sent first (Line 486)
+                # Hardware needs ≥200ms to process brightness/enable state change
+                # before accepting color/mode command
+                # 变通方案：硬件时序要求
+                # 模式改变时，先发送亮度命令（Line 486）
+                # 硬件需要≥200ms来处理亮度/启用状态改变
+                # 然后才能接受颜色/模式命令
                 if mode_changed:
-                    logger.debug(f"[WORKAROUND] Mode changed, flushing + waiting + resending")
-                    self._flush_queue()
-                    time.sleep(0.1)
-                    self._queue_command(cmd)
-                    self._flush_queue()  # Flush resend immediately to prevent mixing with secondary zone commands
+                    self._queue_delay(0.3)  # 300ms for safety margin (>200ms minimum)
+                    logger.debug(f"[WORKAROUND] Mode changed, adding 300ms delay for hardware processing")
+                
+                self._queue_command(cmd)
             
             # Update global state tracking
+            # FIX: Store converted mode (Solid) instead of original_mode (Disabled)
+            # This prevents mode_changed from always being True when in Disabled mode
             # 更新全局状态跟踪
-            _global_prev_mode = original_mode
+            # 修复：存储转换后的模式（Solid）而不是原始模式（Disabled）
+            # 这防止Disabled模式下mode_changed总是为True
+            _global_prev_mode = mode  # FIX: was original_mode
             _global_prev_color = current_color
             _global_prev_brightness = brightness_level
             _global_prev_enabled = enabled
@@ -581,7 +589,7 @@ class OneXLEDDeviceHID:
             
             # Send brightness/enable command only if enabled state changed
             # 只在启用状态改变时发送亮度/启用命令
-            if secondary_enabled_changed or True:
+            if secondary_enabled_changed:
                 self._queue_command(gen_brightness(0x03, secondary_enabled, "high"))
                 self._queue_command(gen_brightness(0x04, secondary_enabled, "high"))
                 self._queue_delay(0.5)

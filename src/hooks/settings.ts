@@ -1,4 +1,4 @@
-import { Backend, hsvToRgb, Logger, RGBMode, RGBModeCapabilities, RunningApps, ACStateManager, EACState, DEFAULT_APP, DeviceCapabilities } from "../util";
+import { Backend, hsvToRgb, RGBMode, RGBModeCapabilities, RunningApps, ACStateManager, EACState, DEFAULT_APP, DeviceCapabilities } from "../util";
 
 export class RgbSetting {
   public enableControl = false;
@@ -358,7 +358,7 @@ export class Setting {
   }
 
   public static async saveSettingsData() {
-    Logger.debug(`HueSync: saveSettingsData: ${JSON.stringify(this.settingsData)}`);
+    // Logger.debug(`HueSync: saveSettingsData: ${JSON.stringify(this.settingsData)}`);
     await Backend.setSettings(this.settingsData);
   }
 
