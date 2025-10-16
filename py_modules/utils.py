@@ -62,6 +62,12 @@ class RGBModeCapabilities:
     speed: bool = False  # Whether the mode supports adjusting animation speed
     brightness: bool = False  # Whether the mode supports adjusting HSV brightness (V value)
     brightness_level: bool = False  # Whether the mode supports hardware brightness level (low/medium/high)
+    zones: list[str] | None = None  # Supported zones: ['primary', 'secondary', ...]
+    
+    def __post_init__(self):
+        """Initialize default zones if not provided"""
+        if self.zones is None:
+            self.zones = ['primary']  # Default: only primary zone
 
 
 class Color:

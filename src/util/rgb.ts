@@ -5,6 +5,7 @@ export interface RGBModeCapabilities {
   speed: boolean;
   brightness: boolean;
   brightness_level: boolean;
+  zones: string[];
 }
 
 export function hslToRgb(

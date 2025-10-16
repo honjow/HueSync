@@ -341,6 +341,7 @@ class OneXLEDDeviceHID:
         main_color: Color,
         mode: RGBMode,
         brightness: int = 100,
+        secondary_color: Color | None = None,
     ) -> bool:
         """
         Set LED color and mode with improved protocol handling.
@@ -357,6 +358,7 @@ class OneXLEDDeviceHID:
             main_color: RGB color values
             mode: RGB mode (Disabled, Solid, Rainbow, or OXP presets)
             brightness: Brightness level (0-100)
+            secondary_color: Secondary zone RGB color (optional)
             
         Returns:
             bool: True if successful
@@ -520,6 +522,23 @@ class OneXLEDDeviceHID:
         _global_prev_color = current_color
         _global_prev_brightness = brightness_level
         _global_prev_enabled = enabled
+        
+        # Secondary zone color setting (unconditional, matching HHD behavior)
+        # 副区域颜色设置（无条件发送，匹配HHD行为）
+        # Hardware will automatically ignore commands for zones it doesn't support
+        # 硬件会自动忽略不支持区域的命令
+        if secondary_color:
+            # Secondary zones always use "high" brightness (matching HHD line 227-228)
+            # 副区域总是使用"high"亮度（匹配HHD第227-228行）
+            if self._protocol == Protocol.X1_MINI:
+                self._queue_command(gen_brightness(0x03, True, "high"))
+                self._queue_command(gen_brightness(0x04, True, "high"))
+            
+            # Set secondary zone colors (side 0x03 and 0x04, matching HHD line 233-234)
+            # 设置副区域颜色（side 0x03和0x04，匹配HHD第233-234行）
+            self._queue_command(gen_rgb_solid(secondary_color.R, secondary_color.G, secondary_color.B, side=0x03))
+            self._queue_command(gen_rgb_solid(secondary_color.R, secondary_color.G, secondary_color.B, side=0x04))
+            logger.debug(f"[SECONDARY] Sending secondary zone color: R={secondary_color.R}, G={secondary_color.G}, B={secondary_color.B}")
         
         # Flush all commands with proper delays
         # 按适当延迟发送所有命令

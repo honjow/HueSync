@@ -8,6 +8,10 @@ export const useRgb = () => {
   const [saturation, setSaturation] = useState<number>(Setting.saturation);
   const [brightness, setBrightness] = useState<number>(Setting.brightness);
 
+  const [secondaryZoneHue, setSecondaryZoneHue] = useState<number>(Setting.secondaryZoneHue);
+  const [secondaryZoneSaturation, setSecondaryZoneSaturation] = useState<number>(Setting.secondaryZoneSaturation);
+  const [secondaryZoneBrightness, setSecondaryZoneBrightness] = useState<number>(Setting.secondaryZoneBrightness);
+
   const [rgbMode, setRgbMode] = useState<RGBMode>(Setting.mode);
 
   const [enableControl, setEnableControl] = useState<boolean>(
@@ -24,6 +28,9 @@ export const useRgb = () => {
       setHue2(Setting.hue2);
       setSaturation(Setting.saturation);
       setBrightness(Setting.brightness);
+      setSecondaryZoneHue(Setting.secondaryZoneHue);
+      setSecondaryZoneSaturation(Setting.secondaryZoneSaturation);
+      setSecondaryZoneBrightness(Setting.secondaryZoneBrightness);
       setRgbMode(Setting.mode);
       setEnableControl(Setting.enableControl);
       setSpeed(Setting.speed);
@@ -92,13 +99,35 @@ export const useRgb = () => {
     await Backend.applySettings();
   };
 
+  const setSecondaryZoneHsv = async (
+    h: number,
+    s: number,
+    v: number,
+    apply: boolean = true
+  ) => {
+    setSecondaryZoneHue(h);
+    setSecondaryZoneSaturation(s);
+    setSecondaryZoneBrightness(v);
+    Setting.secondaryZoneHue = h;
+    Setting.secondaryZoneSaturation = s;
+    Setting.secondaryZoneBrightness = v;
+
+    if (apply) {
+      await Backend.applySettings();
+    }
+  };
+
   return {
     hue,
     hue2,
     saturation,
     brightness,
+    secondaryZoneHue,
+    secondaryZoneSaturation,
+    secondaryZoneBrightness,
     setHsv,
     setHue2Value,
+    setSecondaryZoneHsv,
     rgbMode,
     updateRgbMode,
     enableControl,

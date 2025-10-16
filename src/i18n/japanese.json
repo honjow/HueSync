@@ -69,5 +69,10 @@
     "PROFILE": "設定",
     "AC_MODE": "AC電源モード",
     "BAT_MODE": "バッテリーモード",
-    "UNKNOWN": "不明"
+    "UNKNOWN": "不明",
+    "ZONE_PRIMARY_NAME": "ジョイスティック",
+    "ZONE_SECONDARY_CENTER_NAME": "センターゾーン",
+    "ZONE_SECONDARY_FRONT_PANEL_NAME": "フロントパネル",
+    "ZONE_SECONDARY_GENERIC_NAME": "セカンダリゾーン",
+    "RGB_BASIC_SETTINGS": "ライト制御"
 }

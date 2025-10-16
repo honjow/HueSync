@@ -69,5 +69,10 @@
     "PROFILE": " Profile",
     "AC_MODE": "AC Mode",
     "BAT_MODE": "Battery Mode",
-    "UNKNOWN": "Unknown"
+    "UNKNOWN": "Unknown",
+    "ZONE_PRIMARY_NAME": "Joysticks",
+    "ZONE_SECONDARY_CENTER_NAME": "Center Zone",
+    "ZONE_SECONDARY_FRONT_PANEL_NAME": "Front Panel",
+    "ZONE_SECONDARY_GENERIC_NAME": "Secondary Zone",
+    "RGB_BASIC_SETTINGS": "Light Control"
 }

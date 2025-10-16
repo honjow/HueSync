@@ -3,6 +3,17 @@ import { call } from "@decky/api";
 import { debounce } from "lodash";
 import { Logger, RGBModeCapabilities } from ".";
 
+export interface ZoneInfo {
+  id: string;
+  name_key: string;
+}
+
+export interface DeviceCapabilities {
+  zones: ZoneInfo[];
+  power_led: boolean;
+  suspend_mode: boolean;
+}
+
 interface ApplySettingsOptions {
   isInit?: boolean;
 }
@@ -16,6 +27,9 @@ interface ApplyColorOptions {
   red2?: number;
   green2?: number;
   blue2?: number;
+  zoneColors?: {
+    secondary?: { r: number; g: number; b: number };
+  };
   brightness?: number;
   speed?: string;
   brightnessLevel?: string;
@@ -69,7 +83,7 @@ export class Backend {
 
   private static applyColor(options: ApplyColorOptions = {}) {
     console.log(
-      `Applying color: mode=${options.mode} r=${options.red} g=${options.green} b=${options.blue} r2=${options.red2} g2=${options.green2} b2=${options.blue2} init=${options.isInit} brightness=${options.brightness} speed=${options.speed} brightnessLevel=${options.brightnessLevel}`,
+      `Applying color: mode=${options.mode} r=${options.red} g=${options.green} b=${options.blue} r2=${options.red2} g2=${options.green2} b2=${options.blue2} zoneColors=${JSON.stringify(options.zoneColors)} init=${options.isInit} brightness=${options.brightness} speed=${options.speed} brightnessLevel=${options.brightnessLevel}`,
     );
     const {
       mode = "disabled",
@@ -79,11 +93,23 @@ export class Backend {
       red2 = 0,
       green2 = 0,
       blue2 = 0,
+      zoneColors = null,
       isInit = false,
       brightness = 100,
       speed = "low",
       brightnessLevel = "high",
     } = options;
+    
+    // Convert zoneColors format for backend
+    // 将 zoneColors 格式转换为后端格式
+    const zoneColorsDict = zoneColors ? {
+      secondary: zoneColors.secondary ? {
+        R: zoneColors.secondary.r,
+        G: zoneColors.secondary.g,
+        B: zoneColors.secondary.b,
+      } : null,
+    } : null;
+    
     call<
       [
         mode: string,
@@ -97,9 +123,10 @@ export class Backend {
         brightness: number,
         speed: string,
         brightnessLevel: string,
+        zoneColors: any,
       ],
       void
-    >("set_color", mode, red, green, blue, red2, green2, blue2, isInit, brightness, speed, brightnessLevel);
+    >("set_color", mode, red, green, blue, red2, green2, blue2, isInit, brightness, speed, brightnessLevel, zoneColorsDict);
   }
 
   public static throwSuspendEvt() {
@@ -134,6 +161,16 @@ export class Backend {
     return (await call("is_support_suspend_mode")) as boolean;
   }
 
+  // get_device_capabilities
+  public static async getDeviceCapabilities(): Promise<DeviceCapabilities> {
+    return (await call("get_device_capabilities")) as DeviceCapabilities;
+  }
+
+  // get_mode_capabilities
+  public static async getModeCapabilities(): Promise<Record<string, RGBModeCapabilities>> {
+    return (await call("get_mode_capabilities")) as Record<string, RGBModeCapabilities>;
+  }
+
   private static _applySettings = ({ isInit = false }: ApplySettingsOptions = {}) => {
     if (!Setting.enableControl) {
       return;
@@ -144,6 +181,20 @@ export class Backend {
       Backend.setSuspendMode(Setting.suspendMode);
     }
 
+    // Construct zoneColors if secondary zone colors are set
+    // 如果设置了副区域颜色，则构造 zoneColors
+    const zoneColors = Setting.secondaryZoneRed !== undefined && 
+                       Setting.secondaryZoneGreen !== undefined && 
+                       Setting.secondaryZoneBlue !== undefined
+      ? {
+          secondary: {
+            r: Setting.secondaryZoneRed,
+            g: Setting.secondaryZoneGreen,
+            b: Setting.secondaryZoneBlue,
+          },
+        }
+      : undefined;
+
     Backend.applyColor({
       mode: Setting.mode,
       red: Setting.red,
@@ -152,6 +203,7 @@ export class Backend {
       red2: Setting.red2,
       green2: Setting.green2,
       blue2: Setting.blue2,
+      zoneColors,
       isInit,
       brightness: Setting.brightness,
       speed: Setting.speed,
@@ -178,25 +230,6 @@ export class Backend {
   // set_settings
   public static async setSettings(settings: SettingsData) {
     return await call("set_settings", settings);
-  }
-
-  // get_mode_capabilities
-  public static async getModeCapabilities(): Promise<
-    Record<string, RGBModeCapabilities>
-  > {
-    return (await call("get_mode_capabilities")) as Record<
-      string,
-      RGBModeCapabilities
-    >;
-  }
-
-  // get_device_capabilities
-  public static async getDeviceCapabilities(): Promise<{
-    power_led: boolean;
-  }> {
-    return (await call("get_device_capabilities")) as {
-      power_led: boolean;
-    };
   }
 
   // set_power_light

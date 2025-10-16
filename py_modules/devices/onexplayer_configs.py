@@ -107,6 +107,7 @@ ONEXPLAYER_CONFIGS = {
         name="ONEXPLAYER X1 Air",
         protocol=OXPProtocol.HID_V1,
         rgb=True,
+        rgb_secondary=True,
     ),
     
     # ========== X1 Series (Serial) ==========

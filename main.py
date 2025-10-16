@@ -44,6 +44,7 @@ class Plugin:
         brightness: int | None = None,
         speed: str | None = None,
         brightness_level: str | None = None,
+        zone_colors: dict | None = None,
     ):
         try:
             from utils import Color, RGBMode
@@ -55,13 +56,26 @@ class Plugin:
             if r2 is not None and g2 is not None and b2 is not None:
                 color2 = Color(r2, g2, b2)
 
+            # Convert zone_colors dict to Color objects
+            # 将 zone_colors 字典转换为 Color 对象
+            zone_colors_converted = None
+            if zone_colors:
+                zone_colors_converted = {}
+                for zone_id, color_dict in zone_colors.items():
+                    if color_dict and 'R' in color_dict and 'G' in color_dict and 'B' in color_dict:
+                        zone_colors_converted[zone_id] = Color(
+                            color_dict['R'],
+                            color_dict['G'],
+                            color_dict['B']
+                        )
+
             rgb_mode = (
                 next((m for m in RGBMode if m.value == mode.lower()), None)
                 if mode
                 else None
             )
             self.ledControl.set_color(
-                rgb_mode, color, color2, init=init, brightness=brightness, speed=speed, brightness_level=brightness_level
+                rgb_mode, color, color2, zone_colors=zone_colors_converted, init=init, brightness=brightness, speed=speed, brightness_level=brightness_level
             )
             return True
         except Exception as e:
@@ -166,6 +180,7 @@ class Plugin:
                     "speed": cap.speed,
                     "brightness": cap.brightness,
                     "brightness_level": cap.brightness_level,
+                    "zones": cap.zones,  # Add zones field
                 }
                 for mode, cap in capabilities.items()
             }

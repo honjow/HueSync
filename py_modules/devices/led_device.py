@@ -42,6 +42,7 @@ class LEDDevice(ABC):
         mode: RGBMode | None = None,
         color: Color | None = None,
         color2: Color | None = None,
+        zone_colors: dict[str, Color] | None = None,
         init: bool = False,
         brightness: int | None = None,
         speed: str | None = None,
@@ -55,6 +56,7 @@ class LEDDevice(ABC):
             mode: RGB mode to set
             color: Primary color
             color2: Secondary color (for dual-color modes)
+            zone_colors: Zone color mapping, e.g., {'secondary': Color(r, g, b)}
             init: Whether this is an initialization call
             brightness: Software brightness (0-100, for HSV-based modes)
             speed: Animation speed ("low", "medium", "high")
@@ -90,6 +92,32 @@ class LEDDevice(ABC):
     @abstractmethod
     def resume(self) -> None:
         pass
+    
+    def get_device_capabilities(self) -> dict:
+        """
+        Get device hardware capabilities.
+        获取设备硬件能力。
+        
+        Returns:
+            dict: Device capabilities
+            {
+                "zones": [
+                    {"id": "primary", "name_key": "ZONE_PRIMARY_NAME"},
+                ],
+                "power_led": False,
+                "suspend_mode": True,
+            }
+        """
+        return {
+            'zones': [
+                {
+                    'id': 'primary',
+                    'name_key': 'ZONE_PRIMARY_NAME',
+                }
+            ],
+            'power_led': False,
+            'suspend_mode': True,
+        }
 
 
 class BaseLEDDevice(LEDDevice):
@@ -141,6 +169,7 @@ class BaseLEDDevice(LEDDevice):
         mode: RGBMode | None = None,
         color: Color | None = None,
         color2: Color | None = None,
+        zone_colors: dict[str, Color] | None = None,
         init: bool = False,
         speed: str | None = None,
         brightness_level: str | None = None,
@@ -154,6 +183,7 @@ class BaseLEDDevice(LEDDevice):
             mode: RGB mode to set
             color: Primary color
             color2: Secondary color (for dual-color modes)
+            zone_colors: Zone color mapping, e.g., {'secondary': Color(r, g, b)}
             init: Whether this is an initialization call
             speed: Animation speed ("low", "medium", "high")
             brightness_level: Hardware brightness level ("low", "medium", "high")
@@ -166,6 +196,7 @@ class BaseLEDDevice(LEDDevice):
         mode: RGBMode | None = None,
         color: Color | None = None,
         color2: Color | None = None,
+        zone_colors: dict[str, Color] | None = None,
         init: bool = False,
         brightness: int | None = None,
         speed: str | None = None,
@@ -180,6 +211,7 @@ class BaseLEDDevice(LEDDevice):
             mode: RGB mode to set
             color: Primary color
             color2: Secondary color (for dual-color modes)
+            zone_colors: Zone color mapping, e.g., {'secondary': Color(r, g, b)}
             init: Whether this is an initialization call
             brightness: Software brightness (0-100, for HSV-based modes)
             speed: Animation speed ("low", "medium", "high")
@@ -197,7 +229,7 @@ class BaseLEDDevice(LEDDevice):
             try:
                 logger.info(f"use hardware control: mode={mode}")
                 self.stop_effects()
-                self._set_hardware_color(mode, color, color2, init, speed=speed, brightness_level=brightness_level, **kwargs)
+                self._set_hardware_color(mode, color, color2, zone_colors, init, speed=speed, brightness_level=brightness_level, **kwargs)
                 return
             except Exception as e:
                 logger.error(e, exc_info=True)

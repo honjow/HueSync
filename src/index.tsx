@@ -22,10 +22,10 @@ const Content: FC = () => {
       >
         <PerAppControl />
         <AcStateControl />
-        <RGBComponent />
         <SuspendModeComponent />
         <PowerLedControl />
       </PanelSection>
+      <RGBComponent />
       <MoreComponent />
     </div>
   );
@@ -36,25 +36,25 @@ export default definePlugin(() => {
     await localizationManager.init();
     await Backend.init();
     await Setting.init();
-    
+
     // Register app and AC state monitoring
     RunningApps.register();
     ACStateManager.register();
-    
+
     // Listen for app changes
     RunningApps.listenActiveChange((newAppId, oldAppId) => {
       console.log(`[HueSync] App changed: ${oldAppId} -> ${newAppId}`);
       Backend.applySettings({ isInit: false });
       Setting.notifyChange();
     });
-    
+
     // Listen for AC state changes
     ACStateManager.onACStateChange(() => {
       console.log(`[HueSync] AC state changed`);
       Backend.applySettings({ isInit: false });
       Setting.notifyChange();
     });
-    
+
     Backend.applySettings({ isInit: true });
   }
 
@@ -63,7 +63,7 @@ export default definePlugin(() => {
   SteamUtils.RegisterForOnResumeFromSuspend(async () => {
     setTimeout(async () => {
       Backend.applySettings({ isInit: true });
-      
+
       // Power LED resume handling | 电源灯唤醒恢复
       if (Setting.powerLedSuspendOff) {
         const savedState = sessionStorage.getItem('powerLedStateBeforeSuspend');
@@ -73,14 +73,14 @@ export default definePlugin(() => {
           console.log("Power LED restored after resume");
         }
       }
-      
+
       console.log("Resume from suspend");
     }, 5000);
   });
 
   SteamUtils.RegisterForOnSuspendRequest(async () => {
     Backend.throwSuspendEvt();
-    
+
     // Power LED suspend handling | 电源灯睡眠处理
     if (Setting.powerLedSuspendOff) {
       const currentState = await Backend.getPowerLight();
@@ -91,7 +91,7 @@ export default definePlugin(() => {
         console.log("Power LED turned off for suspend");
       }
     }
-    
+
     console.log("Entering suspend mode");
   });
   return {

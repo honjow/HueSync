@@ -69,5 +69,10 @@
     "PROFILE": " Profil",
     "AC_MODE": "Netzbetrieb",
     "BAT_MODE": "Akkubetrieb",
-    "UNKNOWN": "Unbekannt"
+    "UNKNOWN": "Unbekannt",
+    "ZONE_PRIMARY_NAME": "Joysticks",
+    "ZONE_SECONDARY_CENTER_NAME": "Zentrale Zone",
+    "ZONE_SECONDARY_FRONT_PANEL_NAME": "Frontpanel",
+    "ZONE_SECONDARY_GENERIC_NAME": "Sekundäre Zone",
+    "RGB_BASIC_SETTINGS": "Lichtsteuerung"
 }

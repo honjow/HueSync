@@ -69,5 +69,10 @@
     "PROFILE": "配置",
     "AC_MODE": "插电模式",
     "BAT_MODE": "电池模式",
-    "UNKNOWN": "未知"
+    "UNKNOWN": "未知",
+    "ZONE_PRIMARY_NAME": "摇杆",
+    "ZONE_SECONDARY_CENTER_NAME": "中央区域",
+    "ZONE_SECONDARY_FRONT_PANEL_NAME": "前面板",
+    "ZONE_SECONDARY_GENERIC_NAME": "副区域",
+    "RGB_BASIC_SETTINGS": "灯光控制"
 }
