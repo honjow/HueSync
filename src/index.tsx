@@ -16,7 +16,7 @@ import { SteamUtils } from "./util/steamUtils";
 const Content: FC = () => {
 
   return (
-    <div>
+    <>
       <PanelSection
         title={localizationManager.getString(localizeStrEnum.TITEL_SETTINGS)}
       >
@@ -27,7 +27,7 @@ const Content: FC = () => {
       </PanelSection>
       <RGBComponent />
       <MoreComponent />
-    </div>
+    </>
   );
 };
 
