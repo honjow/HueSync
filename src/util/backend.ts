@@ -30,6 +30,9 @@ interface ApplyColorOptions {
   zoneColors?: {
     secondary?: { r: number; g: number; b: number };
   };
+  zoneEnabled?: {
+    secondary?: boolean;
+  };
   brightness?: number;
   speed?: string;
   brightnessLevel?: string;
@@ -94,6 +97,7 @@ export class Backend {
       green2 = 0,
       blue2 = 0,
       zoneColors = null,
+      zoneEnabled = null,
       isInit = false,
       brightness = 100,
       speed = "low",
@@ -110,6 +114,12 @@ export class Backend {
       } : null,
     } : null;
     
+    // Convert zoneEnabled format for backend
+    // 将 zoneEnabled 格式转换为后端格式
+    const zoneEnabledDict = zoneEnabled ? {
+      secondary: zoneEnabled.secondary,
+    } : null;
+    
     call<
       [
         mode: string,
@@ -124,9 +134,10 @@ export class Backend {
         speed: string,
         brightnessLevel: string,
         zoneColors: any,
+        zoneEnabled: any,
       ],
       void
-    >("set_color", mode, red, green, blue, red2, green2, blue2, isInit, brightness, speed, brightnessLevel, zoneColorsDict);
+    >("set_color", mode, red, green, blue, red2, green2, blue2, isInit, brightness, speed, brightnessLevel, zoneColorsDict, zoneEnabledDict);
   }
 
   public static throwSuspendEvt() {
@@ -195,6 +206,14 @@ export class Backend {
         }
       : undefined;
 
+    // Construct zoneEnabled if device has secondary zone
+    // 如果设备有副区域，则构造 zoneEnabled
+    const zoneEnabled = Setting.deviceCapabilities?.zones?.some(z => z.id === 'secondary')
+      ? {
+          secondary: Setting.secondaryZoneEnabled,
+        }
+      : undefined;
+
     Backend.applyColor({
       mode: Setting.mode,
       red: Setting.red,
@@ -204,6 +223,7 @@ export class Backend {
       green2: Setting.green2,
       blue2: Setting.blue2,
       zoneColors,
+      zoneEnabled,
       isInit,
       brightness: Setting.brightness,
       speed: Setting.speed,

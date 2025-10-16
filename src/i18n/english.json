@@ -74,5 +74,6 @@
     "ZONE_SECONDARY_CENTER_NAME": "Center Zone",
     "ZONE_SECONDARY_FRONT_PANEL_NAME": "Front Panel",
     "ZONE_SECONDARY_GENERIC_NAME": "Secondary Zone",
-    "RGB_BASIC_SETTINGS": "Light Control"
+    "RGB_BASIC_SETTINGS": "Light Control",
+    "ENABLE_SECONDARY_ZONE": "Enable Secondary Zone"
 }

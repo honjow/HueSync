@@ -27,6 +27,11 @@ _global_prev_brightness = None
 _global_prev_mode = None
 _global_prev_color = None  # Track color changes in Solid mode
 
+# Note: Secondary zone does NOT use state tracking to avoid complexity
+# Just send commands every time - hardware can handle it
+# 注意：次要区域不使用状态跟踪以避免复杂性
+# 每次都发送命令 - 硬件可以处理
+
 """
 convert from https://github.com/Valkirie/HandheldCompanion/blob/main/HandheldCompanion/Devices/OneXPlayer/OneXPlayerOneXFly.cs 
 """
@@ -342,6 +347,7 @@ class OneXLEDDeviceHID:
         mode: RGBMode,
         brightness: int = 100,
         secondary_color: Color | None = None,
+        secondary_enabled: bool = True,  # New parameter: independent secondary zone switch
     ) -> bool:
         """
         Set LED color and mode with improved protocol handling.
@@ -359,6 +365,7 @@ class OneXLEDDeviceHID:
             mode: RGB mode (Disabled, Solid, Rainbow, or OXP presets)
             brightness: Brightness level (0-100)
             secondary_color: Secondary zone RGB color (optional)
+            secondary_enabled: Secondary zone on/off state (default: True)
             
         Returns:
             bool: True if successful
@@ -402,38 +409,27 @@ class OneXLEDDeviceHID:
         # 这是关键 - HHD的状态持久化因为它是长时间运行的进程
         global _global_prev_enabled, _global_prev_brightness, _global_prev_mode, _global_prev_color
         
-        # Initialize global state on first call
-        # CRITICAL: Don't initialize to current value! That would prevent detection of state change.
-        # Instead, we rely on the fact that None != any value will trigger the brightness command.
-        # 首次调用时初始化全局状态
-        # 关键：不要初始化为当前值！那会阻止检测状态改变。
-        # 相反，我们依赖 None != 任何值 会触发brightness命令的事实。
-        if _global_prev_enabled is None:
-            logger.debug(f"[INIT] First call detected, prev_enabled is None, will trigger brightness command")
-        if _global_prev_brightness is None:
-            logger.debug(f"[INIT] First call detected, prev_brightness is None")
-        if _global_prev_mode is None:
-            logger.debug(f"[INIT] First call detected, prev_mode is None")
-        
+        # Debug logging for state tracking
+        # 状态跟踪调试日志
         logger.debug(f"[STATE] Current: enabled={enabled}, brightness={brightness_level}, mode={mode}")
         logger.debug(f"[STATE] Global Previous: enabled={_global_prev_enabled}, brightness={_global_prev_brightness}, mode={_global_prev_mode}")
+        logger.debug(f"[STATE] Secondary: enabled={secondary_enabled}, color={secondary_color}")
         
-        # CRITICAL: Send brightness/enable command when state changes OR first time
-        # ALSO send when mode changes - HHD might have changed hardware state behind our back
-        # 关键：在状态改变、首次调用、或模式改变时发送亮度/启用命令
-        # 模式改变时也要发送 - HHD可能在我们不知道的情况下改变了硬件状态
+        # ============================================================
+        # PRIMARY ZONE CONTROL (Main LED)
+        # 主灯区域控制
+        # ============================================================
+        
+        # Check if primary zone state changed
+        # 检查主灯区域状态是否改变
         mode_changed = _global_prev_mode != original_mode
-        if (_global_prev_enabled != enabled or 
+        primary_state_changed = (
+            _global_prev_enabled != enabled or 
             _global_prev_brightness != brightness_level or
-            mode_changed):
-            
-            if self._protocol == Protocol.X1_MINI:
-                # V1: gen_brightness(side, enabled, brightness_level)
-                brightness_cmd = gen_brightness(0, enabled, brightness_level)
-            else:
-                # V2: gen_brightness(enabled, brightness_level)
-                brightness_cmd = gen_brightness(enabled, brightness_level)
-            
+            mode_changed
+        )
+        
+        if primary_state_changed:
             reason = []
             if _global_prev_enabled != enabled:
                 reason.append(f"enabled changed from {_global_prev_enabled} to {enabled}")
@@ -441,104 +437,120 @@ class OneXLEDDeviceHID:
                 reason.append(f"brightness changed from {_global_prev_brightness} to {brightness_level}")
             if mode_changed:
                 reason.append(f"mode changed from {_global_prev_mode} to {original_mode}")
-            logger.debug(f"[BRIGHTNESS] Sending: enabled={enabled}, brightness={brightness_level} (reason: {', '.join(reason)})")
-            self._queue_command(brightness_cmd)
+            logger.debug(f"[PRIMARY] Sending brightness: enabled={enabled}, brightness={brightness_level} (reason: {', '.join(reason)})")
+            
+            if self._protocol == Protocol.X1_MINI:
+                # V1: gen_brightness(side, enabled, brightness_level)
+                # Use side=0 for all primary zones (left + right controllers)
+                # V1：gen_brightness(side, enabled, brightness_level)
+                # 使用 side=0 控制所有主区域（左右手柄）
+                self._queue_command(gen_brightness(0, enabled, brightness_level))
+            else:
+                # V2: gen_brightness(enabled, brightness_level)
+                brightness_cmd = gen_brightness(enabled, brightness_level)
+                self._queue_command(brightness_cmd)
+            
             _global_prev_enabled = enabled
             _global_prev_brightness = brightness_level
 
-        # Note: We no longer have true disabled mode (using black solid instead)
-        # So enabled is always True at this point
-        # 注意：我们不再有真正的禁用模式（使用黑色solid代替）
-        # 所以此时enabled总是True
-
-        # Check if we need to send color/mode command
+        # Check if we need to send color/mode command for primary zone
         # For Solid mode: send if mode OR color changed
         # For preset modes: send if mode changed
-        # This matches HHD's behavior (line 217 in hid_v1.py checks `stick != self.prev_stick`)
-        # 检查是否需要发送颜色/模式命令
+        # 检查是否需要发送主灯区域的颜色/模式命令
         # 对于Solid模式：如果mode或颜色改变则发送
         # 对于预设模式：如果mode改变则发送
-        # 这匹配HHD的行为（hid_v1.py第217行检查`stick != self.prev_stick`）
         current_color = (main_color.R, main_color.G, main_color.B) if mode == RGBMode.Solid else None
+        primary_color_changed = (mode != _global_prev_mode) or (current_color != _global_prev_color)
         
-        if mode == _global_prev_mode and current_color == _global_prev_color:
-            # Neither mode nor color changed
-            # mode和颜色都未改变
-            logger.debug(f"[SKIP] Mode and color unchanged: {mode}")
-            return self._flush_queue()
+        if primary_color_changed:
+            # Map RGBMode to hardware command
+            # 将RGBMode映射到硬件命令
+            if mode == RGBMode.Solid:
+                if self._protocol == Protocol.X1_MINI:
+                    cmd: bytes = gen_rgb_solid(main_color.R, main_color.G, main_color.B, side=0x00)
+                else:
+                    cmd: bytes = gen_rgb_solid(main_color.R, main_color.G, main_color.B)
+            # OXP Preset modes
+            # OXP预设模式
+            elif mode == RGBMode.OXP_MONSTER_WOKE:
+                cmd: bytes = gen_rgb_mode("monster_woke")
+            elif mode == RGBMode.OXP_FLOWING:
+                cmd: bytes = gen_rgb_mode("flowing")
+            elif mode == RGBMode.OXP_SUNSET:
+                cmd: bytes = gen_rgb_mode("sunset")
+            elif mode == RGBMode.OXP_NEON:
+                cmd: bytes = gen_rgb_mode("neon")
+            elif mode == RGBMode.OXP_DREAMY:
+                cmd: bytes = gen_rgb_mode("dreamy")
+            elif mode == RGBMode.OXP_CYBERPUNK:
+                cmd: bytes = gen_rgb_mode("cyberpunk")
+            elif mode == RGBMode.OXP_COLORFUL:
+                cmd: bytes = gen_rgb_mode("colorful")
+            elif mode == RGBMode.OXP_AURORA:
+                cmd: bytes = gen_rgb_mode("aurora")
+            elif mode == RGBMode.OXP_SUN:
+                cmd: bytes = gen_rgb_mode("sun")
+            else:
+                logger.warning(f"Unsupported mode: {mode}")
+                # Don't return False here, continue to handle secondary zone
+                # 不在这里返回False，继续处理次要灯区域
+                cmd = None
 
-        # Map RGBMode to hardware command
-        # 将RGBMode映射到硬件命令
-        if mode == RGBMode.Solid:
-            cmd: bytes = gen_rgb_solid(main_color.R, main_color.G, main_color.B)
-        # OXP Preset modes
-        # OXP预设模式
-        elif mode == RGBMode.OXP_MONSTER_WOKE:
-            cmd: bytes = gen_rgb_mode("monster_woke")
-        elif mode == RGBMode.OXP_FLOWING:
-            cmd: bytes = gen_rgb_mode("flowing")
-        elif mode == RGBMode.OXP_SUNSET:
-            cmd: bytes = gen_rgb_mode("sunset")
-        elif mode == RGBMode.OXP_NEON:
-            cmd: bytes = gen_rgb_mode("neon")
-        elif mode == RGBMode.OXP_DREAMY:
-            cmd: bytes = gen_rgb_mode("dreamy")
-        elif mode == RGBMode.OXP_CYBERPUNK:
-            cmd: bytes = gen_rgb_mode("cyberpunk")
-        elif mode == RGBMode.OXP_COLORFUL:
-            cmd: bytes = gen_rgb_mode("colorful")
-        elif mode == RGBMode.OXP_AURORA:
-            cmd: bytes = gen_rgb_mode("aurora")
-        elif mode == RGBMode.OXP_SUN:
-            cmd: bytes = gen_rgb_mode("sun")
-        else:
-            logger.warning(f"Unsupported mode: {mode}")
-            return False
-
-        if self.hid_device is None:
-            return False
-        
-        # Queue the color/mode command
-        # 将颜色/模式命令加入队列
-        logger.debug(f"[COLOR] Sending color/mode command for mode={mode}")
-        self._queue_command(cmd)
-        
-        # WORKAROUND: If mode changed, HHD might have disabled hardware behind our back
-        # Hardware needs time + duplicate command to reliably recover
-        # 变通方案：如果模式改变，HHD可能在后台禁用了硬件
-        # 硬件需要时间 + 重复命令才能可靠恢复
-        if mode_changed:
-            import time
-            logger.debug(f"[WORKAROUND] Mode changed, flushing + waiting + resending to ensure hardware responds")
-            self._flush_queue()  # Send brightness + first color command
-            time.sleep(0.1)  # Wait for hardware stabilization
-            self._queue_command(cmd)  # Send color command again
-        
-        # Update global state tracking (like HHD does at line 222-224)
-        # IMPORTANT: Save original mode (before Disabled->Solid conversion) for proper state tracking
-        # 更新全局状态跟踪（模仿HHD在222-224行的做法）
-        # 重要：保存原始mode（Disabled->Solid转换之前的）以正确跟踪状态
-        _global_prev_mode = original_mode  # Use original mode, not converted
-        _global_prev_color = current_color
-        _global_prev_brightness = brightness_level
-        _global_prev_enabled = enabled
-        
-        # Secondary zone color setting (unconditional, matching HHD behavior)
-        # 副区域颜色设置（无条件发送，匹配HHD行为）
-        # Hardware will automatically ignore commands for zones it doesn't support
-        # 硬件会自动忽略不支持区域的命令
-        if secondary_color:
-            # Secondary zones always use "high" brightness (matching HHD line 227-228)
-            # 副区域总是使用"high"亮度（匹配HHD第227-228行）
-            if self._protocol == Protocol.X1_MINI:
-                self._queue_command(gen_brightness(0x03, True, "high"))
-                self._queue_command(gen_brightness(0x04, True, "high"))
+            if cmd is not None:
+                if self.hid_device is None:
+                    return False
+                
+                logger.debug(f"[PRIMARY] Sending color/mode command for mode={mode}")
+                self._queue_command(cmd)
+                
+                # WORKAROUND: If mode changed, resend command for hardware stability
+                # 变通方案：如果模式改变，重发命令以确保硬件稳定性
+                if mode_changed:
+                    import time
+                    logger.debug(f"[WORKAROUND] Mode changed, flushing + waiting + resending")
+                    self._flush_queue()
+                    time.sleep(0.1)
+                    self._queue_command(cmd)
+                    self._flush_queue()  # Flush resend immediately to prevent mixing with secondary zone commands
             
-            # Set secondary zone colors (side 0x03 and 0x04, matching HHD line 233-234)
-            # 设置副区域颜色（side 0x03和0x04，匹配HHD第233-234行）
-            self._queue_command(gen_rgb_solid(secondary_color.R, secondary_color.G, secondary_color.B, side=0x03))
-            self._queue_command(gen_rgb_solid(secondary_color.R, secondary_color.G, secondary_color.B, side=0x04))
-            logger.debug(f"[SECONDARY] Sending secondary zone color: R={secondary_color.R}, G={secondary_color.G}, B={secondary_color.B}")
+            # Update global state tracking
+            # 更新全局状态跟踪
+            _global_prev_mode = original_mode
+            _global_prev_color = current_color
+            _global_prev_brightness = brightness_level
+            _global_prev_enabled = enabled
+        else:
+            logger.debug(f"[PRIMARY] No change in color/mode, skipping primary zone command")
+        
+        # ============================================================
+        # SECONDARY ZONE CONTROL (Independent, No State Tracking)
+        # 次要灯区域控制（独立，无状态跟踪）
+        # ============================================================
+        
+        # Only process secondary zone if device supports it (V1 protocol only)
+        # 仅在设备支持时处理次要灯区域（仅V1协议）
+        if self._protocol == Protocol.X1_MINI:
+            # Simple logic: always send commands based on current state
+            # No state tracking to avoid complexity and bugs
+            # 简单逻辑：总是根据当前状态发送命令
+            # 不使用状态跟踪以避免复杂性和bug
+            
+            # Always send brightness/enable command
+            # 总是发送亮度/启用命令
+            self._queue_command(gen_brightness(0x03, secondary_enabled, "high"))
+            self._queue_command(gen_brightness(0x04, secondary_enabled, "high"))
+            logger.debug(f"[SECONDARY] Setting enabled={secondary_enabled}")
+            
+            # Send color command if zone is enabled and has color
+            # 如果区域已启用并且有颜色，发送颜色命令
+            if secondary_enabled and secondary_color:
+                self._queue_command(gen_rgb_solid(secondary_color.R, secondary_color.G, secondary_color.B, side=0x03))
+                self._queue_command(gen_rgb_solid(secondary_color.R, secondary_color.G, secondary_color.B, side=0x04))
+                logger.info(f"[SECONDARY] Sending color: R={secondary_color.R}, G={secondary_color.G}, B={secondary_color.B}")
+            elif not secondary_enabled:
+                logger.debug(f"[SECONDARY] Zone disabled, skipping color command")
+            else:
+                logger.debug(f"[SECONDARY] No color provided, skipping color command")
         
         # Flush all commands with proper delays
         # 按适当延迟发送所有命令

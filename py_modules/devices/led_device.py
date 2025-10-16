@@ -47,7 +47,7 @@ class LEDDevice(ABC):
         brightness: int | None = None,
         speed: str | None = None,
         brightness_level: str | None = None,
-        **kwargs,  # Accept any additional parameters for future extension
+        **kwargs,  # Accept zone_enabled and other future parameters
     ):
         """
         Set LED color and mode.
@@ -169,11 +169,10 @@ class BaseLEDDevice(LEDDevice):
         mode: RGBMode | None = None,
         color: Color | None = None,
         color2: Color | None = None,
-        zone_colors: dict[str, Color] | None = None,
         init: bool = False,
         speed: str | None = None,
         brightness_level: str | None = None,
-        **kwargs,  # Accept any additional parameters for future extension
+        **kwargs,  # Accept zone_colors, zone_enabled and other future parameters
     ) -> None:
         """
         Subclasses should override this method to implement hardware lighting control
@@ -201,7 +200,7 @@ class BaseLEDDevice(LEDDevice):
         brightness: int | None = None,
         speed: str | None = None,
         brightness_level: str | None = None,
-        **kwargs,  # Accept any additional parameters for future extension
+        **kwargs,  # Accept zone_enabled and other future parameters
     ):
         """
         Default implementation for setting color.
@@ -224,12 +223,12 @@ class BaseLEDDevice(LEDDevice):
         if not mode:
             mode = self._current_mode
 
-        # If hardware-supported LED mode, try hardware implementation | 如果是支持硬件的灯效模式，尝试使用硬件实现
+        # If hardware-supported LED mode, try hardware implementation | 如果是支持硬件的灯效模式,尝试使用硬件实现
         if mode in self.hardware_supported_modes:
             try:
                 logger.info(f"use hardware control: mode={mode}")
                 self.stop_effects()
-                self._set_hardware_color(mode, color, color2, zone_colors, init, speed=speed, brightness_level=brightness_level, **kwargs)
+                self._set_hardware_color(mode, color, color2, init=init, zone_colors=zone_colors, speed=speed, brightness_level=brightness_level, **kwargs)
                 return
             except Exception as e:
                 logger.error(e, exc_info=True)

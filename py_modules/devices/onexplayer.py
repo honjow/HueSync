@@ -230,6 +230,7 @@ class OneXLEDDevice(BaseLEDDevice):
         color: Color | None = None,
         color2: Color | None = None,
         zone_colors: dict[str, Color] | None = None,
+        zone_enabled: dict[str, bool] | None = None,  # New parameter: zone enable states
         init: bool = False,
         speed: str | None = None,
         brightness_level: str | None = None,  # OneXPlayer uses this parameter
@@ -244,6 +245,7 @@ class OneXLEDDevice(BaseLEDDevice):
         
         Args:
             zone_colors: Zone color mapping, e.g., {'secondary': Color(r, g, b)}
+            zone_enabled: Zone enable states, e.g., {'secondary': True}
             brightness_level: Hardware brightness level ("low", "medium", "high") - used by OXP preset modes
         """
         if not color:
@@ -252,6 +254,10 @@ class OneXLEDDevice(BaseLEDDevice):
         # Extract secondary zone color
         # 提取副区域颜色
         secondary_color = zone_colors.get('secondary') if zone_colors else None
+        
+        # Extract secondary zone enabled state (default: True for backward compatibility)
+        # 提取副区域开关状态（默认：True，保持向后兼容）
+        secondary_enabled = zone_enabled.get('secondary', True) if zone_enabled else True
         
         # Handle OXP Classic mode: convert to Solid mode with cherry red
         # 处理OXP经典模式：转换为樱桃红的Solid模式
@@ -269,21 +275,21 @@ class OneXLEDDevice(BaseLEDDevice):
             elif self._config.protocol == OXPProtocol.MIXED:
                 # F1 series: HID for sticks, Serial for secondary zone
                 # F1系列：HID控制摇杆，串口控制副区域
-                self.set_onex_color_hid(color, mode, brightness_level)
+                self.set_onex_color_hid(color, mode, brightness_level, secondary_enabled=secondary_enabled)
                 if secondary_color:
                     self.set_onex_color_serial(secondary_color, mode, brightness_level)
             else:
                 # HID_V1, HID_V2, HID_V1_G1
-                self.set_onex_color_hid(color, mode, brightness_level, secondary_color=secondary_color)
+                self.set_onex_color_hid(color, mode, brightness_level, secondary_color=secondary_color, secondary_enabled=secondary_enabled)
         else:
             # Legacy fallback
             # 传统回退
             if "ONEXPLAYER X1" in PRODUCT_NAME:
                 self.set_onex_color_serial(color, mode, brightness_level)
             else:
-                self.set_onex_color_hid(color, mode, brightness_level)
+                self.set_onex_color_hid(color, mode, brightness_level, secondary_enabled=secondary_enabled)
 
-    def set_onex_color_hid(self, color: Color, mode: RGBMode | None = None, brightness_level: str | None = None, secondary_color: Color | None = None) -> None:
+    def set_onex_color_hid(self, color: Color, mode: RGBMode | None = None, brightness_level: str | None = None, secondary_color: Color | None = None, secondary_enabled: bool = True) -> None:
         """
         Set RGB color via HID protocol with retry logic.
         通过HID协议设置RGB颜色，带重试逻辑。
@@ -298,6 +304,7 @@ class OneXLEDDevice(BaseLEDDevice):
             color: RGB color
             mode: RGB mode (defaults to Solid if None)
             secondary_color: Secondary zone RGB color (optional)
+            secondary_enabled: Secondary zone on/off state (default: True)
         """
         if mode is None:
             mode = RGBMode.Solid
@@ -318,7 +325,7 @@ class OneXLEDDevice(BaseLEDDevice):
         # 首先尝试使用缓存的设备
         if self._hid_device_cache and self._hid_device_cache.is_ready():
             logger.debug(f"set_onex_color_hid: using cached device, color={color}, mode={mode.value}, brightness_level={brightness_level}, secondary_color={secondary_color}")
-            success = self._hid_device_cache.set_led_color_new(color, mode, brightness=brightness, secondary_color=secondary_color)
+            success = self._hid_device_cache.set_led_color_new(color, mode, brightness=brightness, secondary_color=secondary_color, secondary_enabled=secondary_enabled)
             if success:
                 return
             else:
@@ -348,7 +355,7 @@ class OneXLEDDevice(BaseLEDDevice):
                 # Cache the device instance for future calls
                 # 缓存设备实例供未来调用使用
                 self._hid_device_cache = ledDevice
-                ledDevice.set_led_color_new(color, mode, brightness=brightness, secondary_color=secondary_color)
+                ledDevice.set_led_color_new(color, mode, brightness=brightness, secondary_color=secondary_color, secondary_enabled=secondary_enabled)
                 return
             logger.info("set_onex_color_hid: device not ready")
 

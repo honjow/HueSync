@@ -12,6 +12,7 @@ export class RgbSetting {
   public secondaryZoneHue = 0;
   public secondaryZoneSaturation = 100;
   public secondaryZoneBrightness = 100;
+  public secondaryZoneEnabled = true;  // Default to enabled for backward compatibility
   public speed = "low";
   public brightnessLevel = "high";
 
@@ -27,6 +28,7 @@ export class RgbSetting {
     this.secondaryZoneHue = source.secondaryZoneHue;
     this.secondaryZoneSaturation = source.secondaryZoneSaturation;
     this.secondaryZoneBrightness = source.secondaryZoneBrightness;
+    this.secondaryZoneEnabled = source.secondaryZoneEnabled;
     this.speed = source.speed;
     this.brightnessLevel = source.brightnessLevel;
   }
@@ -477,6 +479,9 @@ export class Setting {
 
   @Setting.readonlyProperty<number>("secondaryZoneBlue")
   public static secondaryZoneBlue: number;
+
+  @Setting.settingProperty<boolean>("secondaryZoneEnabled")
+  public static secondaryZoneEnabled: boolean;
 
   @Setting.settingProperty<string>("speed")
   public static speed: string;

@@ -20,6 +20,7 @@ interface ColorControlsProps {
   hue2?: number;
   setHue2?: (h: number, immediate?: boolean) => void;
   onlyBrightness?: boolean;
+  zone?: 'primary' | 'secondary';  // New: zone identifier for CSS class names
 }
 
 const ColorControls: FC<ColorControlsProps> = ({
@@ -31,6 +32,7 @@ const ColorControls: FC<ColorControlsProps> = ({
   hue2,
   setHue2,
   onlyBrightness,
+  zone = 'primary',  // Default to primary zone for backward compatibility
 }) => {
   // Call to update RGB color, placed in onChangeEnd event to avoid frequent updates | 调用更新 RGB 颜色, 放在 onChangeEnd 事件中，避免频繁更新
   const _setHue = (value: number) => {
@@ -72,7 +74,7 @@ const ColorControls: FC<ColorControlsProps> = ({
               bottomSeparator="thick"
               onChangeEnd={_setHue}
               onChange={setHueValue}
-              className="ColorPicker_HSlider"
+              className={`ColorPicker_${zone}_HSlider`}
               valueSuffix="°"
             />
           </PanelSectionRow>
@@ -90,7 +92,7 @@ const ColorControls: FC<ColorControlsProps> = ({
                 bottomSeparator="thick"
                 onChangeEnd={(value) => setHue2(value)}
                 onChange={(value) => setHue2(value, false)}
-                className="ColorPicker_HSlider2"
+                className={`ColorPicker_${zone}_HSlider2`}
                 valueSuffix="°"
               />
             </PanelSectionRow>
@@ -107,7 +109,7 @@ const ColorControls: FC<ColorControlsProps> = ({
               onChangeEnd={_setSaturation}
               onChange={setSaturationValue}
               valueSuffix="%"
-              className="ColorPicker_SSlider"
+              className={`ColorPicker_${zone}_SSlider`}
             />
           </PanelSectionRow>
         </>
@@ -122,13 +124,13 @@ const ColorControls: FC<ColorControlsProps> = ({
           onChangeEnd={_setBrightness}
           onChange={setBrightnessValue}
           valueSuffix="%"
-          className="ColorPicker_VSlider"
+          className={`ColorPicker_${zone}_VSlider`}
         />
       </PanelSectionRow>
       <style>
         {`
-        .ColorPicker_HSlider .${gamepadSliderClasses.SliderTrack},
-        .ColorPicker_HSlider2 .${gamepadSliderClasses.SliderTrack} {
+        .ColorPicker_${zone}_HSlider .${gamepadSliderClasses.SliderTrack},
+        .ColorPicker_${zone}_HSlider2 .${gamepadSliderClasses.SliderTrack} {
           background: linear-gradient(
             to right,
             hsl(0, 100%, 50%),
@@ -142,7 +144,7 @@ const ColorControls: FC<ColorControlsProps> = ({
           --left-track-color: #0000 !important;
           --colored-toggles-main-color: #0000 !important;
         }
-        .ColorPicker_SSlider .${gamepadSliderClasses.SliderTrack} {
+        .ColorPicker_${zone}_SSlider .${gamepadSliderClasses.SliderTrack} {
           background: linear-gradient(
             to right,
             hsl(0, 100%, 100%),
@@ -151,7 +153,7 @@ const ColorControls: FC<ColorControlsProps> = ({
           --left-track-color: #0000 !important;
           --colored-toggles-main-color: #0000 !important;
         }
-        .ColorPicker_VSlider .${gamepadSliderClasses.SliderTrack} {
+        .ColorPicker_${zone}_VSlider .${gamepadSliderClasses.SliderTrack} {
           background: linear-gradient(
             to right,
             hsl(0, 100%, 0%),
@@ -175,9 +177,11 @@ export const RGBComponent: FC = () => {
     secondaryZoneHue,
     secondaryZoneSaturation,
     secondaryZoneBrightness,
+    secondaryZoneEnabled,
     setHsv,
     setHue2Value,
     setSecondaryZoneHsv,
+    updateSecondaryZoneEnabled,
     rgbMode,
     updateRgbMode,
     enableControl,
@@ -290,6 +294,7 @@ export const RGBComponent: FC = () => {
                       hue2={hue2}
                       setHue2={setHue2Value}
                       onlyBrightness={currentModeCapabilities.brightness}
+                      zone="primary"
                     />
                   )}
                 {currentModeCapabilities.speed && (
@@ -312,14 +317,28 @@ export const RGBComponent: FC = () => {
                 localizeStrEnum[secondaryZoneNameKey as keyof typeof localizeStrEnum]
               )}
             >
-              <ColorControls
-                hue={secondaryZoneHue}
-                saturation={secondaryZoneSaturation}
-                brightness={secondaryZoneBrightness}
-                setHsv={setSecondaryZoneHsv}
-                supportsColor2={false}
-                onlyBrightness={false}
-              />
+              <PanelSectionRow>
+                <ToggleField
+                  label={localizationManager.getString(
+                    localizeStrEnum.ENABLE_SECONDARY_ZONE
+                  )}
+                  checked={secondaryZoneEnabled}
+                  onChange={(value) => {
+                    updateSecondaryZoneEnabled(value);
+                  }}
+                />
+              </PanelSectionRow>
+              {secondaryZoneEnabled && (
+                <ColorControls
+                  hue={secondaryZoneHue}
+                  saturation={secondaryZoneSaturation}
+                  brightness={secondaryZoneBrightness}
+                  setHsv={setSecondaryZoneHsv}
+                  supportsColor2={false}
+                  onlyBrightness={false}
+                  zone="secondary"
+                />
+              )}
             </PanelSection>
           )}
         </>

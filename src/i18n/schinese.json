@@ -74,5 +74,6 @@
     "ZONE_SECONDARY_CENTER_NAME": "中央区域",
     "ZONE_SECONDARY_FRONT_PANEL_NAME": "前面板",
     "ZONE_SECONDARY_GENERIC_NAME": "副区域",
-    "RGB_BASIC_SETTINGS": "灯光控制"
+    "RGB_BASIC_SETTINGS": "灯光控制",
+    "ENABLE_SECONDARY_ZONE": "启用副区域灯光"
 }
