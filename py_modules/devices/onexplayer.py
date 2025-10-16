@@ -259,14 +259,6 @@ class OneXLEDDevice(BaseLEDDevice):
         # 提取副区域开关状态（默认：True，保持向后兼容）
         secondary_enabled = zone_enabled.get('secondary', True) if zone_enabled else True
         
-        # Handle OXP Classic mode: convert to Solid mode with cherry red
-        # 处理OXP经典模式：转换为樱桃红的Solid模式
-        if mode == RGBMode.OXP_CLASSIC:
-            mode = RGBMode.Solid
-            # Cherry red: RGB(183, 48, 0) = 0xB7, 0x30, 0x00
-            # 樱桃红：RGB(183, 48, 0) = 0xB7, 0x30, 0x00
-            color = Color(0xB7, 0x30, 0x00)
-        
         # Use configuration if available, fallback to legacy detection
         # 如果配置可用则使用配置，否则回退到传统检测
         if self._config:
@@ -310,16 +302,33 @@ class OneXLEDDevice(BaseLEDDevice):
             mode = RGBMode.Solid
         
         # Convert brightness_level to brightness value (0-100)
-        # Default to "high" (100) if not specified
+        # For Solid/Disabled modes: always use "high" since they use HSV brightness
+        # For OXP preset modes (including OXP_CLASSIC): use the brightness_level parameter
         # 将brightness_level转换为亮度值（0-100）
-        # 如果未指定则默认为"high"（100）
+        # Solid/Disabled模式：固定使用"high"，因为它们使用HSV亮度控制
+        # OXP预设模式（包括OXP_CLASSIC）：使用brightness_level参数
         brightness = 100  # Default to high
-        if brightness_level == "low":
+        if mode == RGBMode.Solid or mode == RGBMode.Disabled:
+            # Solid mode uses HSV brightness, always use max hardware brightness level
+            # Solid模式使用HSV亮度，始终使用最大硬件亮度级别
+            brightness_level = "high"
+            brightness = 100
+        elif brightness_level == "low":
             brightness = 25
         elif brightness_level == "medium":
             brightness = 60
         elif brightness_level == "high":
             brightness = 100
+        
+        # Handle OXP Classic mode: convert to Solid mode with cherry red
+        # IMPORTANT: This conversion happens AFTER brightness_level logic
+        # 处理OXP经典模式：转换为樱桃红的Solid模式
+        # 重要：此转换在亮度逻辑之后进行
+        if mode == RGBMode.OXP_CLASSIC:
+            mode = RGBMode.Solid
+            # Cherry red: RGB(183, 48, 0) = 0xB7, 0x30, 0x00
+            # 樱桃红：RGB(183, 48, 0) = 0xB7, 0x30, 0x00
+            color = Color(0xB7, 0x30, 0x00)
         
         # Try to use cached device first
         # 首先尝试使用缓存的设备
@@ -372,6 +381,14 @@ class OneXLEDDevice(BaseLEDDevice):
         """
         if mode is None:
             mode = RGBMode.Solid
+        
+        # Handle OXP Classic mode: convert to Solid mode with cherry red
+        # 处理OXP经典模式：转换为樱桃红的Solid模式
+        if mode == RGBMode.OXP_CLASSIC:
+            mode = RGBMode.Solid
+            # Cherry red: RGB(183, 48, 0) = 0xB7, 0x30, 0x00
+            # 樱桃红：RGB(183, 48, 0) = 0xB7, 0x30, 0x00
+            color = Color(0xB7, 0x30, 0x00)
             
         try:
             ledDevice = OneXLEDDeviceSerial()
