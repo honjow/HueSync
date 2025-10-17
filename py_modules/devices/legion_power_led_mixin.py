@@ -195,4 +195,42 @@ class LegionPowerLEDMixin:
         except Exception as e:
             logger.error(f"Failed to get power light status: {e}", exc_info=True)
             return None
+    
+    def get_device_capabilities(self) -> dict:
+        """
+        Get device capabilities including power LED support.
+        获取设备能力，包括电源LED支持。
+        
+        This method extends the base implementation by adding power_led capability.
+        If the subclass has its own get_device_capabilities, it will be called first.
+        此方法通过添加power_led能力扩展基类实现。
+        如果子类有自己的get_device_capabilities，会先调用它。
+        
+        Returns:
+            dict: Device capabilities with power_led field
+            {
+                "zones": [...],
+                "power_led": bool,  # Based on _power_led_available
+                "suspend_mode": bool,
+            }
+        """
+        # Get base capabilities from parent class
+        # Try to call the next class in MRO (usually BaseLEDDevice)
+        # 从父类获取基础能力
+        # 尝试调用MRO中的下一个类（通常是BaseLEDDevice）
+        if hasattr(super(), 'get_device_capabilities'):
+            base_caps = super().get_device_capabilities()
+        else:
+            # Fallback if no parent implementation
+            # 如果没有父类实现则使用后备值
+            base_caps = {
+                'zones': [{'id': 'primary', 'name_key': 'ZONE_PRIMARY_NAME'}],
+                'suspend_mode': True,
+            }
+        
+        # Override power_led with our availability check
+        # 用我们的可用性检查覆盖power_led
+        base_caps['power_led'] = self._power_led_available
+        
+        return base_caps
 
