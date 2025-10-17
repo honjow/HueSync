@@ -632,8 +632,10 @@ class OneXLEDDeviceHID:
         # ============================================================
         
         # Only process secondary zone if device supports it (V1 protocol only)
+        # Also check if secondary_enabled is not None (indicates device has rgb_secondary support)
         # 仅在设备支持时处理次要灯区域（仅V1协议）
-        if self._protocol == Protocol.X1_MINI:
+        # 同时检查 secondary_enabled 不为 None（表示设备有 rgb_secondary 支持）
+        if self._protocol == Protocol.X1_MINI and secondary_enabled is not None:
             global _global_prev_secondary_enabled, _global_prev_secondary_color
             
             # Track secondary zone state changes

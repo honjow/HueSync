@@ -251,13 +251,11 @@ class OneXLEDDevice(BaseLEDDevice):
         if not color:
             return
         
-        # Extract secondary zone color
-        # 提取副区域颜色
-        secondary_color = zone_colors.get('secondary') if zone_colors else None
-        
-        # Extract secondary zone enabled state (default: True for backward compatibility)
-        # 提取副区域开关状态（默认：True，保持向后兼容）
-        secondary_enabled = zone_enabled.get('secondary', True) if zone_enabled else True
+        # Extract secondary zone parameters only if device supports it
+        # 只有在设备支持副区域时才提取副区域参数
+        has_sec = self._has_secondary_zone()
+        secondary_color = has_sec and zone_colors and zone_colors.get('secondary') or None
+        secondary_enabled = has_sec and zone_enabled and zone_enabled.get('secondary', True) or None
         
         # Use configuration if available, fallback to legacy detection
         # 如果配置可用则使用配置，否则回退到传统检测
