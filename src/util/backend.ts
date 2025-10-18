@@ -192,9 +192,12 @@ export class Backend {
       Backend.setSuspendMode(Setting.suspendMode);
     }
 
-    // Construct zoneColors if secondary zone colors are set
-    // 如果设置了副区域颜色，则构造 zoneColors
-    const zoneColors = Setting.secondaryZoneRed !== undefined && 
+    // Only construct zone parameters if device supports secondary zone
+    // 只有设备支持副区域时才构造区域参数
+    const hasSecondaryZone = Setting.deviceCapabilities?.zones?.some(z => z.id === 'secondary');
+
+    const zoneColors = hasSecondaryZone &&
+                       Setting.secondaryZoneRed !== undefined && 
                        Setting.secondaryZoneGreen !== undefined && 
                        Setting.secondaryZoneBlue !== undefined
       ? {
@@ -206,9 +209,7 @@ export class Backend {
         }
       : undefined;
 
-    // Construct zoneEnabled if device has secondary zone
-    // 如果设备有副区域，则构造 zoneEnabled
-    const zoneEnabled = Setting.deviceCapabilities?.zones?.some(z => z.id === 'secondary')
+    const zoneEnabled = hasSecondaryZone
       ? {
           secondary: Setting.secondaryZoneEnabled,
         }

@@ -251,11 +251,30 @@ class OneXLEDDevice(BaseLEDDevice):
         if not color:
             return
         
-        # Extract secondary zone parameters only if device supports it
-        # 只有在设备支持副区域时才提取副区域参数
-        has_sec = self._has_secondary_zone()
-        secondary_color = has_sec and zone_colors and zone_colors.get('secondary') or None
-        secondary_enabled = has_sec and zone_enabled and zone_enabled.get('secondary', True) or None
+        # Extract secondary zone parameters
+        # Frontend already filters these based on device capabilities (_has_secondary_zone):
+        # - For unsupported devices (X1 Mini): zone_colors and zone_enabled will be None
+        # - For supported devices (X1 Air, G1): zone_colors and zone_enabled contain user settings
+        # Backend trusts frontend filtering and processes parameters directly without rechecking capabilities
+        #
+        # WARNING: If secondary zone commands (side=0x03/0x04) are sent to unsupported devices like X1 Mini,
+        # the hardware will misapply these commands to the primary joystick LEDs, causing incorrect colors.
+        # For example, sending Color(255,0,0) to secondary zone on X1 Mini will turn joysticks red instead
+        # of the configured color. Frontend filtering prevents this by ensuring zone_colors/zone_enabled
+        # are None for unsupported devices.
+        # 
+        # 提取副区域参数
+        # 前端已根据设备能力 (_has_secondary_zone) 过滤了这些参数：
+        # - 不支持的设备（X1 Mini）：zone_colors 和 zone_enabled 为 None
+        # - 支持的设备（X1 Air, G1）：zone_colors 和 zone_enabled 包含用户设置
+        # 后端信任前端过滤，直接处理参数而不重复检查设备能力
+        #
+        # 警告：如果向不支持的设备（如 X1 Mini）发送副区域命令（side=0x03/0x04），
+        # 硬件会将这些命令错误地应用到主摇杆 LED，导致颜色错误。
+        # 例如，向 X1 Mini 的副区域发送 Color(255,0,0) 会导致摇杆变红，而不是配置的颜色。
+        # 前端过滤确保不支持的设备的 zone_colors/zone_enabled 为 None，从而避免此问题。
+        secondary_color = zone_colors.get('secondary') if zone_colors else None
+        secondary_enabled = zone_enabled.get('secondary', True) if zone_enabled else True
         
         # Use configuration if available, fallback to legacy detection
         # 如果配置可用则使用配置，否则回退到传统检测
