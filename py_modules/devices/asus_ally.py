@@ -32,7 +32,15 @@ class AllyLEDDevice(AsusLEDDevice):
         if mode == RGBMode.Solid:
             self._set_color_by_sysfs(color)
         else:
-            super().set_color(mode, color, color2, init, brightness=brightness, speed=speed, **kwargs)
+            super().set_color(
+                mode=mode,
+                color=color,
+                color2=color2,
+                init=init,
+                brightness=brightness,
+                speed=speed,
+                **kwargs
+            )
 
     def _set_color_by_sysfs(
         self,
