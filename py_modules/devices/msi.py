@@ -38,6 +38,42 @@ class MSILEDDevice(BaseLEDDevice):
     def _set_solid_color(self, color: Color) -> None:
         self._set_hardware_color(RGBMode.Solid, color)
 
+    def _convert_speed_to_int(self, speed: str) -> int:
+        """
+        Convert speed string to integer value for MSI protocol.
+        将速度字符串转换为 MSI 协议的整数值。
+        
+        Args:
+            speed: "low", "medium", or "high"
+            
+        Returns:
+            int: Speed value (0-20, higher = faster)
+        """
+        speed_map = {
+            "low": 6,      # Slow speed
+            "medium": 10,  # Medium speed
+            "high": 17,    # Fast speed
+        }
+        return speed_map.get(speed, 10)  # Default to medium
+
+    def _convert_brightness_to_int(self, brightness_level: str) -> int:
+        """
+        Convert brightness level string to integer value.
+        将亮度级别字符串转换为整数值。
+        
+        Args:
+            brightness_level: "low", "medium", or "high"
+            
+        Returns:
+            int: Brightness value (0-100)
+        """
+        brightness_map = {
+            "low": 33,      # ~33% brightness
+            "medium": 66,   # ~66% brightness
+            "high": 100,    # 100% brightness
+        }
+        return brightness_map.get(brightness_level, 100)  # Default to high
+
     def _set_hardware_color(
         self,
         mode: RGBMode | None = None,
@@ -45,10 +81,19 @@ class MSILEDDevice(BaseLEDDevice):
         color2: Color | None = None,
         init: bool = False,
         speed: str | None = None,
-        **kwargs,  # Accept brightness_level and other future parameters
+        brightness_level: str | None = None,
+        **kwargs,  # Accept other future parameters
     ) -> None:
         if not color:
             return
+
+        # Convert string speed to integer (0-20, higher = faster)
+        # 将字符串速度转换为整数（0-20，越大越快）
+        speed_value = self._convert_speed_to_int(speed) if speed else 15
+        
+        # Convert string brightness_level to integer (0-100)
+        # 将字符串亮度级别转换为整数（0-100）
+        brightness_value = self._convert_brightness_to_int(brightness_level) if brightness_level else 100
 
         try:
             ledDevice = MSILEDDeviceHID(
@@ -60,17 +105,22 @@ class MSILEDDevice(BaseLEDDevice):
             if ledDevice.is_ready():
                 init = self._current_real_mode != mode or init
                 logger.debug(
-                    f"set_legion_go_color: mode={mode} color={color} secondary={color2} init={init}"
+                    f"set_msi_color: mode={mode} color={color} secondary={color2} "
+                    f"speed={speed}({speed_value}) brightness_level={brightness_level}({brightness_value}) init={init}"
                 )
                 if mode:
                     if init:
                         ledDevice.set_led_color(main_color=color, mode=RGBMode.Disabled)
                     ledDevice.set_led_color(
-                        main_color=color, mode=mode, secondary_color=color2
+                        main_color=color,
+                        mode=mode,
+                        secondary_color=color2,
+                        brightness=brightness_value,
+                        speed=speed_value,
                     )
                 self._current_real_mode = mode or RGBMode.Disabled
                 return
-            logger.info("set_asus_color: device not ready")
+            logger.info("set_msi_color: device not ready")
         except Exception as e:
             logger.error(e, exc_info=True)
             raise
@@ -89,60 +139,79 @@ class MSILEDDevice(BaseLEDDevice):
                 color=False,
                 color2=False,
                 speed=False,
+                brightness=False,
+                brightness_level=False,
             ),
             RGBMode.Solid: RGBModeCapabilities(
                 mode=RGBMode.Solid,
                 color=True,
                 color2=False,
                 speed=False,
+                brightness=False,
+                brightness_level=True,  # Hardware brightness support
             ),
             RGBMode.Rainbow: RGBModeCapabilities(
                 mode=RGBMode.Rainbow,
                 color=False,
                 color2=False,
-                speed=True,
+                speed=True,  # Hardware speed support
+                brightness=False,
+                brightness_level=True,  # Hardware brightness support
             ),
             RGBMode.Pulse: RGBModeCapabilities(
                 mode=RGBMode.Pulse,
                 color=True,
                 color2=False,
-                speed=True,
+                speed=True,  # Hardware speed support
+                brightness=False,
+                brightness_level=True,  # Hardware brightness support
             ),
             RGBMode.Spiral: RGBModeCapabilities(
                 mode=RGBMode.Spiral,
                 color=False,
                 color2=False,
-                speed=True,
+                speed=True,  # Hardware speed support
+                brightness=False,
+                brightness_level=True,  # Hardware brightness support
             ),
             RGBMode.Duality: RGBModeCapabilities(
                 mode=RGBMode.Duality,
                 color=True,
                 color2=True,
-                speed=True,
+                speed=True,  # Hardware speed support
+                brightness=False,
+                brightness_level=True,  # Hardware brightness support
             ),
             RGBMode.Gradient: RGBModeCapabilities(
                 mode=RGBMode.Gradient,
                 color=True,
                 color2=True,
-                speed=True,
+                speed=True,  # Hardware speed support
+                brightness=False,
+                brightness_level=True,  # Hardware brightness support
             ),
             RGBMode.MSI_FROSTFIRE: RGBModeCapabilities(
                 mode=RGBMode.MSI_FROSTFIRE,
                 color=False,
                 color2=False,
-                speed=False,
+                speed=True,  # Hardware speed support
+                brightness=False,
+                brightness_level=True,  # Hardware brightness support
             ),
             RGBMode.OXP_SUN: RGBModeCapabilities(
                 mode=RGBMode.OXP_SUN,
                 color=False,
                 color2=False,
-                speed=False,
+                speed=True,  # Hardware speed support
+                brightness=False,
+                brightness_level=True,  # Hardware brightness support
             ),
             RGBMode.Battery: RGBModeCapabilities(
                 mode=RGBMode.Battery,
                 color=False,
                 color2=False,
                 speed=False,
-                brightness=True,
+                brightness=True,  # Battery mode uses HSV brightness
+                brightness_level=False,
             ),
         }

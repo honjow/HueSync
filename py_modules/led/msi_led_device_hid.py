@@ -226,47 +226,29 @@ def build_pulse_effect(
     if not 2 <= len(colors) <= MAX_KEYFRAMES:
         raise ValueError(f"Pulse effect requires 2-{MAX_KEYFRAMES} colors")
 
+    # # Speed compensation algorithm: boost minimum speed while keeping maximum unchanged
+    # # 速度补偿算法：提高最低速度，最高速度不变
+    # MIN_EFFECTIVE_SPEED = 5  # Minimum effective speed (avoid too slow animation)
+    # MAX_SPEED = 20  # Maximum speed unchanged
+
+    # # Linear mapping: input [0, 20] -> output [MIN_EFFECTIVE_SPEED, 20]
+    # # Formula: output = MIN_EFFECTIVE_SPEED + (input / MAX_SPEED) * (MAX_SPEED - MIN_EFFECTIVE_SPEED)
+    # compensated_speed = MIN_EFFECTIVE_SPEED + (speed / MAX_SPEED) * (
+    #     MAX_SPEED - MIN_EFFECTIVE_SPEED
+    # )
+    # compensated_speed = int(round(compensated_speed))
+
+    # logger.debug(
+    #     f"Pulse effect speed compensation: {speed} -> {compensated_speed} "
+    #     f"(min={MIN_EFFECTIVE_SPEED}, max={MAX_SPEED})"
+    # )
+
     keyframes = [MSIKeyFrame(rgb_zones=[c] * RGB_ZONES_PER_FRAME) for c in colors]
     return MSIRGBConfig(
         speed=normalize_speed(speed),
         brightness=brightness,
         effect=MSIEffect.UNKNOWN_09,
         keyframes=keyframes,
-    )
-
-
-def build_rainbow_effect(
-    brightness: int = 100,
-    speed: int = 10,
-) -> MSIRGBConfig:
-    """
-    Build config for rainbow effect - each LED shows different color
-
-    Parameters:
-    - brightness: 0-100
-    - speed: 0-20 (higher = faster, will be converted to device protocol)
-
-    Returns:
-    - MSIRGBConfig object ready to send
-    """
-    rainbow_colors = [
-        Color(255, 0, 0),  # RGB1: Red
-        Color(255, 127, 0),  # RGB2: Orange
-        Color(255, 255, 0),  # RGB3: Yellow
-        Color(0, 255, 0),  # RGB4: Green
-        Color(0, 255, 255),  # RGB5: Cyan
-        Color(0, 0, 255),  # RGB6: Blue
-        Color(127, 0, 255),  # RGB7: Purple
-        Color(255, 0, 255),  # RGB8: Magenta
-        Color(255, 255, 255),  # ABXY: White
-    ]
-
-    keyframe = MSIKeyFrame(rgb_zones=rainbow_colors)
-    return MSIRGBConfig(
-        speed=normalize_speed(speed),
-        brightness=brightness,
-        effect=MSIEffect.UNKNOWN_09,
-        keyframes=[keyframe],
     )
 
 
@@ -361,6 +343,30 @@ def build_spiral_effect(
     if bottom_colors is None:
         bottom_colors = [Color(0, 0, 0)]
 
+    # # Convert speed  | 速度补偿算法
+    # logger.debug(f"speed: {speed}")
+    # base_speed = 10.0
+    # full_speed = 17.0
+    # speed = int(base_speed + (full_speed - base_speed) * (float(speed) / full_speed))
+    # logger.debug(f"converted speed: {speed}")
+
+    # Speed compensation algorithm: boost minimum speed while keeping maximum unchanged
+    # 速度补偿算法：提高最低速度，最高速度不变
+    MIN_EFFECTIVE_SPEED = 10  # Minimum effective speed (avoid too slow animation)
+    MAX_SPEED = 18  # Maximum speed unchanged
+
+    # Linear mapping: input [0, 20] -> output [MIN_EFFECTIVE_SPEED, 20]
+    # Formula: output = MIN_EFFECTIVE_SPEED + (input / MAX_SPEED) * (MAX_SPEED - MIN_EFFECTIVE_SPEED)
+    compensated_speed = MIN_EFFECTIVE_SPEED + (speed / MAX_SPEED) * (
+        MAX_SPEED - MIN_EFFECTIVE_SPEED
+    )
+    compensated_speed = int(round(compensated_speed))
+
+    logger.debug(
+        f"Spiral effect speed compensation: {speed} -> {compensated_speed} "
+        f"(min={MIN_EFFECTIVE_SPEED}, max={MAX_SPEED})"
+    )
+
     # Fixed 4 frames for complete joystick rotation
     num_frames = 4
 
@@ -416,7 +422,7 @@ def build_spiral_effect(
         )
 
     return MSIRGBConfig(
-        speed=normalize_speed(speed),
+        speed=normalize_speed(compensated_speed),
         brightness=brightness,
         effect=MSIEffect.UNKNOWN_09,
         keyframes=keyframes,
@@ -703,6 +709,7 @@ class MSILEDDeviceHID:
                     speed=speed,
                     right_clockwise=True,  # Fire rotates clockwise
                     left_clockwise=False,  # Ice rotates counter-clockwise
+                    brightness=brightness,
                 )
             elif mode == RGBMode.OXP_SUN:
                 config = build_spiral_effect(
