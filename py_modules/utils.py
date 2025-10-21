@@ -40,6 +40,10 @@ class RGBMode(Enum):
     OXP_AURORA = "oxp_aurora"
     OXP_SUN = "oxp_sun"
     OXP_CLASSIC = "oxp_classic"  # OXP Cherry Red (0xB7, 0x30, 0x00)
+    
+    # MSI specific preset modes
+    # MSI 专属预设模式
+    MSI_FROSTFIRE = "msi_frostfire"  # A Song of Ice and Fire | 冰火之歌
 
 
 class RGBSpeed(Enum):
@@ -71,21 +75,157 @@ class RGBModeCapabilities:
 
 
 class Color:
+    """
+    RGB color class with support for multiple initialization methods.
+    支持多种初始化方法的 RGB 颜色类。
+    """
+    
     def __init__(self, r: int, g: int, b: int):
+        """
+        Initialize color with RGB values.
+        使用 RGB 值初始化颜色。
+        
+        Args:
+            r: Red component (0-255)
+            g: Green component (0-255)
+            b: Blue component (0-255)
+        """
         self.R = self._validate_color_value(r)
         self.G = self._validate_color_value(g)
         self.B = self._validate_color_value(b)
 
+    @classmethod
+    def from_hex(cls, hex_str: str) -> 'Color':
+        """
+        Create a Color from a hexadecimal string.
+        从十六进制字符串创建颜色。
+        
+        Args:
+            hex_str: Hexadecimal color string (e.g., "FF0000" for red)
+        
+        Returns:
+            Color: New Color instance
+        
+        Example:
+            color = Color.from_hex("FF0000")  # Red
+        """
+        # Remove '#' if present
+        hex_str = hex_str.lstrip('#')
+        r = int(hex_str[0:2], 16)
+        g = int(hex_str[2:4], 16)
+        b = int(hex_str[4:6], 16)
+        return cls(r, g, b)
+    
+    @classmethod
+    def from_hsv(cls, h: float, s: float, v: float) -> 'Color':
+        """
+        Create a Color from HSV values.
+        从 HSV 值创建颜色。
+        
+        Args:
+            h: Hue (0-360 degrees)
+            s: Saturation (0.0-1.0)
+            v: Value/Brightness (0.0-1.0)
+        
+        Returns:
+            Color: New Color instance
+        
+        Example:
+            color = Color.from_hsv(0, 1.0, 1.0)  # Red
+        """
+        # HSV to RGB conversion algorithm
+        h = h % 360
+        c = v * s
+        x = c * (1 - abs((h / 60) % 2 - 1))
+        m = v - c
+        
+        if 0 <= h < 60:
+            r, g, b = c, x, 0
+        elif 60 <= h < 120:
+            r, g, b = x, c, 0
+        elif 120 <= h < 180:
+            r, g, b = 0, c, x
+        elif 180 <= h < 240:
+            r, g, b = 0, x, c
+        elif 240 <= h < 300:
+            r, g, b = x, 0, c
+        else:  # 300 <= h < 360
+            r, g, b = c, 0, x
+        
+        # Convert to 0-255 range
+        r_int = int((r + m) * 255)
+        g_int = int((g + m) * 255)
+        b_int = int((b + m) * 255)
+        
+        return cls(r_int, g_int, b_int)
+
     def _validate_color_value(self, value: int) -> int:
+        """Validate that color value is in the valid range (0-255)"""
         if 0 <= value <= 255:
             return value
-        raise ValueError("Color values must be between 0 and 255")
+        raise ValueError(f"Color values must be between 0 and 255, got {value}")
 
-    def hex(self):
+    def to_hex(self) -> str:
+        """
+        Convert color to hexadecimal string.
+        将颜色转换为十六进制字符串。
+        
+        Returns:
+            str: Hexadecimal color string (e.g., "FF0000")
+        """
         return f"{self.R:02X}{self.G:02X}{self.B:02X}"
+    
+    def hex(self) -> str:
+        """
+        Convert color to hexadecimal string (alias for to_hex for backward compatibility).
+        将颜色转换为十六进制字符串（为向后兼容保留的 to_hex 别名）。
+        
+        Returns:
+            str: Hexadecimal color string (e.g., "FF0000")
+        """
+        return self.to_hex()
+    
+    def to_hsv(self) -> Tuple[float, float, float]:
+        """
+        Convert color to HSV values.
+        将颜色转换为 HSV 值。
+        
+        Returns:
+            Tuple[float, float, float]: (hue, saturation, value)
+                hue: 0-360 degrees
+                saturation: 0.0-1.0
+                value: 0.0-1.0
+        """
+        r, g, b = self.R / 255.0, self.G / 255.0, self.B / 255.0
+        max_val = max(r, g, b)
+        min_val = min(r, g, b)
+        diff = max_val - min_val
+        
+        # Calculate value
+        v = max_val
+        
+        # Calculate saturation
+        s = 0 if max_val == 0 else diff / max_val
+        
+        # Calculate hue
+        if diff == 0:
+            h = 0
+        elif max_val == r:
+            h = 60 * (((g - b) / diff) % 6)
+        elif max_val == g:
+            h = 60 * (((b - r) / diff) + 2)
+        else:  # max_val == b
+            h = 60 * (((r - g) / diff) + 4)
+        
+        return (h, s, v)
 
-    def __str__(self):
+    def __str__(self) -> str:
+        """String representation of the color"""
         return f"Color(R={self.R}, G={self.G}, B={self.B})"
+    
+    def __repr__(self) -> str:
+        """Developer-friendly representation"""
+        return f"Color({self.R}, {self.G}, {self.B})"
 
     def __eq__(self, other) -> bool:
         """Compare two colors for equality"""

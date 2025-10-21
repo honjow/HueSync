@@ -26,6 +26,13 @@ class MSILEDDevice(BaseLEDDevice):
         return [
             RGBMode.Disabled,
             RGBMode.Solid,
+            RGBMode.Pulse,
+            RGBMode.Rainbow,
+            RGBMode.Spiral,
+            RGBMode.Duality,
+            RGBMode.Gradient,
+            RGBMode.MSI_FROSTFIRE,
+            RGBMode.OXP_SUN,
         ]
 
     def _set_solid_color(self, color: Color) -> None:
@@ -101,6 +108,12 @@ class MSILEDDevice(BaseLEDDevice):
                 color2=False,
                 speed=True,
             ),
+            RGBMode.Spiral: RGBModeCapabilities(
+                mode=RGBMode.Spiral,
+                color=False,
+                color2=False,
+                speed=True,
+            ),
             RGBMode.Duality: RGBModeCapabilities(
                 mode=RGBMode.Duality,
                 color=True,
@@ -112,6 +125,18 @@ class MSILEDDevice(BaseLEDDevice):
                 color=True,
                 color2=True,
                 speed=True,
+            ),
+            RGBMode.MSI_FROSTFIRE: RGBModeCapabilities(
+                mode=RGBMode.MSI_FROSTFIRE,
+                color=False,
+                color2=False,
+                speed=False,
+            ),
+            RGBMode.OXP_SUN: RGBModeCapabilities(
+                mode=RGBMode.OXP_SUN,
+                color=False,
+                color2=False,
+                speed=False,
             ),
             RGBMode.Battery: RGBModeCapabilities(
                 mode=RGBMode.Battery,
