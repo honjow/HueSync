@@ -19,7 +19,7 @@ jobs:
     steps:
       - name: set git global safe directory
         run: |
-          pacman -Syu git npm --noconfirm
+          pacman -Syu git npm zip unzip --noconfirm
           git config --global --add safe.directory $(realpath .)
 
       - uses: actions/checkout@v4
@@ -42,19 +42,33 @@ jobs:
           pnpm run build
           rm -f dist/*.map
           temp_dir=$(mktemp -d)
+          temp_dir_zip=$(mktemp -d)
+          
+          # Prepare directory for tar.gz (preserves symlinks)
           mkdir -p $temp_dir/HueSync
           cp -r dist backend py_modules *.py *.json *.md *.js LICENSE $temp_dir/HueSync
           tar -czvf huesync.tar.gz -C $temp_dir HueSync
+          
+          # Prepare directory for zip (dereference symlinks for compatibility)
+          mkdir -p $temp_dir_zip/HueSync
+          cp -rL dist backend py_modules *.py *.json *.md *.js LICENSE $temp_dir_zip/HueSync
+          (cd $temp_dir_zip && zip -r $OLDPWD/huesync.zip HueSync/)
       
       - name: show files
         run: |
-          tar -tzvf huesync.tar.gz
+          echo "=== tar.gz contents ==="
+          tar -tzvf huesync.tar.gz | head -20
+          echo ""
+          echo "=== zip contents ==="
+          unzip -l huesync.zip | head -20
       
       - name: Publish Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: huesync
-          path: huesync.tar.gz
+          path: |
+            huesync.tar.gz
+            huesync.zip
 
   publish:
     if: startsWith(github.ref, 'refs/tags/v')
@@ -73,7 +87,9 @@ jobs:
       - name: publish to github release
         uses: softprops/action-gh-release@v2
         with:
-          files: /tmp/artifacts/huesync/huesync.tar.gz
+          files: |
+            /tmp/artifacts/huesync/huesync.tar.gz
+            /tmp/artifacts/huesync/huesync.zip
           tag_name: ${{ github.ref_name }}
           generate_release_notes: true
           draft: false
