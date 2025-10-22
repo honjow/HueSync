@@ -113,12 +113,16 @@ class LegionGoLEDDeviceHID:
         if self.hid_device is None:
             return False
 
-        for r in reps:
-            msg_hex = ",".join([f"{x:02X}" for x in r])
-            logger.debug(f"msg_hex: {msg_hex}")
-            self.hid_device.write(r)
+        try:
+            for r in reps:
+                msg_hex = ",".join([f"{x:02X}" for x in r])
+                logger.debug(f"msg_hex: {msg_hex}")
+                self.hid_device.write(r)
 
-        if close_device:
-            self.hid_device.close()
+            if close_device:
+                self.hid_device.close()
 
-        return True
+            return True
+        except Exception as e:
+            logger.error(f"Failed to write to Legion Go device: {e}", exc_info=True)
+            return False  # Return failure on write error | 写入错误时返回失败

@@ -1,3 +1,6 @@
+import threading
+import time
+
 from config import PRODUCT_NAME, logger
 from id_info import ID_MAP
 from led.ausu_led_device_hid import AsusLEDDeviceHID
@@ -17,12 +20,57 @@ class AsusLEDDevice(BaseLEDDevice):
     def __init__(self):
         super().__init__()
         self._current_real_mode: RGBMode = RGBMode.Disabled
+        self._hid_device_cache = None  # Cache HID device instance | 缓存HID设备实例
+        self._device_lock = threading.Lock()  # Thread safety | 线程安全
         for product_name, id_info in ID_MAP.items():
             if product_name in PRODUCT_NAME:
                 self.id_info = id_info
 
     def _set_solid_color(self, color: Color) -> None:
         self._set_hardware_color(RGBMode.Solid, color)
+
+    def _get_or_create_device(self) -> AsusLEDDeviceHID | None:
+        """
+        Get cached device or create new one with retry logic.
+        获取缓存的设备或创建新设备（带重试逻辑）。
+        
+        Returns:
+            AsusLEDDeviceHID | None: Device instance or None if failed
+        """
+        # Try cached device first | 首先尝试缓存的设备
+        if self._hid_device_cache and self._hid_device_cache.is_ready():
+            logger.debug("Using cached HID device")
+            return self._hid_device_cache
+        
+        # Clear invalid cache | 清除无效缓存
+        if self._hid_device_cache:
+            logger.debug("Cached device no longer ready, clearing cache")
+        self._hid_device_cache = None
+        
+        # Retry logic (3 attempts with exponential backoff) | 重试逻辑（3次尝试，指数退避）
+        max_retries = 3
+        retry_delay = 0.5
+        for retry in range(max_retries):
+            if retry > 0:
+                logger.info(f"Retry attempt {retry}/{max_retries-1}")
+                time.sleep(retry_delay)
+                retry_delay *= 2  # Exponential backoff | 指数退避
+            
+            device = AsusLEDDeviceHID(
+                vid=[self.id_info.vid],
+                pid=[self.id_info.pid],
+                usage_page=[0xFF31],
+                usage=[0x0080],
+            )
+            if device.is_ready():
+                logger.debug("Created and cached new HID device")
+                self._hid_device_cache = device
+                return device
+            
+            logger.debug(f"Device not ready on attempt {retry + 1}")
+        
+        logger.warning("Failed to get LED device after all retries")
+        return None
 
     @property
     def hardware_supported_modes(self) -> list[RGBMode]:
@@ -47,30 +95,45 @@ class AsusLEDDevice(BaseLEDDevice):
         if not color:
             return
 
-        try:
-            ledDevice = AsusLEDDeviceHID(
-                vid=[self.id_info.vid],
-                pid=[self.id_info.pid],
-                usage_page=[0xFF31],
-                usage=[0x0080],
-            )
-            if ledDevice.is_ready():
+        with self._device_lock:  # Thread safety | 线程安全保护
+            try:
+                ledDevice = self._get_or_create_device()
+                if not ledDevice:
+                    logger.warning("Failed to get LED device after retries")
+                    return
+                
                 init = self._current_real_mode != mode or init
                 logger.debug(
                     f"set_asus_color: mode={mode} color={color} secondary={color2} init={init} speed={speed}"
                 )
+                
                 if mode:
                     if init:
-                        ledDevice.set_led_color(color, RGBMode.Disabled, init=True)
-                    ledDevice.set_led_color(
-                        color, mode, init=init, secondary_color=color2, speed=speed or "low"
+                        # First call: send global initialization | 首次调用：发送全局初始化
+                        success = ledDevice.set_led_color(
+                            color, RGBMode.Disabled, init=True, global_init=True
+                        )
+                        if not success:
+                            logger.warning("Failed to send init sequence, clearing cache")
+                            self._hid_device_cache = None
+                            return
+                    
+                    # Subsequent calls: skip global init | 后续调用：跳过全局初始化
+                    success = ledDevice.set_led_color(
+                        color, mode, init=init, secondary_color=color2, 
+                        speed=speed or "low", global_init=False
                     )
+                    
+                    if not success:
+                        logger.warning("Failed to set LED color, clearing cache")
+                        self._hid_device_cache = None
+                        return
+                        
                 self._current_real_mode = mode or RGBMode.Disabled
-                return
-            logger.info("set_asus_color: device not ready")
-        except Exception as e:
-            logger.error(e, exc_info=True)
-            raise
+            except Exception as e:
+                logger.error(e, exc_info=True)
+                self._hid_device_cache = None  # Clear cache on error | 错误时清除缓存
+                raise
 
     def get_mode_capabilities(self) -> dict[RGBMode, RGBModeCapabilities]:
         """

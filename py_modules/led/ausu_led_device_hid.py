@@ -129,7 +129,7 @@ class AsusLEDDeviceHID:
         mode: RGBMode,
         secondary_color: Color | None = None,
         init: bool = False,
-        global_init: bool = True,
+        global_init: bool = False,  # Change default to False | 默认改为False
         speed: str | None = None,
     ) -> bool:
         if not self.is_ready():
@@ -138,7 +138,7 @@ class AsusLEDDeviceHID:
         # Check if config_rgb needs to be sent
         current_config = (self.rgb_boot, self.rgb_charging)
         if self._last_rgb_config != current_config:
-            logger.info(
+            logger.debug(
                 f"Sending config_rgb command: boot={self.rgb_boot}, charging={self.rgb_charging}"
             )
             try:
@@ -147,6 +147,7 @@ class AsusLEDDeviceHID:
                 init = True  # Force full initialization after config change
             except Exception as e:
                 logger.error(f"Failed to send config_rgb command: {e}", exc_info=True)
+                return False  # Return failure instead of just logging | 返回失败而非仅记录
 
         logger.debug(
             f">>>> set_asus_color: mode={mode} color={main_color} secondary={secondary_color} init={init} speed={speed}"
@@ -261,7 +262,7 @@ class AsusLEDDeviceHID:
                 RGB_SET,
                 RGB_APPLY,
             ]
-        if global_init or init:
+        if global_init:  # Only when explicitly requested | 只在明确请求时
             msg = [
                 *RGB_INIT,
                 *msg,
@@ -270,10 +271,13 @@ class AsusLEDDeviceHID:
         if self.hid_device is None:
             return False
 
-        for m in msg:
-            self.hid_device.write(m)
+        try:
+            for m in msg:
+                self.hid_device.write(m)
+            return True
+        except Exception as e:
+            logger.error(f"Failed to write to device: {e}", exc_info=True)
+            return False  # Return failure on write error | 写入错误时返回失败
 
         # if self.hid_device:
         #     self.hid_device.close()
-
-        return True
