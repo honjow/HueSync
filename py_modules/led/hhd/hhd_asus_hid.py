@@ -9,7 +9,7 @@ code from https://github.com/hhd-dev/hhd/blob/master/src/hhd/device/rog_ally/hid
 
 FEATURE_KBD_DRIVER = 0x5A
 FEATURE_KBD_APP = 0x5D
-FEATURE_KBD_ID = FEATURE_KBD_APP
+FEATURE_KBD_ID = FEATURE_KBD_DRIVER
 
 
 def RGB_PKEY_INIT(key):
@@ -56,7 +56,7 @@ def rgb_set_brightness(brightness: Brightness):
             c = 0x01
         case _:
             c = 0x00
-    return buf([0x5A, 0xBA, 0xC5, 0xC4, c])
+    return buf([FEATURE_KBD_ID, 0xBA, 0xC5, 0xC4, c])
 
 
 def rgb_command(
@@ -134,7 +134,7 @@ def rgb_command(
 
     return buf(
         [
-            0x5A,
+            FEATURE_KBD_ID,
             0xB3,
             c_zone,  # zone
             c_mode,  # mode
