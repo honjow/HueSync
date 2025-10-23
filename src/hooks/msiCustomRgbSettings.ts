@@ -190,10 +190,42 @@ export class MsiCustomRgbSetting {
     if (!this._currentEditing) {
       return false;
     }
+    
+    const oldName = this._currentEditingName;
+    const isEditing = oldName !== null; // Editing existing preset
+    const isRename = isEditing && oldName !== name; // Renaming
+    
+    // Save the preset
     const success = await this.savePreset(name, this._currentEditing);
+    
     if (success) {
+      // Handle rename: delete old preset and update references
+      if (isRename) {
+        // Update reference if the old preset was currently applied
+        if (Setting.currentMsiCustomPreset === oldName) {
+          Setting.currentMsiCustomPreset = name;
+          Setting.saveSettingsData();
+          Setting.notifyChange();
+        }
+        
+        // Delete old preset from backend (direct call to avoid deletePreset's side effects)
+        try {
+          await Backend.deleteMsiCustomPreset(oldName!);
+          delete this._presets[oldName!];
+        } catch (error) {
+          console.error(`Failed to delete old preset '${oldName}':`, error);
+        }
+      }
+      
+      // If editing a currently applied preset (name unchanged or renamed), reapply to device
+      if (Setting.currentMsiCustomPreset === name) {
+        await this.applyPreset(name);
+      }
+      
       this._currentEditingName = name;
+      this.notifyChange();
     }
+    
     return success;
   }
 
