@@ -240,7 +240,7 @@ export const RGBComponent: FC = () => {
         label: (
           <div style={{ display: "flex", alignItems: "center", gap: "0.5em" }}>
             <FiPlusCircle />
-            <span>Create New Effect</span>
+            <span>{localizationManager.getString(localizeStrEnum.MSI_CUSTOM_CREATE_NEW)}</span>
           </div>
         ),
         data: "create_new",
@@ -252,8 +252,8 @@ export const RGBComponent: FC = () => {
         options.push({
           label: name,
           options: [
-            { label: "Edit", data: { name, action: "edit" } },
-            { label: "Delete", data: { name, action: "delete" } },
+            { label: localizationManager.getString(localizeStrEnum.MSI_CUSTOM_EDIT), data: { name, action: "edit" } },
+            { label: localizationManager.getString(localizeStrEnum.MSI_CUSTOM_DELETE), data: { name, action: "delete" } },
           ],
         });
       });
@@ -336,7 +336,7 @@ export const RGBComponent: FC = () => {
       } else if (action === "delete") {
         const success = await deletePreset(name);
         if (!success) {
-          alert(`Delete failed: ${name}`);
+          alert(`${localizationManager.getString(localizeStrEnum.MSI_CUSTOM_DELETE_FAILED)}: ${name}`);
         }
       }
     }
@@ -389,8 +389,8 @@ export const RGBComponent: FC = () => {
         {Setting.deviceCapabilities?.custom_rgb && manageOptions.length > 0 && (
           <PanelSectionRow>
             <DropdownItem
-              label="Manage Custom Effects"
-              strDefaultLabel="Select Action"
+              label={localizationManager.getString(localizeStrEnum.MSI_CUSTOM_MANAGE_EFFECTS)}
+              strDefaultLabel={localizationManager.getString(localizeStrEnum.MSI_CUSTOM_SELECT_ACTION)}
               selectedOption={undefined}
               rgOptions={manageOptions}
               onChange={handleManageAction}

@@ -8,7 +8,6 @@ import {
   TextField,
   DialogButton,
   Field,
-  ButtonItem,
   Focusable,
   gamepadSliderClasses,
 } from "@decky/ui";
@@ -17,13 +16,15 @@ import {
   FiChevronRight,
   FiPlus,
   FiTrash2,
+  FiEye,
 } from "react-icons/fi";
 import { useMsiCustomRgb } from "../hooks";
 import { MsiLEDPreview } from "./MsiLEDPreview";
-import { MSI_LED_ZONE_NAMES, MSI_MAX_KEYFRAMES } from "../util/const";
+import { MSI_LED_ZONE_KEYS, MSI_MAX_KEYFRAMES } from "../util/const";
 import { RGBTuple } from "../types/msiCustomRgb";
 import { hsvToRgb, rgbToHsv } from "../util";
 import { SlowSliderField } from "./SlowSliderField";
+import { localizationManager, localizeStrEnum } from "../i18n";
 
 interface MsiCustomRgbEditorProps {
   closeModal: () => void;
@@ -187,7 +188,7 @@ export const MsiCustomRgbEditor: FC<MsiCustomRgbEditorProps> = ({ closeModal }) 
         }}
       >
         <TextField
-          label={editingName ? "Edit Effect" : "New Effect"}
+          label={editingName ? localizationManager.getString(localizeStrEnum.MSI_CUSTOM_EDIT_EFFECT) : localizationManager.getString(localizeStrEnum.MSI_CUSTOM_NEW_EFFECT)}
           value={presetName}
           onChange={(e) => setPresetName((e.target as HTMLInputElement).value)}
         />
@@ -219,7 +220,7 @@ export const MsiCustomRgbEditor: FC<MsiCustomRgbEditorProps> = ({ closeModal }) 
               step={1}
               onChange={handleZoneChange}
               notchCount={9}
-              notchLabels={MSI_LED_ZONE_NAMES.map((_, idx) => ({
+              notchLabels={MSI_LED_ZONE_KEYS.map((_, idx) => ({
                 notchIndex: idx,
                 label: `${idx + 1}`,
                 value: idx,
@@ -228,13 +229,13 @@ export const MsiCustomRgbEditor: FC<MsiCustomRgbEditorProps> = ({ closeModal }) 
               showValue={false}
             />
             <div style={{ fontSize: "12px", color: "#93979C", marginTop: "4px", paddingLeft: "8px" }}>
-              {MSI_LED_ZONE_NAMES[selectedZone]}
+              {localizationManager.getString(localizeStrEnum[MSI_LED_ZONE_KEYS[selectedZone] as keyof typeof localizeStrEnum])}
             </div>
           </div>
 
           {/* Frame navigation with icons */}
           <Field
-            label={`Keyframe ${currentFrame + 1} / ${editing!.keyframes.length}`}
+            label={`${localizationManager.getString(localizeStrEnum.MSI_CUSTOM_KEYFRAME_LABEL)} ${currentFrame + 1} / ${editing!.keyframes.length}`}
             childrenLayout="below"
             highlightOnFocus={false}
           >
@@ -277,6 +278,13 @@ export const MsiCustomRgbEditor: FC<MsiCustomRgbEditorProps> = ({ closeModal }) 
               >
                 <FiTrash2 />
               </FrameControlButton>
+              <FrameControlButton
+                onOKActionDescription="PREVIEW"
+                onClick={handlePreview}
+                disabled={isPreviewing}
+              >
+                <FiEye />
+              </FrameControlButton>
             </Focusable>
           </Field>
         </div>
@@ -290,11 +298,11 @@ export const MsiCustomRgbEditor: FC<MsiCustomRgbEditorProps> = ({ closeModal }) 
             overflowY: "scroll",
           }}
         >
-            <PanelSection title="Color Editor">
+            <PanelSection title={localizationManager.getString(localizeStrEnum.MSI_CUSTOM_COLOR_EDITOR)}>
               {/* Hue slider with rainbow gradient */}
               <SlowSliderField
                 showValue
-                label="Hue"
+                label={localizationManager.getString(localizeStrEnum.HUE)}
                 value={hue}
                 min={0}
                 max={359}
@@ -308,7 +316,7 @@ export const MsiCustomRgbEditor: FC<MsiCustomRgbEditorProps> = ({ closeModal }) 
               {/* Saturation slider with gradient */}
               <SlowSliderField
                 showValue
-                label="Saturation"
+                label={localizationManager.getString(localizeStrEnum.SATURATION)}
                 value={saturation}
                 min={0}
                 max={100}
@@ -322,7 +330,7 @@ export const MsiCustomRgbEditor: FC<MsiCustomRgbEditorProps> = ({ closeModal }) 
               {/* Value/Brightness slider with gradient */}
               <SlowSliderField
                 showValue
-                label="Value"
+                label={localizationManager.getString(localizeStrEnum.MSI_CUSTOM_VALUE)}
                 value={value}
                 min={0}
                 max={100}
@@ -334,10 +342,10 @@ export const MsiCustomRgbEditor: FC<MsiCustomRgbEditorProps> = ({ closeModal }) 
 
             </PanelSection>
 
-            <PanelSection title="Global Settings">
+            <PanelSection title={localizationManager.getString(localizeStrEnum.MSI_CUSTOM_GLOBAL_SETTINGS)}>
               {/* Speed */}
               <SlowSliderField
-                label="Speed"
+                label={localizationManager.getString(localizeStrEnum.SPEED)}
                 value={editing!.speed}
                 min={0}
                 max={20}
@@ -348,7 +356,7 @@ export const MsiCustomRgbEditor: FC<MsiCustomRgbEditorProps> = ({ closeModal }) 
 
               {/* Brightness */}
               <SlowSliderField
-                label="Brightness"
+                label={localizationManager.getString(localizeStrEnum.BRIGHTNESS)}
                 value={editing!.brightness}
                 min={0}
                 max={100}
@@ -360,13 +368,8 @@ export const MsiCustomRgbEditor: FC<MsiCustomRgbEditorProps> = ({ closeModal }) 
 
               {/* Info */}
               <div style={{ fontSize: "12px", color: "#93979C", marginTop: "8px" }}>
-                Keyframes: {editing!.keyframes.length} / {MSI_MAX_KEYFRAMES}
+                {localizationManager.getString(localizeStrEnum.MSI_CUSTOM_KEYFRAMES_INFO)}: {editing!.keyframes.length} / {MSI_MAX_KEYFRAMES}
               </div>
-
-              {/* Preview button */}
-              <ButtonItem onClick={handlePreview} disabled={isPreviewing}>
-                {isPreviewing ? "Previewing..." : "Preview on Device"}
-              </ButtonItem>
             </PanelSection>
 
             {/* CSS for HSV sliders */}
@@ -422,9 +425,9 @@ export const MsiCustomRgbEditor: FC<MsiCustomRgbEditorProps> = ({ closeModal }) 
           padding: "8px 0",
         }}
       >
-        <DialogButton onClick={handleCancel}>Cancel</DialogButton>
+        <DialogButton onClick={handleCancel}>{localizationManager.getString(localizeStrEnum.MSI_CUSTOM_CANCEL)}</DialogButton>
         <DialogButton onClick={handleSave} disabled={isSaving}>
-          {isSaving ? "Saving..." : "Save"}
+          {isSaving ? localizationManager.getString(localizeStrEnum.MSI_CUSTOM_SAVING) : localizationManager.getString(localizeStrEnum.MSI_CUSTOM_SAVE)}
         </DialogButton>
       </Focusable>
     </ModalRoot>

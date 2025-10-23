@@ -34,17 +34,18 @@ export enum RGBMode {
   }
 
 // MSI Custom RGB constants
-export const MSI_LED_ZONE_NAMES = [
-  "Right Stick - Left-Bottom (R1)",
-  "Right Stick - Right-Bottom (R2)",
-  "Right Stick - Right-Top (R3)",
-  "Right Stick - Left-Top (R4)",
-  "Left Stick - Right-Top (L5)",
-  "Left Stick - Left-Top (L6)",
-  "Left Stick - Left-Bottom (L7)",
-  "Left Stick - Right-Bottom (L8)",
-  "ABXY Buttons"
-];
+// Zone names are i18n keys, use localizationManager.getString() to get localized text
+export const MSI_LED_ZONE_KEYS = [
+  "MSI_LED_ZONE_R1",
+  "MSI_LED_ZONE_R2",
+  "MSI_LED_ZONE_R3",
+  "MSI_LED_ZONE_R4",
+  "MSI_LED_ZONE_L5",
+  "MSI_LED_ZONE_L6",
+  "MSI_LED_ZONE_L7",
+  "MSI_LED_ZONE_L8",
+  "MSI_LED_ZONE_ABXY"
+] as const;
 
 export const MSI_MAX_KEYFRAMES = 8;
 export const MSI_ZONE_COUNT = 9;
