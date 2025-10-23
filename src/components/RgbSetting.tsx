@@ -228,7 +228,7 @@ export const RGBComponent: FC = () => {
     // Custom presets with nested options
     const customPresets = Object.keys(presets).map((name) => ({
       label: name,
-      data: `msi_custom:${name}`,
+      // Note: MultiDropdownOption cannot have 'data' property, only 'options'
       options: [
         {
           label: "Apply",
@@ -320,6 +320,15 @@ export const RGBComponent: FC = () => {
       return;
     }
 
+    // Handle "Create Custom Effect" button
+    if (selectedData === 'msi_custom:create_new') {
+      startEditing();
+      const createModal = showModal(
+        <MsiCustomRgbEditor closeModal={() => createModal.Close()} />
+      );
+      return;
+    }
+
     // Sub-menu action (Apply/Edit/Delete) - selectedData is an object with name and type
     if (typeof selectedData === 'object' && selectedData !== null && 'type' in selectedData && 'name' in selectedData) {
       const { name, type } = selectedData as { name: string; type: MSI_PRESET_ACTION };
@@ -331,7 +340,9 @@ export const RGBComponent: FC = () => {
           
         case MSI_PRESET_ACTION.EDIT:
           startEditing(name);
-          showModal(<MsiCustomRgbEditor closeModal={() => {}} />);
+          const editModal = showModal(
+            <MsiCustomRgbEditor closeModal={() => editModal.Close()} />
+          );
           break;
           
         case MSI_PRESET_ACTION.DELETE:
@@ -341,18 +352,6 @@ export const RGBComponent: FC = () => {
           break;
       }
       return;
-    }
-
-    // Handle custom preset parent or create new
-    if (typeof selectedData === 'string' && selectedData.startsWith('msi_custom:')) {
-      const action = selectedData.replace('msi_custom:', '');
-      
-      if (action === 'create_new') {
-        // Create new custom effect
-        startEditing();
-        showModal(<MsiCustomRgbEditor closeModal={() => {}} />);
-        return;
-      }
     }
 
     // Standard mode change
@@ -394,12 +393,14 @@ export const RGBComponent: FC = () => {
               label={localizationManager.getString(localizeStrEnum.LED_MODE)}
               strDefaultLabel={displayedModeName}
               selectedOption={modes.find((m) => {
-                // If current mode is msi_custom, find the matching preset option
+                // If current mode is msi_custom, find the matching preset by label (preset name)
                 if (rgbMode === RGBMode.msi_custom) {
-                  return m.data === `msi_custom:${Setting.currentMsiCustomPreset}`;
+                  // Custom presets are MultiDropdownOption with label = preset name
+                  return m.label === Setting.currentMsiCustomPreset;
                 }
-                return m.data === rgbMode;
-              })?.data}
+                // Standard modes are SingleDropdownOption with data = mode name
+                return 'data' in m && m.data === rgbMode;
+              })}
               rgOptions={modes}
               onChange={handleModeChange}
             />
