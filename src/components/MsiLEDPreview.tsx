@@ -61,12 +61,12 @@ const getContrastColor = (r: number, g: number, b: number): string => {
 const calculateLEDLayout = (width: number, height: number) => {
   const params = {
     canvas: { width, height },
-    padding: { left: 40, right: 40, top: 10, bottom: 10 },
+    padding: { left: 38, right: 38, top: 12, bottom: 12 },
     ledSpacing: 70,
     ring: { innerRadius: 20, outerRadius: 28, offsetFromEdge: 35 },
     visual: {
-      led: { radius: 6, radiusSelected: 8, borderWidth: 1, borderWidthSelected: 2 },
-      label: { distance: 10, distanceSelected: 12, fontSize: "6px", fontSizeBold: "bold 6px" },
+      led: { radius: 8, radiusSelected: 10, borderWidth: 1, borderWidthSelected: 2 },
+      label: { distance: 10, distanceSelected: 12, fontSize: "8px", fontSizeBold: "bold 8px" },
     },
   };
 

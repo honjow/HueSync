@@ -12,14 +12,16 @@ import {
   gamepadSliderClasses,
 } from "@decky/ui";
 import {
-  FiChevronLeft,
-  FiChevronRight,
   FiPlus,
   FiTrash2,
   FiPlay,
   FiPause,
+  FiCopy,
+  FiRotateCw,
+  FiRotateCcw,
 } from "react-icons/fi";
 import { useMsiCustomRgb } from "../hooks";
+import { MsiCustomRgbSetting } from "../hooks/msiCustomRgbSettings";
 import { MsiLEDPreview } from "./MsiLEDPreview";
 import { MSI_LED_ZONE_KEYS, MSI_MAX_KEYFRAMES } from "../util/const";
 import { RGBTuple } from "../types/msiCustomRgb";
@@ -169,6 +171,59 @@ export const MsiCustomRgbEditor: FC<MsiCustomRgbEditorProps> = ({ closeModal }) 
     }
   };
 
+  const rotateFrame = (frame: RGBTuple[], clockwise: boolean): RGBTuple[] => {
+    const newFrame = [...frame];
+    
+    // Right stick rotation (indices 0-3): R1→R2→R3→R4
+    const rightStick = [frame[0], frame[1], frame[2], frame[3]];
+    if (clockwise) {
+      [newFrame[0], newFrame[1], newFrame[2], newFrame[3]] = [rightStick[1], rightStick[2], rightStick[3], rightStick[0]];
+    } else {
+      [newFrame[0], newFrame[1], newFrame[2], newFrame[3]] = [rightStick[3], rightStick[0], rightStick[1], rightStick[2]];
+    }
+    
+    // Left stick rotation (indices 4-7): L5→L6→L7→L8
+    // Same circular pattern as right stick: left-bottom → right-bottom → right-top → left-top
+    // Positions: L7(6)left-bottom → L8(7)right-bottom → L5(4)right-top → L6(5)left-top
+    const leftStick = [frame[4], frame[5], frame[6], frame[7]];
+    if (clockwise) {
+      [newFrame[4], newFrame[5], newFrame[6], newFrame[7]] = [leftStick[1], leftStick[2], leftStick[3], leftStick[0]];
+    } else {
+      [newFrame[4], newFrame[5], newFrame[6], newFrame[7]] = [leftStick[3], leftStick[0], leftStick[1], leftStick[2]];
+    }
+    
+    // ABXY (index 8) remains unchanged
+    
+    return newFrame;
+  };
+
+  const handleCopyFrame = () => {
+    if (editing && editing.keyframes.length < MSI_MAX_KEYFRAMES) {
+      addKeyframe(currentFrame);
+      setCurrentFrame(editing.keyframes.length);
+    }
+  };
+
+  const handleCopyRotateCW = () => {
+    if (!editing || editing.keyframes.length >= MSI_MAX_KEYFRAMES) return;
+    
+    const rotated = rotateFrame(editing.keyframes[currentFrame], true);
+    const newConfig = { ...editing };
+    newConfig.keyframes = [...newConfig.keyframes, rotated];
+    MsiCustomRgbSetting.updateEditingConfig(newConfig);
+    setCurrentFrame(newConfig.keyframes.length - 1);
+  };
+
+  const handleCopyRotateCCW = () => {
+    if (!editing || editing.keyframes.length >= MSI_MAX_KEYFRAMES) return;
+    
+    const rotated = rotateFrame(editing.keyframes[currentFrame], false);
+    const newConfig = { ...editing };
+    newConfig.keyframes = [...newConfig.keyframes, rotated];
+    MsiCustomRgbSetting.updateEditingConfig(newConfig);
+    setCurrentFrame(newConfig.keyframes.length - 1);
+  };
+
   const togglePlayback = async () => {
     if (isPlaying) {
       // Pause: stop playback and return to current frame preview
@@ -264,11 +319,83 @@ export const MsiCustomRgbEditor: FC<MsiCustomRgbEditorProps> = ({ closeModal }) 
             </div>
           </div>
 
+          {/* Keyframe color timeline */}
+          <div style={{ marginTop: "4px", marginBottom: "4px" }}>
+            <div style={{ 
+              fontSize: "10px", 
+              color: "#B8BCBF", 
+              marginBottom: "4px",
+              textAlign: "center"
+            }}>
+              {localizationManager.getString(localizeStrEnum.MSI_CUSTOM_KEYFRAME_LABEL)} {currentFrame + 1} / {editing!.keyframes.length}
+            </div>
+            {/* @ts-ignore */}
+            <Focusable
+              style={{ 
+                display: "flex", 
+                gap: editing!.keyframes.length > 4 ? "6px" : "12px",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: "4px 8px",
+                minHeight: "26px"
+              }}
+            >
+              {editing!.keyframes.map((frame, index) => {
+                // Find the brightest/most saturated color to represent this frame
+                const nonBlackColors = frame.filter(rgb => rgb[0] + rgb[1] + rgb[2] > 30);
+                let representativeColor = [40, 40, 40]; // Default dark gray
+                
+                if (nonBlackColors.length > 0) {
+                  // Sort by brightness (sum of RGB) and saturation (max - min of RGB)
+                  representativeColor = nonBlackColors.reduce((brightest, current) => {
+                    const brightnessCurrent = current[0] + current[1] + current[2];
+                    const brightnessBrightest = brightest[0] + brightest[1] + brightest[2];
+                    const saturationCurrent = Math.max(...current) - Math.min(...current);
+                    const saturationBrightest = Math.max(...brightest) - Math.min(...brightest);
+                    
+                    // Prefer high saturation first, then brightness
+                    if (saturationCurrent > saturationBrightest || 
+                       (saturationCurrent === saturationBrightest && brightnessCurrent > brightnessBrightest)) {
+                      return current;
+                    }
+                    return brightest;
+                  });
+                }
+                
+                const [r, g, b] = representativeColor;
+                const isCurrent = currentFrame === index;
+                
+                return (
+                  // @ts-ignore
+                  <Focusable
+                    key={index}
+                    onActivate={() => setCurrentFrame(index)}
+                    noFocusRing={true}
+                    style={{
+                      width: "18px",
+                      height: "18px",
+                      background: `rgb(${r}, ${g}, ${b})`,
+                      borderRadius: "3px",
+                      border: isCurrent ? "2px solid #1A9FFF" : "2px solid #666",
+                      cursor: "pointer",
+                      transition: "all 0.15s ease",
+                      boxShadow: isCurrent ? "0 0 6px rgba(26, 159, 255, 0.6)" : "none",
+                      flexShrink: 0,
+                      opacity: isCurrent ? 1 : 0.7,
+                    }}
+                    focusClassName="keyframe-focused"
+                  />
+                );
+              })}
+            </Focusable>
+          </div>
+
           {/* Frame navigation with icons */}
           <Field
-            label={`${localizationManager.getString(localizeStrEnum.MSI_CUSTOM_KEYFRAME_LABEL)} ${currentFrame + 1} / ${editing!.keyframes.length}`}
+            label=""
             childrenLayout="below"
             highlightOnFocus={false}
+            padding="none"
           >
             {/* @ts-ignore */}
             <Focusable
@@ -280,37 +407,42 @@ export const MsiCustomRgbEditor: FC<MsiCustomRgbEditorProps> = ({ closeModal }) 
               }}
             >
               <FrameControlButton
-                onOKActionDescription="PREV"
-                onClick={() => setCurrentFrame(Math.max(0, currentFrame - 1))}
-                disabled={currentFrame === 0}
-              >
-                <FiChevronLeft />
-              </FrameControlButton>
-              <FrameControlButton
-                onOKActionDescription="NEXT"
-                onClick={() =>
-                  setCurrentFrame(Math.min(editing!.keyframes.length - 1, currentFrame + 1))
-                }
-                disabled={currentFrame >= editing!.keyframes.length - 1}
-              >
-                <FiChevronRight />
-              </FrameControlButton>
-              <FrameControlButton
-                onOKActionDescription="ADD"
+                onOKActionDescription={localizationManager.getString(localizeStrEnum.MSI_CUSTOM_ADD_FRAME)}
                 onClick={handleAddFrame}
                 disabled={editing!.keyframes.length >= MSI_MAX_KEYFRAMES}
               >
                 <FiPlus />
               </FrameControlButton>
               <FrameControlButton
-                onOKActionDescription="DELETE"
+                onOKActionDescription={localizationManager.getString(localizeStrEnum.MSI_CUSTOM_COPY_FRAME)}
+                onClick={handleCopyFrame}
+                disabled={editing!.keyframes.length >= MSI_MAX_KEYFRAMES}
+              >
+                <FiCopy />
+              </FrameControlButton>
+              <FrameControlButton
+                onOKActionDescription={localizationManager.getString(localizeStrEnum.MSI_CUSTOM_COPY_ROTATE_CW)}
+                onClick={handleCopyRotateCW}
+                disabled={editing!.keyframes.length >= MSI_MAX_KEYFRAMES}
+              >
+                <FiRotateCw />
+              </FrameControlButton>
+              <FrameControlButton
+                onOKActionDescription={localizationManager.getString(localizeStrEnum.MSI_CUSTOM_COPY_ROTATE_CCW)}
+                onClick={handleCopyRotateCCW}
+                disabled={editing!.keyframes.length >= MSI_MAX_KEYFRAMES}
+              >
+                <FiRotateCcw />
+              </FrameControlButton>
+              <FrameControlButton
+                onOKActionDescription={localizationManager.getString(localizeStrEnum.MSI_CUSTOM_DELETE_FRAME)}
                 onClick={handleDeleteFrame}
                 disabled={editing!.keyframes.length <= 1}
               >
                 <FiTrash2 />
               </FrameControlButton>
               <FrameControlButton
-                onOKActionDescription={isPlaying ? "PAUSE" : "PLAY"}
+                onOKActionDescription={isPlaying ? localizationManager.getString(localizeStrEnum.MSI_CUSTOM_PAUSE) : localizationManager.getString(localizeStrEnum.MSI_CUSTOM_PLAY)}
                 onClick={togglePlayback}
               >
                 {isPlaying ? <FiPause /> : <FiPlay />}
@@ -402,9 +534,17 @@ export const MsiCustomRgbEditor: FC<MsiCustomRgbEditorProps> = ({ closeModal }) 
               </div>
             </PanelSection>
 
-            {/* CSS for HSV sliders */}
+            {/* CSS for HSV sliders and keyframe timeline */}
             <style>
               {`
+                .keyframe-focused {
+                  transform: scale(1.15);
+                  filter: brightness(1.2);
+                  outline: 2px solid #fff !important;
+                  outline-offset: 2px;
+                  box-shadow: 0 0 12px rgba(255, 255, 255, 0.9) !important;
+                }
+                
                 .MsiColorPicker_HSlider .${gamepadSliderClasses.SliderTrack} {
                   background: linear-gradient(
                     to right,
