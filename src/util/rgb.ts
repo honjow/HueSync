@@ -103,3 +103,39 @@ export function hsvToRgb(
 
   return [r, g, b];
 }
+
+export function rgbToHsv(
+  r: number,
+  g: number,
+  b: number
+): [number, number, number] {
+  r /= 255;
+  g /= 255;
+  b /= 255;
+
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const delta = max - min;
+
+  let h = 0;
+  let s = 0;
+  const v = max;
+
+  if (delta !== 0) {
+    s = delta / max;
+
+    if (max === r) {
+      h = ((g - b) / delta + (g < b ? 6 : 0)) / 6;
+    } else if (max === g) {
+      h = ((b - r) / delta + 2) / 6;
+    } else {
+      h = ((r - g) / delta + 4) / 6;
+    }
+  }
+
+  return [
+    Math.round(h * 360),      // Hue: 0-360
+    Math.round(s * 100),      // Saturation: 0-100
+    Math.round(v * 100)       // Value: 0-100
+  ];
+}

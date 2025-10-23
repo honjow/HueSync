@@ -4,12 +4,17 @@ import {
   DropdownItem,
   gamepadSliderClasses,
   ToggleField,
+  DropdownOption,
+  showModal,
 } from "@decky/ui";
 import { FC, useMemo } from "react";
+import { FiPlusCircle } from "react-icons/fi";
 import { localizationManager, localizeStrEnum } from "../i18n";
 import { useRgb } from "../hooks";
-import { SlowSliderField, SpeedControl, BrightnessLevelControl } from ".";
+import { SlowSliderField, SpeedControl, BrightnessLevelControl, MsiCustomRgbEditor } from ".";
 import { Setting } from "../hooks/settings";
+import { useMsiCustomRgb } from "../hooks";
+import { RGBMode } from "../util";
 
 interface ColorControlsProps {
   hue: number;
@@ -192,16 +197,70 @@ export const RGBComponent: FC = () => {
     updateBrightnessLevel,
   } = useRgb();
 
-  const modes = useMemo(() => {
-    return Object.entries(Setting.modeCapabilities).map(([mode]) => ({
-      label: localizationManager.getString(
-        localizeStrEnum[
-        `LED_MODE_${mode.toUpperCase()}` as keyof typeof localizeStrEnum
-        ]
-      ),
-      data: mode,
+  // MSI Custom RGB hook
+  const { presets, startEditing, deletePreset, applyPreset } = useMsiCustomRgb();
+
+  // LED Mode Options (single layer)
+  const modeOptions = useMemo(() => {
+    const baseModes = Object.entries(Setting.modeCapabilities)
+      .filter(([mode]) => mode !== RGBMode.msi_custom)
+      .map(([mode]) => ({
+        label: localizationManager.getString(
+          localizeStrEnum[
+            `LED_MODE_${mode.toUpperCase()}` as keyof typeof localizeStrEnum
+          ]
+        ),
+        data: mode,
+      }));
+
+    if (!Setting.deviceCapabilities?.custom_rgb) {
+      return baseModes;
+    }
+
+    // Custom presets as single-layer options, click to apply directly
+    const customPresetModes = Object.keys(presets).map((name) => ({
+      label: name,
+      data: `msi_custom:${name}`, // Has data property, can maintain focus
     }));
-  }, []);
+
+    return [
+      ...baseModes,
+      ...customPresetModes,
+    ];
+  }, [presets]);
+
+  // Manage Custom Effects Options (two-level)
+  const manageOptions = useMemo(() => {
+    if (!Setting.deviceCapabilities?.custom_rgb) {
+      return [];
+    }
+
+    const options: DropdownOption[] = [
+      {
+        label: (
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5em" }}>
+            <FiPlusCircle />
+            <span>{localizationManager.getString(localizeStrEnum.MSI_CUSTOM_CREATE_NEW)}</span>
+          </div>
+        ),
+        data: "create_new",
+      },
+    ];
+
+    if (Object.keys(presets).length > 0) {
+      Object.keys(presets).forEach((name) => {
+        options.push({
+          label: name,
+          options: [
+            { label: localizationManager.getString(localizeStrEnum.MSI_CUSTOM_EDIT), data: { name, action: "edit" } },
+            { label: localizationManager.getString(localizeStrEnum.MSI_CUSTOM_DELETE), data: { name, action: "delete" } },
+          ],
+        });
+      });
+    }
+
+    return options;
+  }, [presets]);
 
   // Get current mode capabilities | 获取当前模式的能力
   const currentModeCapabilities = useMemo(() => {
@@ -238,6 +297,62 @@ export const RGBComponent: FC = () => {
     return secondaryZone?.name_key || null;
   }, []);
 
+  // Handle mode selection
+  const handleModeChange = async (option: DropdownOption) => {
+    const selectedData = option.data;
+    if (selectedData === "separator") return;
+
+    // Handle custom preset apply
+    if (typeof selectedData === 'string' && selectedData.startsWith('msi_custom:')) {
+      const presetName = selectedData.replace('msi_custom:', '');
+      await applyPreset(presetName);
+      return;
+    }
+
+    // Handle standard mode change
+    if (selectedData !== rgbMode) {
+      updateRgbMode(selectedData);
+    }
+  };
+
+  // Handle manage actions
+  const handleManageAction = async (option: DropdownOption) => {
+    const selectedData = option.data;
+    if (selectedData === "separator") return;
+
+    // Create new effect
+    if (selectedData === "create_new") {
+      startEditing();
+      const modal = showModal(<MsiCustomRgbEditor closeModal={() => modal.Close()} />);
+      return;
+    }
+
+    // Edit or delete operations
+    if (typeof selectedData === 'object' && selectedData !== null && 'action' in selectedData && 'name' in selectedData) {
+      const { name, action } = selectedData as { name: string; action: string };
+      if (action === "edit") {
+        startEditing(name);
+        const modal = showModal(<MsiCustomRgbEditor closeModal={() => modal.Close()} />);
+      } else if (action === "delete") {
+        const success = await deletePreset(name);
+        if (!success) {
+          alert(`${localizationManager.getString(localizeStrEnum.MSI_CUSTOM_DELETE_FAILED)}: ${name}`);
+        }
+      }
+    }
+  };
+
+  // Display mode name
+  const displayedModeName = useMemo(() => {
+    if (rgbMode === RGBMode.msi_custom) {
+      return Setting.currentMsiCustomPreset || "Custom Effect";
+    }
+    
+    return localizationManager.getString(
+      localizeStrEnum[`LED_MODE_${rgbMode.toUpperCase()}` as keyof typeof localizeStrEnum]
+    );
+  }, [rgbMode]);
+
   return (
     <>
       <PanelSection
@@ -258,20 +373,30 @@ export const RGBComponent: FC = () => {
           <PanelSectionRow>
             <DropdownItem
               label={localizationManager.getString(localizeStrEnum.LED_MODE)}
-              strDefaultLabel={localizationManager.getString(
-                localizeStrEnum.LED_MODE_DESC
-              )}
-              selectedOption={modes.find((m) => m.data === rgbMode)?.data}
-              rgOptions={modes}
-              onChange={(option) => {
-                console.log(">>> Dropdown onChange, selected:", option.data);
-                if (option.data !== rgbMode) {
-                  console.log(">>> Setting new mode:", option.data);
-                  updateRgbMode(option.data);
+              strDefaultLabel={displayedModeName}
+              selectedOption={modeOptions.find((m) => {
+                if (rgbMode === RGBMode.msi_custom) {
+                  return m.data === `msi_custom:${Setting.currentMsiCustomPreset}`;
                 }
-              }}
+                return m.data === rgbMode;
+              })?.data}
+              rgOptions={modeOptions}
+              onChange={handleModeChange}
             />
-          </PanelSectionRow>)}
+          </PanelSectionRow>
+        )}
+        {/* Manage Custom Effects Dropdown */}
+        {Setting.deviceCapabilities?.custom_rgb && manageOptions.length > 0 && (
+          <PanelSectionRow>
+            <DropdownItem
+              label={localizationManager.getString(localizeStrEnum.MSI_CUSTOM_MANAGE_EFFECTS)}
+              strDefaultLabel={localizationManager.getString(localizeStrEnum.MSI_CUSTOM_SELECT_ACTION)}
+              selectedOption={undefined}
+              rgOptions={manageOptions}
+              onChange={handleManageAction}
+            />
+          </PanelSectionRow>
+        )}
       </PanelSection>
       {enableControl && (
         <>

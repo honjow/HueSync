@@ -28,4 +28,24 @@ export enum RGBMode {
     
     // MSI specific preset modes
     msi_frostfire = "msi_frostfire",
+    
+    // MSI custom RGB mode
+    msi_custom = "msi_custom",
   }
+
+// MSI Custom RGB constants
+// Zone names are i18n keys, use localizationManager.getString() to get localized text
+export const MSI_LED_ZONE_KEYS = [
+  "MSI_LED_ZONE_R1",
+  "MSI_LED_ZONE_R2",
+  "MSI_LED_ZONE_R3",
+  "MSI_LED_ZONE_R4",
+  "MSI_LED_ZONE_L5",
+  "MSI_LED_ZONE_L6",
+  "MSI_LED_ZONE_L7",
+  "MSI_LED_ZONE_L8",
+  "MSI_LED_ZONE_ABXY"
+] as const;
+
+export const MSI_MAX_KEYFRAMES = 8;
+export const MSI_ZONE_COUNT = 9;

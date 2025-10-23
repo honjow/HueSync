@@ -20,6 +20,15 @@ class MSILEDDevice(BaseLEDDevice):
     def __init__(self):
         super().__init__()
         self._current_real_mode: RGBMode = RGBMode.Solid
+        
+        # Initialize MSI LED device HID interface
+        # 初始化 MSI LED 设备 HID 接口
+        self.led_device = MSILEDDeviceHID(
+            vid=[MSI_CLAW_VID],
+            pid=[MSI_CLAW_XINPUT_PID, MSI_CLAW_DINPUT_PID],
+            usage_page=[0xFFA0, 0xFFF0],
+            usage=[0x0001, 0x0040],
+        )
 
     @property
     def hardware_supported_modes(self) -> list[RGBMode]:
@@ -96,13 +105,9 @@ class MSILEDDevice(BaseLEDDevice):
         brightness_value = self._convert_brightness_to_int(brightness_level) if brightness_level else 100
 
         try:
-            ledDevice = MSILEDDeviceHID(
-                vid=[MSI_CLAW_VID],
-                pid=[MSI_CLAW_XINPUT_PID, MSI_CLAW_DINPUT_PID],
-                usage_page=[0xFFA0, 0xFFF0],
-                usage=[0x0001, 0x0040],
-            )
-            if ledDevice.is_ready():
+            # Use the instance led_device instead of creating new one
+            # 使用实例的 led_device 而不是每次创建新实例
+            if self.led_device.is_ready():
                 init = self._current_real_mode != mode or init
                 logger.debug(
                     f"set_msi_color: mode={mode} color={color} secondary={color2} "
@@ -110,8 +115,8 @@ class MSILEDDevice(BaseLEDDevice):
                 )
                 if mode:
                     if init:
-                        ledDevice.set_led_color(main_color=color, mode=RGBMode.Disabled)
-                    ledDevice.set_led_color(
+                        self.led_device.set_led_color(main_color=color, mode=RGBMode.Disabled)
+                    self.led_device.set_led_color(
                         main_color=color,
                         mode=mode,
                         secondary_color=color2,
@@ -215,3 +220,16 @@ class MSILEDDevice(BaseLEDDevice):
                 brightness_level=False,
             ),
         }
+
+    def get_device_capabilities(self) -> dict:
+        """
+        Get MSI device hardware capabilities.
+        获取 MSI 设备硬件能力。
+
+        Returns:
+            dict: Device capabilities including custom_rgb support
+        """
+        base_caps = super().get_device_capabilities()
+        # MSI Claw supports custom RGB configuration
+        base_caps["custom_rgb"] = True
+        return base_caps
