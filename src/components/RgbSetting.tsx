@@ -4,12 +4,17 @@ import {
   DropdownItem,
   gamepadSliderClasses,
   ToggleField,
+  DropdownOption,
+  showModal,
 } from "@decky/ui";
 import { FC, useMemo } from "react";
+import { FiPlusCircle } from "react-icons/fi";
 import { localizationManager, localizeStrEnum } from "../i18n";
 import { useRgb } from "../hooks";
-import { SlowSliderField, SpeedControl, BrightnessLevelControl, MsiCustomRgbControl } from ".";
+import { SlowSliderField, SpeedControl, BrightnessLevelControl, MsiCustomRgbEditor } from ".";
 import { Setting } from "../hooks/settings";
+import { useMsiCustomRgb } from "../hooks";
+import { RGBMode } from "../util";
 
 interface ColorControlsProps {
   hue: number;
@@ -168,6 +173,13 @@ const ColorControls: FC<ColorControlsProps> = ({
   );
 };
 
+enum MSI_PRESET_ACTION {
+  ADD = "ADD",
+  APPLY = "APPLY",
+  EDIT = "EDIT",
+  DELETE = "DELETE",
+}
+
 export const RGBComponent: FC = () => {
   const {
     hue,
@@ -192,16 +204,77 @@ export const RGBComponent: FC = () => {
     updateBrightnessLevel,
   } = useRgb();
 
+  // MSI Custom RGB hook
+  const { presets, startEditing, deletePreset, applyPreset } = useMsiCustomRgb();
+
   const modes = useMemo(() => {
-    return Object.entries(Setting.modeCapabilities).map(([mode]) => ({
-      label: localizationManager.getString(
-        localizeStrEnum[
-        `LED_MODE_${mode.toUpperCase()}` as keyof typeof localizeStrEnum
-        ]
-      ),
-      data: mode,
+    // Base preset modes (exclude msi_custom as it will be added dynamically)
+    const baseModes = Object.entries(Setting.modeCapabilities)
+      .filter(([mode]) => mode !== RGBMode.msi_custom)
+      .map(([mode]) => ({
+        label: localizationManager.getString(
+          localizeStrEnum[
+            `LED_MODE_${mode.toUpperCase()}` as keyof typeof localizeStrEnum
+          ]
+        ),
+        data: mode,
+      }));
+
+    // If device doesn't support custom RGB, return base modes only
+    if (!Setting.deviceCapabilities?.custom_rgb) {
+      return baseModes;
+    }
+
+    // Custom presets with nested options
+    const customPresets = Object.keys(presets).map((name) => ({
+      label: name,
+      data: `msi_custom:${name}`,
+      options: [
+        {
+          label: "Apply",
+          data: {
+            name,
+            type: MSI_PRESET_ACTION.APPLY,
+          },
+        },
+        {
+          label: "Edit",
+          data: {
+            name,
+            type: MSI_PRESET_ACTION.EDIT,
+          },
+        },
+        {
+          label: "Delete",
+          data: {
+            name,
+            type: MSI_PRESET_ACTION.DELETE,
+          },
+        },
+      ],
     }));
-  }, []);
+
+    // Combine: base modes + separator + custom presets + create button
+    return [
+      ...baseModes,
+      ...(customPresets.length > 0 ? [
+        {
+          label: "────────────────",
+          data: "separator",
+        }
+      ] : []),
+      ...customPresets,
+      {
+        label: (
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5em" }}>
+            <FiPlusCircle />
+            <span>Create Custom Effect</span>
+          </div>
+        ),
+        data: "msi_custom:create_new",
+      },
+    ];
+  }, [presets]);
 
   // Get current mode capabilities | 获取当前模式的能力
   const currentModeCapabilities = useMemo(() => {
@@ -238,6 +311,67 @@ export const RGBComponent: FC = () => {
     return secondaryZone?.name_key || null;
   }, []);
 
+  // Handle mode change including custom presets
+  const handleModeChange = (option: DropdownOption) => {
+    const selectedData = option.data;
+
+    // Ignore separator
+    if (selectedData === "separator") {
+      return;
+    }
+
+    // Sub-menu action (Apply/Edit/Delete) - selectedData is an object with name and type
+    if (typeof selectedData === 'object' && selectedData !== null && 'type' in selectedData && 'name' in selectedData) {
+      const { name, type } = selectedData as { name: string; type: MSI_PRESET_ACTION };
+      
+      switch (type) {
+        case MSI_PRESET_ACTION.APPLY:
+          applyPreset(name);
+          break;
+          
+        case MSI_PRESET_ACTION.EDIT:
+          startEditing(name);
+          showModal(<MsiCustomRgbEditor closeModal={() => {}} />);
+          break;
+          
+        case MSI_PRESET_ACTION.DELETE:
+          if (confirm(`确认删除预设 "${name}"？\nDelete preset "${name}"?`)) {
+            deletePreset(name);
+          }
+          break;
+      }
+      return;
+    }
+
+    // Handle custom preset parent or create new
+    if (typeof selectedData === 'string' && selectedData.startsWith('msi_custom:')) {
+      const action = selectedData.replace('msi_custom:', '');
+      
+      if (action === 'create_new') {
+        // Create new custom effect
+        startEditing();
+        showModal(<MsiCustomRgbEditor closeModal={() => {}} />);
+        return;
+      }
+    }
+
+    // Standard mode change
+    if (selectedData !== rgbMode) {
+      updateRgbMode(selectedData);
+    }
+  };
+
+  // Display mode name
+  const displayedModeName = useMemo(() => {
+    if (rgbMode === RGBMode.msi_custom) {
+      return Setting.currentMsiCustomPreset || "Custom Effect";
+    }
+    
+    return localizationManager.getString(
+      localizeStrEnum[`LED_MODE_${rgbMode.toUpperCase()}` as keyof typeof localizeStrEnum]
+    );
+  }, [rgbMode]);
+
   return (
     <>
       <PanelSection
@@ -258,18 +392,16 @@ export const RGBComponent: FC = () => {
           <PanelSectionRow>
             <DropdownItem
               label={localizationManager.getString(localizeStrEnum.LED_MODE)}
-              strDefaultLabel={localizationManager.getString(
-                localizeStrEnum.LED_MODE_DESC
-              )}
-              selectedOption={modes.find((m) => m.data === rgbMode)?.data}
-              rgOptions={modes}
-              onChange={(option) => {
-                console.log(">>> Dropdown onChange, selected:", option.data);
-                if (option.data !== rgbMode) {
-                  console.log(">>> Setting new mode:", option.data);
-                  updateRgbMode(option.data);
+              strDefaultLabel={displayedModeName}
+              selectedOption={modes.find((m) => {
+                // If current mode is msi_custom, find the matching preset option
+                if (rgbMode === RGBMode.msi_custom) {
+                  return m.data === `msi_custom:${Setting.currentMsiCustomPreset}`;
                 }
-              }}
+                return m.data === rgbMode;
+              })?.data}
+              rgOptions={modes}
+              onChange={handleModeChange}
             />
           </PanelSectionRow>)}
       </PanelSection>
@@ -339,13 +471,6 @@ export const RGBComponent: FC = () => {
                   zone="secondary"
                 />
               )}
-            </PanelSection>
-          )}
-
-          {/* MSI Custom RGB Section | MSI 自定义 RGB 设置 */}
-          {Setting.deviceCapabilities?.custom_rgb && (
-            <PanelSection title="MSI 自定义灯效 / MSI Custom Effects">
-              <MsiCustomRgbControl />
             </PanelSection>
           )}
         </>

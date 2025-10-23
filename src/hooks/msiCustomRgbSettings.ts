@@ -1,8 +1,9 @@
 // MSI Custom RGB Settings Management
 // MSI 自定义 RGB 设置管理
 
-import { Backend } from "../util";
+import { Backend, RGBMode } from "../util";
 import { MsiCustomRgbConfig, MsiCustomPresetsDict } from "../types/msiCustomRgb";
+import { Setting } from "./settings";
 
 export class MsiCustomRgbSetting {
   private static _presets: MsiCustomPresetsDict = {};
@@ -37,9 +38,11 @@ export class MsiCustomRgbSetting {
   static async init() {
     try {
       this._presets = await Backend.getMsiCustomPresets();
+      this.notifyChange(); // Notify listeners after loading presets
     } catch (error) {
       console.error("Failed to load MSI custom presets:", error);
       this._presets = {};
+      this.notifyChange(); // Notify even on error
     }
   }
 
@@ -94,6 +97,15 @@ export class MsiCustomRgbSetting {
       const success = await Backend.deleteMsiCustomPreset(name);
       if (success) {
         delete this._presets[name];
+        
+        // If deleting the currently applied preset, clear state and switch to default mode
+        if (Setting.currentMsiCustomPreset === name) {
+          Setting.currentMsiCustomPreset = null;
+          Setting.mode = RGBMode.solid; // Fallback to solid mode
+          Setting.saveSettingsData();
+          Setting.notifyChange();
+        }
+        
         this.notifyChange();
       }
       return success;
@@ -109,7 +121,15 @@ export class MsiCustomRgbSetting {
    */
   static async applyPreset(name: string): Promise<boolean> {
     try {
-      return await Backend.applyMsiCustomPreset(name);
+      const success = await Backend.applyMsiCustomPreset(name);
+      if (success) {
+        // Update current preset name and mode in Setting
+        Setting.currentMsiCustomPreset = name;
+        Setting.mode = RGBMode.msi_custom;
+        Setting.saveSettingsData();
+        Setting.notifyChange();
+      }
+      return success;
     } catch (error) {
       console.error(`Failed to apply preset '${name}':`, error);
       return false;
