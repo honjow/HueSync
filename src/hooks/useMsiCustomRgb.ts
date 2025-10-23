@@ -11,6 +11,9 @@ export const useMsiCustomRgb = () => {
   const [editingName, setEditingName] = useState<string | null>(MsiCustomRgbSetting.currentEditingName);
 
   useEffect(() => {
+    // Initialize and load presets from backend
+    MsiCustomRgbSetting.init();
+    
     // Listen for preset changes
     const unsubscribe = MsiCustomRgbSetting.onPresetsChange(() => {
       setPresets({ ...MsiCustomRgbSetting.presets });

@@ -7,7 +7,7 @@ import {
   DropdownOption,
   showModal,
 } from "@decky/ui";
-import { FC, useMemo } from "react";
+import { FC, useMemo, useState, useEffect } from "react";
 import { FiPlusCircle } from "react-icons/fi";
 import { localizationManager, localizeStrEnum } from "../i18n";
 import { useRgb } from "../hooks";
@@ -206,6 +206,17 @@ export const RGBComponent: FC = () => {
 
   // MSI Custom RGB hook
   const { presets, startEditing, deletePreset, applyPreset } = useMsiCustomRgb();
+  
+  // Track currentMsiCustomPreset to trigger re-renders when it changes
+  const [currentPreset, setCurrentPreset] = useState<string | null>(Setting.currentMsiCustomPreset);
+  
+  useEffect(() => {
+    // Listen for Setting changes to update currentPreset
+    const unsubscribe = Setting.onSettingChange(() => {
+      setCurrentPreset(Setting.currentMsiCustomPreset);
+    });
+    return unsubscribe;
+  }, []);
 
   const modes = useMemo(() => {
     // Base preset modes (exclude msi_custom as it will be added dynamically)
@@ -312,7 +323,7 @@ export const RGBComponent: FC = () => {
   }, []);
 
   // Handle mode change including custom presets
-  const handleModeChange = (option: DropdownOption) => {
+  const handleModeChange = async (option: DropdownOption) => {
     const selectedData = option.data;
 
     // Ignore separator
@@ -329,13 +340,13 @@ export const RGBComponent: FC = () => {
       return;
     }
 
-    // Sub-menu action (Apply/Edit/Delete) - selectedData is an object with name and type
+    // Sub-menu action (Apply/Edit/Delete)
     if (typeof selectedData === 'object' && selectedData !== null && 'type' in selectedData && 'name' in selectedData) {
       const { name, type } = selectedData as { name: string; type: MSI_PRESET_ACTION };
       
       switch (type) {
         case MSI_PRESET_ACTION.APPLY:
-          applyPreset(name);
+          await applyPreset(name);
           break;
           
         case MSI_PRESET_ACTION.EDIT:
@@ -346,8 +357,9 @@ export const RGBComponent: FC = () => {
           break;
           
         case MSI_PRESET_ACTION.DELETE:
-          if (confirm(`确认删除预设 "${name}"？\nDelete preset "${name}"?`)) {
-            deletePreset(name);
+          const deleteSuccess = await deletePreset(name);
+          if (!deleteSuccess) {
+            alert(`删除失败 / Delete failed: ${name}`);
           }
           break;
       }
@@ -363,13 +375,13 @@ export const RGBComponent: FC = () => {
   // Display mode name
   const displayedModeName = useMemo(() => {
     if (rgbMode === RGBMode.msi_custom) {
-      return Setting.currentMsiCustomPreset || "Custom Effect";
+      return currentPreset || "Custom Effect";
     }
     
     return localizationManager.getString(
       localizeStrEnum[`LED_MODE_${rgbMode.toUpperCase()}` as keyof typeof localizeStrEnum]
     );
-  }, [rgbMode]);
+  }, [rgbMode, currentPreset]);
 
   return (
     <>
@@ -396,7 +408,7 @@ export const RGBComponent: FC = () => {
                 // If current mode is msi_custom, find the matching preset by label (preset name)
                 if (rgbMode === RGBMode.msi_custom) {
                   // Custom presets are MultiDropdownOption with label = preset name
-                  return m.label === Setting.currentMsiCustomPreset;
+                  return m.label === currentPreset;
                 }
                 // Standard modes are SingleDropdownOption with data = mode name
                 return 'data' in m && m.data === rgbMode;

@@ -103,6 +103,8 @@ export class MsiCustomRgbSetting {
           Setting.currentMsiCustomPreset = null;
           Setting.mode = RGBMode.solid; // Fallback to solid mode
           Setting.saveSettingsData();
+          // Apply settings to backend/device
+          await Backend.applySettings();
           Setting.notifyChange();
         }
         
@@ -128,6 +130,8 @@ export class MsiCustomRgbSetting {
         Setting.mode = RGBMode.msi_custom;
         Setting.saveSettingsData();
         Setting.notifyChange();
+        // Apply settings to backend/device
+        await Backend.applySettings();
       }
       return success;
     } catch (error) {

@@ -50,6 +50,12 @@ class Plugin:
         try:
             from utils import Color, RGBMode
 
+            # MSI custom RGB is handled separately by set_msi_custom_rgb
+            # Skip standard set_color processing for msi_custom mode
+            if mode and mode.lower() == "msi_custom":
+                logger.debug("Skipping set_color for msi_custom mode (handled by set_msi_custom_rgb)")
+                return True
+
             color = None
             color2 = None
             if r is not None and g is not None and b is not None:
