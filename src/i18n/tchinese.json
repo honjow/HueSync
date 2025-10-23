@@ -89,6 +89,8 @@
     "MSI_CUSTOM_KEYFRAMES_INFO": "關鍵幀數",
     "MSI_CUSTOM_PREVIEW": "預覽",
     "MSI_CUSTOM_PREVIEWING": "預覽中...",
+    "MSI_CUSTOM_PLAY": "播放",
+    "MSI_CUSTOM_PAUSE": "暫停",
     "MSI_CUSTOM_CANCEL": "取消",
     "MSI_CUSTOM_SAVE": "保存",
     "MSI_CUSTOM_SAVING": "保存中...",

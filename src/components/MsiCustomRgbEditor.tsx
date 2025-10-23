@@ -16,7 +16,8 @@ import {
   FiChevronRight,
   FiPlus,
   FiTrash2,
-  FiEye,
+  FiPlay,
+  FiPause,
 } from "react-icons/fi";
 import { useMsiCustomRgb } from "../hooks";
 import { MsiLEDPreview } from "./MsiLEDPreview";
@@ -40,6 +41,7 @@ export const MsiCustomRgbEditor: FC<MsiCustomRgbEditorProps> = ({ closeModal }) 
     updateSpeed,
     updateBrightness,
     preview,
+    previewSingleFrame,
     save,
     cancelEditing,
   } = useMsiCustomRgb();
@@ -48,7 +50,7 @@ export const MsiCustomRgbEditor: FC<MsiCustomRgbEditorProps> = ({ closeModal }) 
   const [selectedZone, setSelectedZone] = useState(0);
   const [presetName, setPresetName] = useState(editingName || "");
   const [isSaving, setIsSaving] = useState(false);
-  const [isPreviewing, setIsPreviewing] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
 
   if (!editing) {
     return null;
@@ -77,6 +79,28 @@ export const MsiCustomRgbEditor: FC<MsiCustomRgbEditorProps> = ({ closeModal }) 
       setHsvState([h, s, v]);
     }
   }, [currentFrame, selectedZone]);
+
+  // Auto-preview current frame when not playing
+  useEffect(() => {
+    if (isPlaying || !editing) return;
+    
+    const timer = setTimeout(() => {
+      previewSingleFrame(currentFrame);
+    }, 300); // 300ms debounce to avoid frequent updates
+    
+    return () => clearTimeout(timer);
+  }, [currentFrame, editing.keyframes[currentFrame], isPlaying]);
+
+  // Re-send all frames when playing and config changes (speed, brightness, or any frame color)
+  useEffect(() => {
+    if (!isPlaying || !editing) return;
+    
+    const timer = setTimeout(() => {
+      preview();
+    }, 300); // 300ms debounce to avoid frequent updates
+    
+    return () => clearTimeout(timer);
+  }, [editing.speed, editing.brightness, editing.keyframes, isPlaying]);
 
   const [hue, saturation, value] = hsvState;
 
@@ -145,12 +169,15 @@ export const MsiCustomRgbEditor: FC<MsiCustomRgbEditorProps> = ({ closeModal }) 
     }
   };
 
-  const handlePreview = async () => {
-    setIsPreviewing(true);
-    try {
+  const togglePlayback = async () => {
+    if (isPlaying) {
+      // Pause: stop playback and return to current frame preview
+      setIsPlaying(false);
+      await previewSingleFrame(currentFrame);
+    } else {
+      // Play: send all frames for animation
+      setIsPlaying(true);
       await preview();
-    } finally {
-      setIsPreviewing(false);
     }
   };
 
@@ -280,11 +307,10 @@ export const MsiCustomRgbEditor: FC<MsiCustomRgbEditorProps> = ({ closeModal }) 
                 <FiTrash2 />
               </FrameControlButton>
               <FrameControlButton
-                onOKActionDescription="PREVIEW"
-                onClick={handlePreview}
-                disabled={isPreviewing}
+                onOKActionDescription={isPlaying ? "PAUSE" : "PLAY"}
+                onClick={togglePlayback}
               >
-                <FiEye />
+                {isPlaying ? <FiPause /> : <FiPlay />}
               </FrameControlButton>
             </Focusable>
           </Field>

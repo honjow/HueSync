@@ -183,6 +183,28 @@ export class MsiCustomRgbSetting {
   }
 
   /**
+   * Preview a single frame (send only one frame to device)
+   * 预览单个关键帧（只发送一帧到设备）
+   */
+  static async previewSingleFrame(frameIndex: number): Promise<boolean> {
+    if (!this._currentEditing || frameIndex >= this._currentEditing.keyframes.length) {
+      return false;
+    }
+    try {
+      // Create a config with only the current frame
+      const singleFrameConfig = {
+        speed: this._currentEditing.speed,
+        brightness: this._currentEditing.brightness,
+        keyframes: [this._currentEditing.keyframes[frameIndex]]
+      };
+      return await Backend.setMsiCustomRgb(singleFrameConfig);
+    } catch (error) {
+      console.error("Failed to preview single frame:", error);
+      return false;
+    }
+  }
+
+  /**
    * Save current editing configuration as a preset
    * 将当前编辑的配置保存为预设
    */

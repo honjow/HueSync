@@ -89,6 +89,8 @@
     "MSI_CUSTOM_KEYFRAMES_INFO": "키프레임",
     "MSI_CUSTOM_PREVIEW": "미리보기",
     "MSI_CUSTOM_PREVIEWING": "미리보기 중...",
+    "MSI_CUSTOM_PLAY": "재생",
+    "MSI_CUSTOM_PAUSE": "일시정지",
     "MSI_CUSTOM_CANCEL": "취소",
     "MSI_CUSTOM_SAVE": "저장",
     "MSI_CUSTOM_SAVING": "저장 중...",

@@ -89,6 +89,8 @@
     "MSI_CUSTOM_KEYFRAMES_INFO": "Keyframes",
     "MSI_CUSTOM_PREVIEW": "Preview",
     "MSI_CUSTOM_PREVIEWING": "Previewing...",
+    "MSI_CUSTOM_PLAY": "Play",
+    "MSI_CUSTOM_PAUSE": "Pause",
     "MSI_CUSTOM_CANCEL": "Cancel",
     "MSI_CUSTOM_SAVE": "Save",
     "MSI_CUSTOM_SAVING": "Saving...",

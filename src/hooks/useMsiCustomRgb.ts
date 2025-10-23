@@ -103,6 +103,14 @@ export const useMsiCustomRgb = () => {
   };
 
   /**
+   * Preview a single frame on device
+   * 在设备上预览单个关键帧
+   */
+  const previewSingleFrame = async (frameIndex: number): Promise<boolean> => {
+    return await MsiCustomRgbSetting.previewSingleFrame(frameIndex);
+  };
+
+  /**
    * Save current configuration as a preset
    * 将当前配置保存为预设
    */
@@ -157,6 +165,7 @@ export const useMsiCustomRgb = () => {
 
     // Actions
     preview,
+    previewSingleFrame,
     save,
     startEditing,
     cancelEditing,
