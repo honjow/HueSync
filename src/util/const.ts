@@ -28,4 +28,23 @@ export enum RGBMode {
     
     // MSI specific preset modes
     msi_frostfire = "msi_frostfire",
+    
+    // MSI custom RGB mode
+    msi_custom = "msi_custom",
   }
+
+// MSI Custom RGB constants
+export const MSI_LED_ZONE_NAMES = [
+  "Right Stick - Left-Bottom (R1)",
+  "Right Stick - Right-Bottom (R2)",
+  "Right Stick - Right-Top (R3)",
+  "Right Stick - Left-Top (R4)",
+  "Left Stick - Right-Top (L5)",
+  "Left Stick - Left-Top (L6)",
+  "Left Stick - Left-Bottom (L7)",
+  "Left Stick - Right-Bottom (L8)",
+  "ABXY Buttons"
+];
+
+export const MSI_MAX_KEYFRAMES = 8;
+export const MSI_ZONE_COUNT = 9;

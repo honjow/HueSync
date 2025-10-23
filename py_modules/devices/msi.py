@@ -215,3 +215,16 @@ class MSILEDDevice(BaseLEDDevice):
                 brightness_level=False,
             ),
         }
+
+    def get_device_capabilities(self) -> dict:
+        """
+        Get MSI device hardware capabilities.
+        获取 MSI 设备硬件能力。
+
+        Returns:
+            dict: Device capabilities including custom_rgb support
+        """
+        base_caps = super().get_device_capabilities()
+        # MSI Claw supports custom RGB configuration
+        base_caps["custom_rgb"] = True
+        return base_caps

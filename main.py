@@ -242,6 +242,225 @@ class Plugin:
             logger.error(f"Failed to get power light: {e}", exc_info=True)
             return None
 
+    # ===== MSI Custom RGB Methods =====
+
+    MSI_CUSTOM_PRESETS_KEY = "msi_custom_rgb_presets"
+
+    def _validate_msi_custom_config(self, config: dict) -> bool:
+        """
+        Validate MSI custom RGB configuration.
+        验证 MSI 自定义 RGB 配置。
+
+        Args:
+            config: Configuration dict to validate
+
+        Returns:
+            bool: True if valid
+        """
+        try:
+            # Check required fields
+            if "speed" not in config or "brightness" not in config or "keyframes" not in config:
+                logger.error("Missing required fields in config")
+                return False
+
+            # Validate speed (0-20)
+            if not isinstance(config["speed"], int) or not 0 <= config["speed"] <= 20:
+                logger.error(f"Invalid speed: {config['speed']}")
+                return False
+
+            # Validate brightness (0-100)
+            if not isinstance(config["brightness"], int) or not 0 <= config["brightness"] <= 100:
+                logger.error(f"Invalid brightness: {config['brightness']}")
+                return False
+
+            # Validate keyframes (1-8 frames)
+            keyframes = config["keyframes"]
+            if not isinstance(keyframes, list) or not 1 <= len(keyframes) <= 8:
+                logger.error(f"Invalid keyframes count: {len(keyframes) if isinstance(keyframes, list) else 'not a list'}")
+                return False
+
+            # Validate each keyframe
+            for frame_idx, frame in enumerate(keyframes):
+                # Must have exactly 9 zones
+                if not isinstance(frame, list) or len(frame) != 9:
+                    logger.error(f"Frame {frame_idx}: must have 9 zones, got {len(frame) if isinstance(frame, list) else 'not a list'}")
+                    return False
+
+                # Validate each zone color
+                for zone_idx, zone in enumerate(frame):
+                    if not isinstance(zone, list) or len(zone) != 3:
+                        logger.error(f"Frame {frame_idx}, Zone {zone_idx}: must be [R,G,B], got {zone}")
+                        return False
+                    # Check RGB values (0-255)
+                    if not all(isinstance(c, int) and 0 <= c <= 255 for c in zone):
+                        logger.error(f"Frame {frame_idx}, Zone {zone_idx}: RGB values must be 0-255, got {zone}")
+                        return False
+
+            return True
+
+        except Exception as e:
+            logger.error(f"Validation error: {e}", exc_info=True)
+            return False
+
+    async def get_msi_custom_presets(self):
+        """
+        Get all saved MSI custom RGB presets.
+        获取所有保存的 MSI 自定义 RGB 预设。
+
+        Returns:
+            dict: Dictionary of custom presets
+        """
+        try:
+            presets = self.settings.getSetting(self.MSI_CUSTOM_PRESETS_KEY)
+            if presets is None:
+                presets = {}
+            logger.debug(f"Retrieved {len(presets)} MSI custom presets")
+            return presets
+        except Exception as e:
+            logger.error(f"Failed to get MSI custom presets: {e}", exc_info=True)
+            return {}
+
+    async def save_msi_custom_preset(self, name: str, config: dict):
+        """
+        Save an MSI custom RGB preset.
+        保存 MSI 自定义 RGB 预设。
+
+        Args:
+            name: Preset name
+            config: Preset configuration
+
+        Returns:
+            bool: True if successful
+        """
+        try:
+            # Validate config
+            if not self._validate_msi_custom_config(config):
+                logger.error(f"Invalid MSI custom preset config: {config}")
+                return False
+
+            # Get existing presets
+            presets = await self.get_msi_custom_presets()
+
+            # Add or update preset
+            presets[name] = config
+
+            # Save to settings
+            self.settings.setSetting(self.MSI_CUSTOM_PRESETS_KEY, presets)
+            logger.info(f"Saved MSI custom preset: {name}")
+            return True
+
+        except Exception as e:
+            logger.error(f"Failed to save MSI custom preset '{name}': {e}", exc_info=True)
+            return False
+
+    async def delete_msi_custom_preset(self, name: str):
+        """
+        Delete an MSI custom RGB preset.
+        删除 MSI 自定义 RGB 预设。
+
+        Args:
+            name: Preset name to delete
+
+        Returns:
+            bool: True if successful
+        """
+        try:
+            presets = await self.get_msi_custom_presets()
+
+            if name not in presets:
+                logger.warning(f"MSI preset '{name}' not found")
+                return False
+
+            del presets[name]
+            self.settings.setSetting(self.MSI_CUSTOM_PRESETS_KEY, presets)
+            logger.info(f"Deleted MSI custom preset: {name}")
+            return True
+
+        except Exception as e:
+            logger.error(f"Failed to delete MSI custom preset '{name}': {e}", exc_info=True)
+            return False
+
+    async def apply_msi_custom_preset(self, name: str):
+        """
+        Apply a saved MSI custom RGB preset.
+        应用保存的 MSI 自定义 RGB 预设。
+
+        Args:
+            name: Preset name to apply
+
+        Returns:
+            bool: True if successful
+        """
+        try:
+            presets = await self.get_msi_custom_presets()
+
+            if name not in presets:
+                logger.error(f"MSI preset '{name}' not found")
+                return False
+
+            config = presets[name]
+            return await self.set_msi_custom_rgb(config)
+
+        except Exception as e:
+            logger.error(f"Failed to apply MSI custom preset '{name}': {e}", exc_info=True)
+            return False
+
+    async def set_msi_custom_rgb(self, custom_config: dict):
+        """
+        Apply MSI custom RGB configuration.
+        应用 MSI 自定义 RGB 配置。
+
+        Args:
+            custom_config: Configuration dict with speed, brightness, and keyframes
+
+        Returns:
+            bool: True if successful
+        """
+        try:
+            from utils import Color
+            from led.msi_led_device_hid import MSIRGBConfig, MSIKeyFrame, MSIEffect, normalize_speed
+
+            # Validate config
+            if not self._validate_msi_custom_config(custom_config):
+                logger.error(f"Invalid MSI custom config: {custom_config}")
+                return False
+
+            # Build keyframes
+            keyframes = []
+            for frame_data in custom_config["keyframes"]:
+                colors = [
+                    Color(zone[0], zone[1], zone[2])
+                    for zone in frame_data
+                ]
+                keyframes.append(MSIKeyFrame(rgb_zones=colors))
+
+            # Build MSI config
+            msi_config = MSIRGBConfig(
+                speed=normalize_speed(custom_config["speed"]),
+                brightness=custom_config["brightness"],
+                effect=MSIEffect.UNKNOWN_09,
+                keyframes=keyframes
+            )
+
+            # Get MSI LED device from ledControl
+            if not hasattr(self.ledControl.device, 'led_device'):
+                logger.error("Device does not support MSI custom RGB")
+                return False
+
+            # Send to device
+            success = self.ledControl.device.led_device.send_rgb_config(msi_config)
+
+            if success:
+                logger.info(f"Applied MSI custom RGB config with {len(keyframes)} keyframes")
+            else:
+                logger.error("Failed to send MSI custom RGB config to device")
+
+            return success
+
+        except Exception as e:
+            logger.error(f"Failed to apply MSI custom RGB: {e}", exc_info=True)
+            return False
+
     # Function called first during the unload process, utilize this to handle your plugin being removed
     async def _unload(self):
         decky.logger.info("Goodbye World!")

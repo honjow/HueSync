@@ -12,6 +12,7 @@ export interface DeviceCapabilities {
   zones: ZoneInfo[];
   power_led: boolean;
   suspend_mode: boolean;
+  custom_rgb?: boolean;  // MSI custom RGB support
 }
 
 interface ApplySettingsOptions {
@@ -281,5 +282,32 @@ export class Backend {
   // log_debug
   public static logDebug(message: string) {
     return call("log_debug", message);
+  }
+
+  // ===== MSI Custom RGB Methods =====
+
+  // get_msi_custom_presets
+  public static async getMsiCustomPresets(): Promise<Record<string, any>> {
+    return (await call("get_msi_custom_presets")) as Record<string, any>;
+  }
+
+  // save_msi_custom_preset
+  public static async saveMsiCustomPreset(name: string, config: any): Promise<boolean> {
+    return (await call("save_msi_custom_preset", name, config)) as boolean;
+  }
+
+  // delete_msi_custom_preset
+  public static async deleteMsiCustomPreset(name: string): Promise<boolean> {
+    return (await call("delete_msi_custom_preset", name)) as boolean;
+  }
+
+  // apply_msi_custom_preset
+  public static async applyMsiCustomPreset(name: string): Promise<boolean> {
+    return (await call("apply_msi_custom_preset", name)) as boolean;
+  }
+
+  // set_msi_custom_rgb
+  public static async setMsiCustomRgb(config: any): Promise<boolean> {
+    return (await call("set_msi_custom_rgb", config)) as boolean;
   }
 }

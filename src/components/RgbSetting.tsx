@@ -8,7 +8,7 @@ import {
 import { FC, useMemo } from "react";
 import { localizationManager, localizeStrEnum } from "../i18n";
 import { useRgb } from "../hooks";
-import { SlowSliderField, SpeedControl, BrightnessLevelControl } from ".";
+import { SlowSliderField, SpeedControl, BrightnessLevelControl, MsiCustomRgbControl } from ".";
 import { Setting } from "../hooks/settings";
 
 interface ColorControlsProps {
@@ -339,6 +339,13 @@ export const RGBComponent: FC = () => {
                   zone="secondary"
                 />
               )}
+            </PanelSection>
+          )}
+
+          {/* MSI Custom RGB Section | MSI 自定义 RGB 设置 */}
+          {Setting.deviceCapabilities?.custom_rgb && (
+            <PanelSection title="MSI 自定义灯效 / MSI Custom Effects">
+              <MsiCustomRgbControl />
             </PanelSection>
           )}
         </>

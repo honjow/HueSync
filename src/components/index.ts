@@ -7,3 +7,6 @@ export * from './BrightnessLevelControl';
 export * from './PowerLedControl';
 export * from './PerAppControl';
 export * from './AcStateControl';
+export * from './MsiLEDPreview';
+export * from './MsiCustomRgbEditor';
+export * from './MsiCustomRgbControl';
