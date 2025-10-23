@@ -237,6 +237,9 @@ export const MsiCustomRgbEditor: FC<MsiCustomRgbEditorProps> = ({ closeModal }) 
             currentFrame={currentFrame}
             selectedZone={selectedZone}
             onZoneClick={setSelectedZone}
+            isPlaying={isPlaying}
+            speed={editing!.speed}
+            brightness={editing!.brightness}
           />
 
           {/* Zone selection slider */}

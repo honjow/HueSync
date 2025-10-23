@@ -9,6 +9,9 @@ interface MsiLEDPreviewProps {
   currentFrame: number;
   selectedZone: number | null;
   onZoneClick?: (zone: number) => void;
+  isPlaying?: boolean;
+  speed?: number;
+  brightness?: number;
 }
 
 // LED colors for canvas drawing
@@ -109,15 +112,69 @@ export const MsiLEDPreview: FC<MsiLEDPreviewProps> = ({
   keyframes,
   currentFrame,
   selectedZone,
-  onZoneClick
+  onZoneClick,
+  isPlaying = false,
+  speed = 10,
+  brightness = 100,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const animationFrameRef = useRef<number | undefined>(undefined);
+  const startTimeRef = useRef<number>(0);
 
-  useEffect(() => {
-    drawPreview();
-  }, [keyframes, currentFrame, selectedZone]);
+  /**
+   * Calculate interpolated colors between keyframes for animation
+   * 计算关键帧之间的插值颜色用于动画
+   */
+  const getInterpolatedFrame = (progress: number): RGBTuple[] => {
+    const numFrames = keyframes.length;
+    if (numFrames === 1) return keyframes[0];
 
+    // Calculate which two frames to interpolate between
+    const totalProgress = progress * numFrames;
+    const frameIndex = Math.floor(totalProgress);
+    const frameProgress = totalProgress - frameIndex;
+    
+    const frame1 = keyframes[frameIndex % numFrames];
+    const frame2 = keyframes[(frameIndex + 1) % numFrames];
+
+    // Interpolate each zone's color
+    return frame1.map((color1, zoneIndex) => {
+      const color2 = frame2[zoneIndex];
+      return [
+        Math.round(color1[0] + (color2[0] - color1[0]) * frameProgress),
+        Math.round(color1[1] + (color2[1] - color1[1]) * frameProgress),
+        Math.round(color1[2] + (color2[2] - color1[2]) * frameProgress),
+      ] as RGBTuple;
+    });
+  };
+
+  /**
+   * Apply brightness to colors
+   * 应用亮度到颜色
+   */
+  const applyBrightness = (colors: RGBTuple[]): RGBTuple[] => {
+    const factor = brightness / 100;
+    return colors.map(color => [
+      Math.round(color[0] * factor),
+      Math.round(color[1] * factor),
+      Math.round(color[2] * factor),
+    ] as RGBTuple);
+  };
+
+  /**
+   * Draw static preview with current frame
+   * 绘制当前帧的静态预览
+   */
   const drawPreview = () => {
+    const colors = applyBrightness(keyframes[currentFrame]);
+    drawPreviewWithColors(colors);
+  };
+
+  /**
+   * Draw preview with specific colors
+   * 使用特定颜色绘制预览
+   */
+  const drawPreviewWithColors = (colors: RGBTuple[]) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -133,8 +190,6 @@ export const MsiLEDPreview: FC<MsiLEDPreviewProps> = ({
     canvas.height = height * dpr;
     ctx.scale(dpr, dpr);
     ctx.clearRect(0, 0, width, height);
-
-    const colors = keyframes[currentFrame];
 
     // Get layout from centralized calculation
     const { params, positions } = calculateLEDLayout(width, height);
@@ -215,6 +270,60 @@ export const MsiLEDPreview: FC<MsiLEDPreviewProps> = ({
     const abxyLabelOffset = isAbxySelected ? 15 : 13;
     ctx.fillText(layout.abxy.label, layout.abxy.x, layout.abxy.y + abxyLabelOffset);
   };
+
+  // Animation loop for playing mode
+  useEffect(() => {
+    if (!isPlaying) {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = undefined;
+      }
+      drawPreview(); // Draw static frame
+      return;
+    }
+
+    // Calculate cycle duration based on speed (0-20) and keyframes
+    // Hardware timing: each frame has a duration that depends on speed
+    // Total cycle = per-frame duration × number of keyframes
+    const minPerFrameDuration = 150;   // milliseconds per frame at max speed (20)
+    const maxPerFrameDuration = 3500;  // milliseconds per frame at min speed (0)
+    const perFrameDuration = maxPerFrameDuration - ((maxPerFrameDuration - minPerFrameDuration) * speed / 20);
+    const cycleDuration = perFrameDuration * keyframes.length;
+
+    const animate = (timestamp: number) => {
+      if (!startTimeRef.current) {
+        startTimeRef.current = timestamp;
+      }
+
+      const elapsed = timestamp - startTimeRef.current;
+      const progress = (elapsed % cycleDuration) / cycleDuration;
+
+      // Get interpolated and brightness-adjusted colors
+      const interpolatedColors = getInterpolatedFrame(progress);
+      const finalColors = applyBrightness(interpolatedColors);
+
+      // Draw with interpolated colors
+      drawPreviewWithColors(finalColors);
+
+      animationFrameRef.current = requestAnimationFrame(animate);
+    };
+
+    startTimeRef.current = 0;
+    animationFrameRef.current = requestAnimationFrame(animate);
+
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
+  }, [isPlaying, speed, brightness, keyframes]);
+
+  // Static preview when not playing
+  useEffect(() => {
+    if (!isPlaying) {
+      drawPreview();
+    }
+  }, [keyframes, currentFrame, selectedZone, brightness, isPlaying]);
 
   /**
    * Handle canvas click to select zone
