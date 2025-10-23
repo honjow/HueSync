@@ -8,6 +8,7 @@ interface MsiLEDPreviewProps {
   keyframes: RGBTuple[][];
   currentFrame: number;
   selectedZone: number | null;
+  onZoneClick?: (zone: number) => void;
 }
 
 // LED colors for canvas drawing
@@ -30,10 +31,85 @@ interface VisualConfig {
   };
 }
 
+/**
+ * Calculate relative luminance for text contrast
+ * 计算相对亮度用于文字对比度
+ */
+const getRelativeLuminance = (r: number, g: number, b: number): number => {
+  const [rs, gs, bs] = [r, g, b].map(val => {
+    const s = val / 255;
+    return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
+  });
+  return 0.2126 * rs + 0.7152 * gs + 0.0722 * bs;
+};
+
+/**
+ * Get contrasting text color based on background luminance
+ * 根据背景亮度获取对比文字颜色
+ */
+const getContrastColor = (r: number, g: number, b: number): string => {
+  return getRelativeLuminance(r, g, b) > 0.5 ? "#000000" : "#FFFFFF";
+};
+
+/**
+ * Calculate LED layout positions and parameters
+ * 计算 LED 布局位置和参数
+ */
+const calculateLEDLayout = (width: number, height: number) => {
+  const params = {
+    canvas: { width, height },
+    padding: { left: 40, right: 40, top: 10, bottom: 10 },
+    ledSpacing: 70,
+    ring: { innerRadius: 20, outerRadius: 28, offsetFromEdge: 35 },
+    visual: {
+      led: { radius: 6, radiusSelected: 8, borderWidth: 1, borderWidthSelected: 2 },
+      label: { distance: 10, distanceSelected: 12, fontSize: "6px", fontSizeBold: "bold 6px" },
+    },
+  };
+
+  const centerY = height / 2;
+  const leftLedLeft = params.padding.left;
+  const leftLedRight = leftLedLeft + params.ledSpacing;
+  const rightLedLeft = width - params.padding.right - params.ledSpacing;
+  const rightLedRight = width - params.padding.right;
+  const ledTop = params.padding.top;
+  const ledBottom = height - params.padding.bottom;
+  const leftRingX = params.padding.left + params.ring.offsetFromEdge;
+  const rightRingX = width - params.padding.right - params.ring.offsetFromEdge;
+
+  return {
+    params,
+    positions: {
+      centerY,
+      leftLedLeft,
+      leftLedRight,
+      rightLedLeft,
+      rightLedRight,
+      ledTop,
+      ledBottom,
+      leftRingX,
+      rightRingX,
+    },
+    // All clickable LED zones
+    clickableZones: [
+      { x: leftLedLeft, y: ledTop, zone: 5 },       // L6
+      { x: leftLedRight, y: ledTop, zone: 4 },      // L5
+      { x: leftLedLeft, y: ledBottom, zone: 6 },    // L7
+      { x: leftLedRight, y: ledBottom, zone: 7 },   // L8
+      { x: rightLedLeft, y: ledTop, zone: 3 },      // R4
+      { x: rightLedRight, y: ledTop, zone: 2 },     // R3
+      { x: rightLedLeft, y: ledBottom, zone: 0 },   // R1
+      { x: rightLedRight, y: ledBottom, zone: 1 },  // R2
+      { x: width / 2, y: centerY, zone: 8 },        // ABXY
+    ],
+  };
+};
+
 export const MsiLEDPreview: FC<MsiLEDPreviewProps> = ({
   keyframes,
   currentFrame,
-  selectedZone
+  selectedZone,
+  onZoneClick
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -60,94 +136,42 @@ export const MsiLEDPreview: FC<MsiLEDPreviewProps> = ({
 
     const colors = keyframes[currentFrame];
 
-    // ===== Base Parameters =====
-    // Define all base parameters for calculation
-    const params = {
-      canvas: {
-        width,   // 300
-        height,  // 80
-      },
-      padding: {
-        left: 40,      // Distance from left edge to first LED
-        right: 40,     // Distance from right edge to last LED
-        top: 10,       // Distance from top edge to top LEDs
-        bottom: 10,    // Distance from bottom edge to bottom LEDs
-      },
-      ledSpacing: 70,  // Horizontal spacing between LEDs in same group
-      groupSpacing: 80, // Horizontal spacing between left and right groups
-      ring: {
-        innerRadius: 20,
-        outerRadius: 28,
-        offsetFromEdge: 35,  // Distance from edge to ring center
-      },
-      visual: {
-        led: {
-          radius: 6,
-          radiusSelected: 8,
-          borderWidth: 1,
-          borderWidthSelected: 2,
-        },
-        label: {
-          distance: 10,
-          distanceSelected: 12,
-          fontSize: "6px",
-          fontSizeBold: "bold 6px",
-        },
-      },
-    };
-
-    // ===== Calculate Layout from Parameters =====
-    // All positions are calculated from base parameters
-    const centerY = params.canvas.height / 2;
-    
-    // Calculate LED positions
-    const leftLedLeft = params.padding.left;
-    const leftLedRight = leftLedLeft + params.ledSpacing;
-    const rightLedLeft = params.canvas.width - params.padding.right - params.ledSpacing;
-    const rightLedRight = params.canvas.width - params.padding.right;
-    const ledTop = params.padding.top;
-    const ledBottom = params.canvas.height - params.padding.bottom;
-    
-    // Calculate ring centers
-    const leftRingX = params.padding.left + params.ring.offsetFromEdge;
-    const rightRingX = params.canvas.width - params.padding.right - params.ring.offsetFromEdge;
+    // Get layout from centralized calculation
+    const { params, positions } = calculateLEDLayout(width, height);
 
     const layout = {
       // Gradient ring configuration
       ring: {
-        left: { x: leftRingX, y: centerY },
-        right: { x: rightRingX, y: centerY },
+        left: { x: positions.leftRingX, y: positions.centerY },
+        right: { x: positions.rightRingX, y: positions.centerY },
         innerRadius: params.ring.innerRadius,
         outerRadius: params.ring.outerRadius,
       },
       
-      // LED configuration - calculated from parameters
+      // LED configuration
       leds: {
-        // Left stick LEDs
         left: [
-          { x: leftLedLeft, y: ledTop, idx: 5, label: "L6" },       // Top-left
-          { x: leftLedRight, y: ledTop, idx: 4, label: "L5" },      // Top-right
-          { x: leftLedLeft, y: ledBottom, idx: 6, label: "L7" },    // Bottom-left
-          { x: leftLedRight, y: ledBottom, idx: 7, label: "L8" },   // Bottom-right
+          { x: positions.leftLedLeft, y: positions.ledTop, idx: 5, label: "L6" },
+          { x: positions.leftLedRight, y: positions.ledTop, idx: 4, label: "L5" },
+          { x: positions.leftLedLeft, y: positions.ledBottom, idx: 6, label: "L7" },
+          { x: positions.leftLedRight, y: positions.ledBottom, idx: 7, label: "L8" },
         ],
-        // Right stick LEDs
         right: [
-          { x: rightLedLeft, y: ledTop, idx: 3, label: "R4" },      // Top-left
-          { x: rightLedRight, y: ledTop, idx: 2, label: "R3" },     // Top-right
-          { x: rightLedLeft, y: ledBottom, idx: 0, label: "R1" },   // Bottom-left
-          { x: rightLedRight, y: ledBottom, idx: 1, label: "R2" },  // Bottom-right
+          { x: positions.rightLedLeft, y: positions.ledTop, idx: 3, label: "R4" },
+          { x: positions.rightLedRight, y: positions.ledTop, idx: 2, label: "R3" },
+          { x: positions.rightLedLeft, y: positions.ledBottom, idx: 0, label: "R1" },
+          { x: positions.rightLedRight, y: positions.ledBottom, idx: 1, label: "R2" },
         ],
       },
       
-      // ABXY configuration (center of canvas)
+      // ABXY configuration
       abxy: {
-        x: params.canvas.width / 2,
-        y: centerY,
+        x: width / 2,
+        y: positions.centerY,
         idx: 8,
         label: "ABXY",
       },
       
-      // Visual parameters
       visual: params.visual,
     };
 
@@ -177,8 +201,8 @@ export const MsiLEDPreview: FC<MsiLEDPreviewProps> = ({
     ctx.lineWidth = abxyBorderWidth;
     ctx.stroke();
 
-    // ABXY index number inside
-    ctx.fillStyle = "#FFFFFF";
+    // ABXY index number inside - auto contrast
+    ctx.fillStyle = getContrastColor(ar, ag, ab);
     ctx.font = `${layout.visual.label.fontSizeBold} sans-serif`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
@@ -190,6 +214,33 @@ export const MsiLEDPreview: FC<MsiLEDPreviewProps> = ({
     ctx.textBaseline = "top";
     const abxyLabelOffset = isAbxySelected ? 15 : 13;
     ctx.fillText(layout.abxy.label, layout.abxy.x, layout.abxy.y + abxyLabelOffset);
+  };
+
+  /**
+   * Handle canvas click to select zone
+   * 处理画布点击以选择区域
+   */
+  const handleCanvasClick = (event: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!onZoneClick) return;
+    
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    
+    const rect = canvas.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+    
+    // Reuse centralized layout calculation
+    const { clickableZones } = calculateLEDLayout(300, 80);
+    
+    // Check clicks with 30px hit radius
+    for (const led of clickableZones) {
+      const dist = Math.sqrt((x - led.x) ** 2 + (y - led.y) ** 2);
+      if (dist <= 30) {
+        onZoneClick(led.zone);
+        return;
+      }
+    }
   };
 
   /**
@@ -239,7 +290,7 @@ export const MsiLEDPreview: FC<MsiLEDPreviewProps> = ({
       ctx.fill();
     }
 
-    // Draw inner and outer borders (optional)
+    // Draw inner and outer borders
     ctx.beginPath();
     ctx.arc(center.x, center.y, outerRadius, 0, Math.PI * 2);
     ctx.strokeStyle = "rgba(255,255,255,0.3)";
@@ -331,8 +382,8 @@ export const MsiLEDPreview: FC<MsiLEDPreviewProps> = ({
     ctx.lineWidth = borderWidth;
     ctx.stroke();
 
-    // Index number inside LED
-    ctx.fillStyle = "#FFFFFF";
+    // Index number inside LED - auto contrast
+    ctx.fillStyle = getContrastColor(r, g, b);
     ctx.font = `${visualConfig.label.fontSizeBold} sans-serif`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
@@ -347,27 +398,26 @@ export const MsiLEDPreview: FC<MsiLEDPreviewProps> = ({
     let labelY = y;
     
     // Determine label direction based on LED position
-    // Four zones: outer left, inner left, inner right, outer right
     const centerX = canvasWidth / 2;
-    const quarterPoint = ledSpacing * 0.75; // Threshold for inner/outer detection
+    const quarterPoint = ledSpacing * 0.75;
     
     if (x < centerX - quarterPoint) {
-      // Outer left LEDs (L6, L7) - label on the left (outside)
+      // Outer left LEDs (L6, L7) - label on the left
       ctx.textAlign = "right";
       labelX = x - labelDist;
       ctx.textBaseline = "middle";
     } else if (x < centerX) {
-      // Inner left LEDs (L5, L8) - label on the right (inside)
+      // Inner left LEDs (L5, L8) - label on the right
       ctx.textAlign = "left";
       labelX = x + labelDist;
       ctx.textBaseline = "middle";
     } else if (x < centerX + quarterPoint) {
-      // Inner right LEDs (R4, R1) - label on the left (inside)
+      // Inner right LEDs (R4, R1) - label on the left
       ctx.textAlign = "right";
       labelX = x - labelDist;
       ctx.textBaseline = "middle";
     } else {
-      // Outer right LEDs (R3, R2) - label on the right (outside)
+      // Outer right LEDs (R3, R2) - label on the right
       ctx.textAlign = "left";
       labelX = x + labelDist;
       ctx.textBaseline = "middle";
@@ -379,12 +429,14 @@ export const MsiLEDPreview: FC<MsiLEDPreviewProps> = ({
   return (
     <canvas
       ref={canvasRef}
+      onClick={handleCanvasClick}
       style={{
         width: "300px",
         height: "80px",
         backgroundColor: "transparent",
         border: "none",
-        borderRadius: "0px"
+        borderRadius: "0px",
+        cursor: onZoneClick ? "pointer" : "default"
       }}
     />
   );

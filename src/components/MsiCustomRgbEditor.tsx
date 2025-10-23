@@ -131,7 +131,7 @@ export const MsiCustomRgbEditor: FC<MsiCustomRgbEditorProps> = ({ closeModal }) 
 
   const handleAddFrame = () => {
     if (editing.keyframes.length < MSI_MAX_KEYFRAMES) {
-      addKeyframe(currentFrame);
+      addKeyframe();
       setCurrentFrame(editing.keyframes.length);
     }
   };
@@ -209,6 +209,7 @@ export const MsiCustomRgbEditor: FC<MsiCustomRgbEditorProps> = ({ closeModal }) 
             keyframes={editing!.keyframes}
             currentFrame={currentFrame}
             selectedZone={selectedZone}
+            onZoneClick={setSelectedZone}
           />
 
           {/* Zone selection slider */}
