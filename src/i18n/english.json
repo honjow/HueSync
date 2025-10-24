@@ -110,5 +110,14 @@
     "MSI_LED_ZONE_L6": "Left Stick - Left-Top (L6)",
     "MSI_LED_ZONE_L7": "Left Stick - Left-Bottom (L7)",
     "MSI_LED_ZONE_L8": "Left Stick - Right-Bottom (L8)",
-    "MSI_LED_ZONE_ABXY": "ABXY Buttons"
+    "MSI_LED_ZONE_ABXY": "ABXY Buttons",
+    "AYANEO_LED_ZONE_L1": "Left Grip - Zone 1",
+    "AYANEO_LED_ZONE_L2": "Left Grip - Zone 2",
+    "AYANEO_LED_ZONE_L3": "Left Grip - Zone 3",
+    "AYANEO_LED_ZONE_L4": "Left Grip - Zone 4",
+    "AYANEO_LED_ZONE_R1": "Right Grip - Zone 1",
+    "AYANEO_LED_ZONE_R2": "Right Grip - Zone 2",
+    "AYANEO_LED_ZONE_R3": "Right Grip - Zone 3",
+    "AYANEO_LED_ZONE_R4": "Right Grip - Zone 4",
+    "AYANEO_LED_ZONE_GUIDE": "Guide Button"
 }

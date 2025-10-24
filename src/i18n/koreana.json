@@ -110,5 +110,14 @@
     "MSI_LED_ZONE_L6": "왼쪽 스틱 - 왼쪽 상단 (L6)",
     "MSI_LED_ZONE_L7": "왼쪽 스틱 - 왼쪽 하단 (L7)",
     "MSI_LED_ZONE_L8": "왼쪽 스틱 - 오른쪽 하단 (L8)",
-    "MSI_LED_ZONE_ABXY": "ABXY 버튼"
+    "MSI_LED_ZONE_ABXY": "ABXY 버튼",
+    "AYANEO_LED_ZONE_L1": "Left Grip - Zone 1",
+    "AYANEO_LED_ZONE_L2": "Left Grip - Zone 2",
+    "AYANEO_LED_ZONE_L3": "Left Grip - Zone 3",
+    "AYANEO_LED_ZONE_L4": "Left Grip - Zone 4",
+    "AYANEO_LED_ZONE_R1": "Right Grip - Zone 1",
+    "AYANEO_LED_ZONE_R2": "Right Grip - Zone 2",
+    "AYANEO_LED_ZONE_R3": "Right Grip - Zone 3",
+    "AYANEO_LED_ZONE_R4": "Right Grip - Zone 4",
+    "AYANEO_LED_ZONE_GUIDE": "Guide Button"
 }
