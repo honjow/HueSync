@@ -41,8 +41,28 @@ class LedControl:
     def _get_device(self) -> LEDDevice:
         """
         Determines and returns the appropriate LEDDevice instance based on system configuration.
+        
+        Device detection priority (vendor-specific devices before generic):
+        1. ASUS Ally (IS_ALLY_LED_SUPPORTED)
+        2. AyaNeo (SYS_VENDOR == "AYANEO")
+        3. MSI (SYS_VENDOR == "Micro-Star International Co., Ltd.")
+        4. ASUS (SYS_VENDOR == "ASUSTeK COMPUTER INC.")
+        5. GPD (SYS_VENDOR == "GPD")
+        6. OneXPlayer/AOKZOE (SYS_VENDOR matching)
+        7. Lenovo Legion Go (SYS_VENDOR == "LENOVO")
+        8. Generic (IS_LED_SUPPORTED) - fallback for any device with sysfs LED
 
         根据系统配置确定并返回合适的LEDDevice实例。
+        
+        设备检测优先级（厂商特定设备优先于通用设备）：
+        1. ASUS Ally (IS_ALLY_LED_SUPPORTED)
+        2. AyaNeo (SYS_VENDOR == "AYANEO")
+        3. MSI (SYS_VENDOR == "Micro-Star International Co., Ltd.")
+        4. ASUS (SYS_VENDOR == "ASUSTeK COMPUTER INC.")
+        5. GPD (SYS_VENDOR == "GPD")
+        6. OneXPlayer/AOKZOE (SYS_VENDOR 匹配)
+        7. Lenovo Legion Go (SYS_VENDOR == "LENOVO")
+        8. Generic (IS_LED_SUPPORTED) - 任何带有 sysfs LED 的设备的备用方案
 
         Returns:
             LEDDevice: An instance of a specific LED device class.
@@ -54,41 +74,67 @@ class LedControl:
         """
         logger.info(f"SYS_VENDOR: {SYS_VENDOR}")
         logger.info(f"PRODUCT_NAME: {PRODUCT_NAME}")
+        logger.info(f"IS_LED_SUPPORTED: {IS_LED_SUPPORTED}")
+        logger.info(f"IS_ALLY_LED_SUPPORTED: {IS_ALLY_LED_SUPPORTED}")
 
-        if IS_LED_SUPPORTED:
-            logger.info("Using generic LED device")
-            return GenericLEDDevice()
-        elif IS_ALLY_LED_SUPPORTED:
-            logger.info("Using Ally LED device")
+        # Priority 1: ASUS Ally with special LED support
+        # 优先级 1: 具有特殊 LED 支持的 ASUS Ally
+        if IS_ALLY_LED_SUPPORTED:
+            logger.info("Using Ally LED device (IS_ALLY_LED_SUPPORTED)")
             return AllyLEDDevice()
-        elif SYS_VENDOR == "AYANEO":
-            logger.info("Using AyaNeo LED device")
+        
+        # Priority 2: AyaNeo devices (vendor-specific EC control with sysfs fallback)
+        # 优先级 2: AyaNeo 设备（厂商特定的 EC 控制，带 sysfs 回退）
+        if SYS_VENDOR == "AYANEO":
+            logger.info("Using AyaNeo LED device (SYS_VENDOR)")
             return AyaNeoLEDDevice()
-        elif SYS_VENDOR == "GPD" and (PRODUCT_NAME == "G1618-04"):
-            logger.info("Using GPD LED device")
+        
+        # Priority 3: MSI devices
+        # 优先级 3: MSI 设备
+        if SYS_VENDOR == "Micro-Star International Co., Ltd.":
+            logger.info("Using MSI LED device (SYS_VENDOR)")
+            return MSILEDDevice()
+        
+        # Priority 4: ASUS devices (non-Ally)
+        # 优先级 4: ASUS 设备（非 Ally）
+        if SYS_VENDOR == "ASUSTeK COMPUTER INC.":
+            logger.info("Using Asus LED device (SYS_VENDOR)")
+            return AsusLEDDevice()
+        
+        # Priority 5: GPD devices
+        # 优先级 5: GPD 设备
+        if SYS_VENDOR == "GPD" and (PRODUCT_NAME == "G1618-04"):
+            logger.info("Using GPD LED device (SYS_VENDOR + PRODUCT_NAME)")
             return GPDLEDDevice()
-        elif (
+        
+        # Priority 6: OneXPlayer/AOKZOE devices
+        # 优先级 6: OneXPlayer/AOKZOE 设备
+        if (
             SYS_VENDOR == "ONE-NETBOOK"
             or SYS_VENDOR == "ONE-NETBOOK TECHNOLOGY CO., LTD."
             or SYS_VENDOR == "AOKZOE"
         ):
-            logger.info("Using OneX LED device")
+            logger.info("Using OneX LED device (SYS_VENDOR)")
             return OneXLEDDevice()
-        elif SYS_VENDOR == "ASUSTeK COMPUTER INC.":
-            logger.info("Using Asus LED device")
-            return AsusLEDDevice()
-        elif SYS_VENDOR == "LENOVO":
+        
+        # Priority 7: Lenovo Legion Go devices
+        # 优先级 7: Lenovo Legion Go 设备
+        if SYS_VENDOR == "LENOVO":
             # Check if it's Legion Go (tablet mode) or Legion Go S
             if PRODUCT_NAME in ["83E1", "83N0", "83N1"]:
-                logger.info("Using Legion Go (tablet mode) LED device")
+                logger.info("Using Legion Go (tablet mode) LED device (SYS_VENDOR + PRODUCT_NAME)")
                 return LegionGoTabletLEDDevice()
             else:
-                logger.info("Using Legion Go S LED device")
+                logger.info("Using Legion Go S LED device (SYS_VENDOR)")
                 return LegionGoSLEDDevice()
-        elif SYS_VENDOR == "Micro-Star International Co., Ltd.":
-            logger.info("Using MSI LED device")
-            return MSILEDDevice()
-        logger.error("Unsupported device")
+        
+        # Priority 8: Generic sysfs LED device (fallback)
+        # 优先级 8: 通用 sysfs LED 设备（备用方案）
+        if IS_LED_SUPPORTED:
+            logger.info("Using generic LED device (IS_LED_SUPPORTED)")
+            return GenericLEDDevice()
+        
+        logger.error("Unsupported device: no LED support detected")
         raise ValueError("Unsupported device")
 
     def set_color(
@@ -183,11 +229,22 @@ class LedControl:
                 "zones": [{"id": "primary", "name_key": "ZONE_PRIMARY_NAME"}],
                 "power_led": bool,  # Whether power LED control is supported
                 "suspend_mode": bool,  # Whether suspend mode control is supported
+                "device_type": str,  # Device type: "msi", "ayaneo", "generic"
             }
         """
         # Get base capabilities from device
         # 从设备获取基础能力
         base_caps = self.device.get_device_capabilities()
+        
+        # Add device type for frontend to determine which custom RGB implementation to use
+        # 添加设备类型供前端判断使用哪个自定义 RGB 实现
+        device_class_name = self.device.__class__.__name__
+        if "MsiLEDDevice" in device_class_name:
+            base_caps["device_type"] = "msi"
+        elif "AyaNeoLEDDevice" in device_class_name:
+            base_caps["device_type"] = "ayaneo"
+        else:
+            base_caps["device_type"] = "generic"
         
         # Add legacy power_led check for backward compatibility
         # 为向后兼容性添加传统的power_led检查

@@ -1,5 +1,7 @@
-// MSI Custom RGB Editor Modal
-// MSI 自定义 RGB 编辑器弹窗
+// Unified Custom RGB Editor Modal
+// 统一的自定义 RGB 编辑器弹窗
+// Supports MSI Claw, AyaNeo, and other multi-zone LED devices
+// 支持 MSI Claw、AyaNeo 等多区域 LED 设备
 
 import { FC, useState, useEffect } from "react";
 import {
@@ -20,21 +22,33 @@ import {
   FiRotateCw,
   FiRotateCcw,
 } from "react-icons/fi";
-import { useMsiCustomRgb } from "../hooks";
-import { MsiCustomRgbSetting } from "../hooks/msiCustomRgbSettings";
+import { useCustomRgb, MsiCustomRgbSetting, AyaNeoCustomRgbSetting } from "../hooks";
 import { MsiLEDPreview } from "./MsiLEDPreview";
-import { MSI_LED_ZONE_KEYS, MSI_MAX_KEYFRAMES } from "../util/const";
-import { RGBTuple } from "../types/msiCustomRgb";
+import { MSI_LED_ZONE_KEYS, MSI_MAX_KEYFRAMES, AYANEO_LED_ZONE_KEYS_8, AYANEO_LED_ZONE_KEYS_9_KUN, AYANEO_MAX_KEYFRAMES, RGBMode } from "../util/const";
+import { RGBTuple } from "../types/customRgb";
 import { hsvToRgb, rgbToHsv } from "../util";
 import { SlowSliderField } from "./SlowSliderField";
 import { localizationManager, localizeStrEnum } from "../i18n";
 import { Backend } from "../util/backend";
+import { MSI_CLAW_LAYOUT, AYANEO_STANDARD_LAYOUT, AYANEO_KUN_LAYOUT } from "../util/ledLayouts";
+import { Setting } from "../hooks/settings";
+import { CustomRgbDeviceType } from "../types/customRgb";
 
-interface MsiCustomRgbEditorProps {
+type DeviceType = CustomRgbDeviceType; // Unified type from customRgb.d.ts
+
+interface CustomRgbEditorProps {
   closeModal: () => void;
+  deviceType?: DeviceType; // Device type: "msi" or "ayaneo"
 }
 
-export const MsiCustomRgbEditor: FC<MsiCustomRgbEditorProps> = ({ closeModal }) => {
+export const CustomRgbEditor: FC<CustomRgbEditorProps> = ({ 
+  closeModal,
+  deviceType = "msi" // Default to MSI for backward compatibility
+}) => {
+  // Use unified custom RGB hook (automatically selects correct implementation)
+  // 使用统一的自定义 RGB hook（自动选择正确的实现）
+  const hook = useCustomRgb();
+  
   const {
     editing,
     editingName,
@@ -47,7 +61,17 @@ export const MsiCustomRgbEditor: FC<MsiCustomRgbEditorProps> = ({ closeModal }) 
     previewSingleFrame,
     save,
     cancelEditing,
-  } = useMsiCustomRgb();
+    applyPreset,
+  } = hook;
+
+  // Device-specific configuration
+  const config = {
+    zoneKeys: deviceType === "msi" ? MSI_LED_ZONE_KEYS : 
+              (editing?.keyframes[0]?.length === 9 ? AYANEO_LED_ZONE_KEYS_9_KUN : AYANEO_LED_ZONE_KEYS_8),
+    maxKeyframes: deviceType === "msi" ? MSI_MAX_KEYFRAMES : AYANEO_MAX_KEYFRAMES,
+    layout: deviceType === "msi" ? MSI_CLAW_LAYOUT : 
+            (editing?.keyframes[0]?.length === 9 ? AYANEO_KUN_LAYOUT : AYANEO_STANDARD_LAYOUT),
+  };
 
   const [currentFrame, setCurrentFrame] = useState(0);
   const [selectedZone, setSelectedZone] = useState(0);
@@ -92,7 +116,7 @@ export const MsiCustomRgbEditor: FC<MsiCustomRgbEditorProps> = ({ closeModal }) 
     }, 300); // 300ms debounce to avoid frequent updates
     
     return () => clearTimeout(timer);
-  }, [currentFrame, editing.keyframes[currentFrame], isPlaying]);
+  }, [currentFrame, editing.keyframes[currentFrame], editing.brightness, editing.speed, isPlaying]);
 
   // Re-send all frames when playing and config changes (speed, brightness, or any frame color)
   useEffect(() => {
@@ -157,8 +181,8 @@ export const MsiCustomRgbEditor: FC<MsiCustomRgbEditorProps> = ({ closeModal }) 
   };
 
   const handleAddFrame = () => {
-    if (editing.keyframes.length < MSI_MAX_KEYFRAMES) {
-      addKeyframe();
+    if (editing.keyframes.length < config.maxKeyframes) {
+      addKeyframe(); // Create a new black frame
       setCurrentFrame(editing.keyframes.length);
     }
   };
@@ -174,54 +198,76 @@ export const MsiCustomRgbEditor: FC<MsiCustomRgbEditorProps> = ({ closeModal }) 
 
   const rotateFrame = (frame: RGBTuple[], clockwise: boolean): RGBTuple[] => {
     const newFrame = [...frame];
+    const rotationMappings = config.layout.rotationMappings;
     
-    // Right stick rotation (indices 0-3): R1→R2→R3→R4
-    const rightStick = [frame[0], frame[1], frame[2], frame[3]];
-    if (clockwise) {
-      [newFrame[0], newFrame[1], newFrame[2], newFrame[3]] = [rightStick[1], rightStick[2], rightStick[3], rightStick[0]];
-    } else {
-      [newFrame[0], newFrame[1], newFrame[2], newFrame[3]] = [rightStick[3], rightStick[0], rightStick[1], rightStick[2]];
+    // Find left and right zones from layout using circle identifier
+    const leftZones = config.layout.zoneMappings
+      .filter(z => z.circle === "leftStick")
+      .sort((a, b) => a.arrayIndex - b.arrayIndex)
+      .map(z => z.arrayIndex);
+    
+    const rightZones = config.layout.zoneMappings
+      .filter(z => z.circle === "rightStick")
+      .sort((a, b) => a.arrayIndex - b.arrayIndex)
+      .map(z => z.arrayIndex);
+    
+    // Apply rotation to right stick if it has 4 zones
+    if (rightZones.length === 4) {
+      const mapping = clockwise ? rotationMappings.rightStick.clockwise : rotationMappings.rightStick.counterClockwise;
+      const rightColors = rightZones.map(idx => frame[idx]);
+      // mapping[sourceIdx] = targetArrayIndex
+      mapping.forEach((targetArrayIndex: number, sourceIdx: number) => {
+        newFrame[targetArrayIndex] = rightColors[sourceIdx];
+      });
     }
     
-    // Left stick rotation (indices 4-7): L5→L6→L7→L8
-    // Same circular pattern as right stick: left-bottom → right-bottom → right-top → left-top
-    // Positions: L7(6)left-bottom → L8(7)right-bottom → L5(4)right-top → L6(5)left-top
-    const leftStick = [frame[4], frame[5], frame[6], frame[7]];
-    if (clockwise) {
-      [newFrame[4], newFrame[5], newFrame[6], newFrame[7]] = [leftStick[1], leftStick[2], leftStick[3], leftStick[0]];
-    } else {
-      [newFrame[4], newFrame[5], newFrame[6], newFrame[7]] = [leftStick[3], leftStick[0], leftStick[1], leftStick[2]];
+    // Apply rotation to left stick if it has 4 zones
+    if (leftZones.length === 4) {
+      const mapping = clockwise ? rotationMappings.leftStick.clockwise : rotationMappings.leftStick.counterClockwise;
+      const leftColors = leftZones.map(idx => frame[idx]);
+      // mapping[sourceIdx] = targetArrayIndex
+      mapping.forEach((targetArrayIndex: number, sourceIdx: number) => {
+        newFrame[targetArrayIndex] = leftColors[sourceIdx];
+      });
     }
     
-    // ABXY (index 8) remains unchanged
+    // Center button (ABXY/Guide) remains unchanged
     
     return newFrame;
   };
 
   const handleCopyFrame = () => {
-    if (editing && editing.keyframes.length < MSI_MAX_KEYFRAMES) {
+    if (editing && editing.keyframes.length < config.maxKeyframes) {
       addKeyframe(currentFrame);
       setCurrentFrame(editing.keyframes.length);
     }
   };
 
   const handleCopyRotateCW = () => {
-    if (!editing || editing.keyframes.length >= MSI_MAX_KEYFRAMES) return;
+    if (!editing || editing.keyframes.length >= config.maxKeyframes) return;
     
     const rotated = rotateFrame(editing.keyframes[currentFrame], true);
     const newConfig = { ...editing };
     newConfig.keyframes = [...newConfig.keyframes, rotated];
-    MsiCustomRgbSetting.updateEditingConfig(newConfig);
+    if (deviceType === "msi") {
+      MsiCustomRgbSetting.updateEditingConfig(newConfig);
+    } else {
+      AyaNeoCustomRgbSetting.updateEditing(newConfig);
+    }
     setCurrentFrame(newConfig.keyframes.length - 1);
   };
 
   const handleCopyRotateCCW = () => {
-    if (!editing || editing.keyframes.length >= MSI_MAX_KEYFRAMES) return;
+    if (!editing || editing.keyframes.length >= config.maxKeyframes) return;
     
     const rotated = rotateFrame(editing.keyframes[currentFrame], false);
     const newConfig = { ...editing };
     newConfig.keyframes = [...newConfig.keyframes, rotated];
-    MsiCustomRgbSetting.updateEditingConfig(newConfig);
+    if (deviceType === "msi") {
+      MsiCustomRgbSetting.updateEditingConfig(newConfig);
+    } else {
+      AyaNeoCustomRgbSetting.updateEditing(newConfig);
+    }
     setCurrentFrame(newConfig.keyframes.length - 1);
   };
 
@@ -258,9 +304,19 @@ export const MsiCustomRgbEditor: FC<MsiCustomRgbEditorProps> = ({ closeModal }) 
 
   const handleCancel = async () => {
     cancelEditing();
+    
     // Restore the device to the state before editing
     // 恢复设备到编辑前的状态
-    await Backend.applySettings();
+    // For custom mode, need to reapply the active preset; for standard modes, use applySettings
+    // 对于自定义模式，需要重新应用激活的 preset；对于标准模式，使用 applySettings
+    if (Setting.mode === RGBMode.custom && Setting.currentCustomPreset) {
+      // Reapply the previously active preset
+      await applyPreset(Setting.currentCustomPreset);
+    } else {
+      // Standard mode (or no active custom preset)
+      await Backend.applySettings();
+    }
+    
     closeModal();
   };
 
@@ -299,6 +355,7 @@ export const MsiCustomRgbEditor: FC<MsiCustomRgbEditorProps> = ({ closeModal }) 
             isPlaying={isPlaying}
             speed={editing!.speed}
             brightness={editing!.brightness}
+            layoutConfig={config.layout}
           />
 
           {/* Zone selection slider */}
@@ -306,11 +363,11 @@ export const MsiCustomRgbEditor: FC<MsiCustomRgbEditorProps> = ({ closeModal }) 
             <SlowSliderField
               value={selectedZone}
               min={0}
-              max={8}
+              max={config.zoneKeys.length - 1}
               step={1}
               onChange={handleZoneChange}
-              notchCount={9}
-              notchLabels={MSI_LED_ZONE_KEYS.map((_, idx) => ({
+              notchCount={config.zoneKeys.length}
+              notchLabels={config.zoneKeys.map((_, idx) => ({
                 notchIndex: idx,
                 label: `${idx + 1}`,
                 value: idx,
@@ -319,7 +376,7 @@ export const MsiCustomRgbEditor: FC<MsiCustomRgbEditorProps> = ({ closeModal }) 
               showValue={false}
             />
             <div style={{ fontSize: "12px", color: "#93979C", marginTop: "4px", paddingLeft: "8px" }}>
-              {localizationManager.getString(localizeStrEnum[MSI_LED_ZONE_KEYS[selectedZone] as keyof typeof localizeStrEnum])}
+              {localizationManager.getString(localizeStrEnum[config.zoneKeys[selectedZone] as keyof typeof localizeStrEnum])}
             </div>
           </div>
 
@@ -344,14 +401,14 @@ export const MsiCustomRgbEditor: FC<MsiCustomRgbEditorProps> = ({ closeModal }) 
                 minHeight: "26px"
               }}
             >
-              {editing!.keyframes.map((frame, index) => {
+              {editing!.keyframes.map((frame: RGBTuple[], index: number) => {
                 // Find the brightest/most saturated color to represent this frame
-                const nonBlackColors = frame.filter(rgb => rgb[0] + rgb[1] + rgb[2] > 30);
+                const nonBlackColors = frame.filter((rgb: RGBTuple) => rgb[0] + rgb[1] + rgb[2] > 30);
                 let representativeColor = [40, 40, 40]; // Default dark gray
                 
                 if (nonBlackColors.length > 0) {
                   // Sort by brightness (sum of RGB) and saturation (max - min of RGB)
-                  representativeColor = nonBlackColors.reduce((brightest, current) => {
+                  representativeColor = nonBlackColors.reduce((brightest: RGBTuple, current: RGBTuple) => {
                     const brightnessCurrent = current[0] + current[1] + current[2];
                     const brightnessBrightest = brightest[0] + brightest[1] + brightest[2];
                     const saturationCurrent = Math.max(...current) - Math.min(...current);
@@ -407,34 +464,34 @@ export const MsiCustomRgbEditor: FC<MsiCustomRgbEditorProps> = ({ closeModal }) 
                 width: "100%",
                 display: "flex",
                 justifyContent: "space-evenly",
-                padding: "0 4px",
+                padding: "6px 4px",
               }}
             >
               <FrameControlButton
                 onOKActionDescription={localizationManager.getString(localizeStrEnum.MSI_CUSTOM_ADD_FRAME)}
                 onClick={handleAddFrame}
-                disabled={editing!.keyframes.length >= MSI_MAX_KEYFRAMES}
+                disabled={editing!.keyframes.length >= config.maxKeyframes}
               >
                 <FiPlus />
               </FrameControlButton>
               <FrameControlButton
                 onOKActionDescription={localizationManager.getString(localizeStrEnum.MSI_CUSTOM_COPY_FRAME)}
                 onClick={handleCopyFrame}
-                disabled={editing!.keyframes.length >= MSI_MAX_KEYFRAMES}
+                disabled={editing!.keyframes.length >= config.maxKeyframes}
               >
                 <FiCopy />
               </FrameControlButton>
               <FrameControlButton
                 onOKActionDescription={localizationManager.getString(localizeStrEnum.MSI_CUSTOM_COPY_ROTATE_CW)}
                 onClick={handleCopyRotateCW}
-                disabled={editing!.keyframes.length >= MSI_MAX_KEYFRAMES}
+                disabled={editing!.keyframes.length >= config.maxKeyframes}
               >
                 <FiRotateCw />
               </FrameControlButton>
               <FrameControlButton
                 onOKActionDescription={localizationManager.getString(localizeStrEnum.MSI_CUSTOM_COPY_ROTATE_CCW)}
                 onClick={handleCopyRotateCCW}
-                disabled={editing!.keyframes.length >= MSI_MAX_KEYFRAMES}
+                disabled={editing!.keyframes.length >= config.maxKeyframes}
               >
                 <FiRotateCcw />
               </FrameControlButton>
@@ -533,9 +590,9 @@ export const MsiCustomRgbEditor: FC<MsiCustomRgbEditorProps> = ({ closeModal }) 
               />
 
               {/* Info */}
-              <div style={{ fontSize: "12px", color: "#93979C", marginTop: "8px" }}>
-                {localizationManager.getString(localizeStrEnum.MSI_CUSTOM_KEYFRAMES_INFO)}: {editing!.keyframes.length} / {MSI_MAX_KEYFRAMES}
-              </div>
+              {/* <div style={{ fontSize: "12px", color: "#93979C", marginTop: "8px" }}>
+                {localizationManager.getString(localizeStrEnum.MSI_CUSTOM_KEYFRAMES_INFO)}: {editing!.keyframes.length} / {config.maxKeyframes}
+              </div> */}
             </PanelSection>
 
             {/* CSS for HSV sliders and keyframe timeline */}
@@ -596,7 +653,7 @@ export const MsiCustomRgbEditor: FC<MsiCustomRgbEditorProps> = ({ closeModal }) 
           gridTemplateColumns: "repeat(2, 1fr)",
           gridTemplateRows: "repeat(1, 1fr)",
           gridGap: "0.5rem",
-          padding: "8px 0",
+          padding: "4px 0",
         }}
       >
         <DialogButton onClick={handleCancel}>{localizationManager.getString(localizeStrEnum.MSI_CUSTOM_CANCEL)}</DialogButton>

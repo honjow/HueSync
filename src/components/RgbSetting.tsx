@@ -11,9 +11,9 @@ import { FC, useMemo } from "react";
 import { FiPlusCircle } from "react-icons/fi";
 import { localizationManager, localizeStrEnum } from "../i18n";
 import { useRgb } from "../hooks";
-import { SlowSliderField, SpeedControl, BrightnessLevelControl, MsiCustomRgbEditor } from ".";
+import { SlowSliderField, SpeedControl, BrightnessLevelControl, CustomRgbEditor } from ".";
 import { Setting } from "../hooks/settings";
-import { useMsiCustomRgb } from "../hooks";
+import { useCustomRgb } from "../hooks";
 import { RGBMode } from "../util";
 
 interface ColorControlsProps {
@@ -197,13 +197,17 @@ export const RGBComponent: FC = () => {
     updateBrightnessLevel,
   } = useRgb();
 
-  // MSI Custom RGB hook
-  const { presets, startEditing, deletePreset, applyPreset } = useMsiCustomRgb();
+  // Unified Custom RGB hook
+  // 统一的自定义 RGB hook
+  // Automatically uses the correct implementation (MSI or AyaNeo) based on device data
+  // 根据设备数据自动使用正确的实现（MSI 或 AyaNeo）
+  const customRgb = useCustomRgb();
 
   // LED Mode Options (single layer)
   const modeOptions = useMemo(() => {
+    // Filter out custom RGB mode from base modes (it will be added as presets)
     const baseModes = Object.entries(Setting.modeCapabilities)
-      .filter(([mode]) => mode !== RGBMode.msi_custom)
+      .filter(([mode]) => mode !== RGBMode.custom)
       .map(([mode]) => ({
         label: localizationManager.getString(
           localizeStrEnum[
@@ -213,23 +217,23 @@ export const RGBComponent: FC = () => {
         data: mode,
       }));
 
-    if (!Setting.deviceCapabilities?.custom_rgb) {
-      return baseModes;
-    }
-
-    // Custom presets as single-layer options, click to apply directly
-    const customPresetModes = Object.keys(presets).map((name) => ({
-      label: name,
-      data: `msi_custom:${name}`, // Has data property, can maintain focus
-    }));
+    // Add custom presets if device supports custom RGB
+    // 如果设备支持自定义 RGB，添加自定义预设
+    const customPresetModes = Setting.deviceCapabilities?.custom_rgb
+      ? Object.keys(customRgb.presets).map((name) => ({
+          label: name,
+          data: `custom:${name}`,
+        }))
+      : [];
 
     return [
       ...baseModes,
       ...customPresetModes,
     ];
-  }, [presets]);
+  }, [customRgb.presets]);
 
-  // Manage Custom Effects Options (two-level)
+  // Unified Manage Custom Effects Options (two-level)
+  // 统一的管理自定义效果选项（两级）
   const manageOptions = useMemo(() => {
     if (!Setting.deviceCapabilities?.custom_rgb) {
       return [];
@@ -247,20 +251,20 @@ export const RGBComponent: FC = () => {
       },
     ];
 
-    if (Object.keys(presets).length > 0) {
-      Object.keys(presets).forEach((name) => {
-        options.push({
-          label: name,
-          options: [
-            { label: localizationManager.getString(localizeStrEnum.MSI_CUSTOM_EDIT), data: { name, action: "edit" } },
-            { label: localizationManager.getString(localizeStrEnum.MSI_CUSTOM_DELETE), data: { name, action: "delete" } },
-          ],
-        });
+    // Add edit/delete options for each preset
+    // 为每个预设添加编辑/删除选项
+    Object.keys(customRgb.presets).forEach((name) => {
+      options.push({
+        label: name,
+        options: [
+          { label: localizationManager.getString(localizeStrEnum.MSI_CUSTOM_EDIT), data: { name, action: "edit" } },
+          { label: localizationManager.getString(localizeStrEnum.MSI_CUSTOM_DELETE), data: { name, action: "delete" } },
+        ],
       });
-    }
+    });
 
     return options;
-  }, [presets]);
+  }, [customRgb.presets]);
 
   // Get current mode capabilities | 获取当前模式的能力
   const currentModeCapabilities = useMemo(() => {
@@ -303,9 +307,9 @@ export const RGBComponent: FC = () => {
     if (selectedData === "separator") return;
 
     // Handle custom preset apply
-    if (typeof selectedData === 'string' && selectedData.startsWith('msi_custom:')) {
-      const presetName = selectedData.replace('msi_custom:', '');
-      await applyPreset(presetName);
+    if (typeof selectedData === 'string' && selectedData.startsWith('custom:')) {
+      const presetName = selectedData.replace('custom:', '');
+      await customRgb.applyPreset(presetName);
       return;
     }
 
@@ -315,15 +319,36 @@ export const RGBComponent: FC = () => {
     }
   };
 
-  // Handle manage actions
+  // Determine device type based on which preset has data
+  // 根据哪个预设有数据来确定设备类型
+  const getDeviceType = (): "msi" | "ayaneo" => {
+    // Check if this is an AyaNeo device by checking zone count in a preset
+    // AyaNeo typically has 8 zones (or 9 for KUN), MSI has 9 zones
+    const presetKeys = Object.keys(customRgb.presets);
+    if (presetKeys.length > 0) {
+      const firstPreset = customRgb.presets[presetKeys[0]];
+      if (firstPreset && 'keyframes' in firstPreset && firstPreset.keyframes && firstPreset.keyframes[0]) {
+        const zoneCount = firstPreset.keyframes[0].length;
+        // If 8 zones, likely AyaNeo; if 9 zones, could be either, default to MSI
+        return zoneCount === 8 ? "ayaneo" : "msi";
+      }
+    }
+    // Default to MSI if no presets exist yet
+    return "msi";
+  };
+
+  // Unified handle manage actions
+  // 统一的管理操作处理函数
   const handleManageAction = async (option: DropdownOption) => {
     const selectedData = option.data;
     if (selectedData === "separator") return;
 
+    const deviceType = getDeviceType();
+
     // Create new effect
     if (selectedData === "create_new") {
-      startEditing();
-      const modal = showModal(<MsiCustomRgbEditor closeModal={() => modal.Close()} />);
+      customRgb.startEditing();
+      const modal = showModal(<CustomRgbEditor closeModal={() => modal.Close()} deviceType={deviceType} />);
       return;
     }
 
@@ -331,10 +356,10 @@ export const RGBComponent: FC = () => {
     if (typeof selectedData === 'object' && selectedData !== null && 'action' in selectedData && 'name' in selectedData) {
       const { name, action } = selectedData as { name: string; action: string };
       if (action === "edit") {
-        startEditing(name);
-        const modal = showModal(<MsiCustomRgbEditor closeModal={() => modal.Close()} />);
+        customRgb.startEditing(name);
+        const modal = showModal(<CustomRgbEditor closeModal={() => modal.Close()} deviceType={deviceType} />);
       } else if (action === "delete") {
-        const success = await deletePreset(name);
+        const success = await customRgb.deletePreset(name);
         if (!success) {
           alert(`${localizationManager.getString(localizeStrEnum.MSI_CUSTOM_DELETE_FAILED)}: ${name}`);
         }
@@ -344,10 +369,12 @@ export const RGBComponent: FC = () => {
 
   // Display mode name
   const displayedModeName = useMemo(() => {
-    if (rgbMode === RGBMode.msi_custom) {
-      return Setting.currentMsiCustomPreset || "Custom Effect";
+    // Display custom preset name
+    if (rgbMode === RGBMode.custom) {
+      return Setting.currentCustomPreset || "Custom Effect";
     }
     
+    // Display standard mode name
     return localizationManager.getString(
       localizeStrEnum[`LED_MODE_${rgbMode.toUpperCase()}` as keyof typeof localizeStrEnum]
     );
@@ -375,8 +402,8 @@ export const RGBComponent: FC = () => {
               label={localizationManager.getString(localizeStrEnum.LED_MODE)}
               strDefaultLabel={displayedModeName}
               selectedOption={modeOptions.find((m) => {
-                if (rgbMode === RGBMode.msi_custom) {
-                  return m.data === `msi_custom:${Setting.currentMsiCustomPreset}`;
+                if (rgbMode === RGBMode.custom) {
+                  return m.data === `custom:${Setting.currentCustomPreset}`;
                 }
                 return m.data === rgbMode;
               })?.data}
@@ -385,7 +412,8 @@ export const RGBComponent: FC = () => {
             />
           </PanelSectionRow>
         )}
-        {/* Manage Custom Effects Dropdown */}
+        {/* Unified Manage Custom Effects Dropdown */}
+        {/* 统一的管理自定义效果下拉菜单 */}
         {Setting.deviceCapabilities?.custom_rgb && manageOptions.length > 0 && (
           <PanelSectionRow>
             <DropdownItem

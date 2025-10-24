@@ -1,8 +1,11 @@
-// MSI LED Preview Component
-// MSI LED 预览组件
+// Multi-Zone LED Preview Component
+// 多区域 LED 预览组件
+// Supports MSI Claw, AyaNeo, and other multi-zone LED devices
 
 import { FC, useEffect, useRef } from "react";
-import { RGBTuple } from "../types/msiCustomRgb";
+import { RGBTuple } from "../types/customRgb";
+import { LEDLayoutConfig } from "../types/ledLayout";
+import { MSI_CLAW_LAYOUT } from "../util/ledLayouts";
 
 interface MsiLEDPreviewProps {
   keyframes: RGBTuple[][];
@@ -12,27 +15,12 @@ interface MsiLEDPreviewProps {
   isPlaying?: boolean;
   speed?: number;
   brightness?: number;
+  layoutConfig?: LEDLayoutConfig; // Optional: layout configuration for different devices
 }
 
 // LED colors for canvas drawing
 const LED_SELECTED = "#1A9FFF";  // Steam blue for selected zone
 const LED_NORMAL = "rgba(255,255,255,0.4)";
-
-// Visual configuration interface
-interface VisualConfig {
-  led: {
-    radius: number;
-    radiusSelected: number;
-    borderWidth: number;
-    borderWidthSelected: number;
-  };
-  label: {
-    distance: number;
-    distanceSelected: number;
-    fontSize: string;
-    fontSizeBold: string;
-  };
-}
 
 /**
  * Calculate relative luminance for text contrast
@@ -55,56 +43,130 @@ const getContrastColor = (r: number, g: number, b: number): string => {
 };
 
 /**
- * Calculate LED layout positions and parameters
- * 计算 LED 布局位置和参数
+ * Convert polar coordinates to Cartesian coordinates
+ * 将极坐标转换为直角坐标
+ * @param centerX Center X coordinate
+ * @param centerY Center Y coordinate
+ * @param radius Radius from center
+ * @param angleInDegrees Angle in degrees (0=right, 90=top, 180=left, 270=bottom)
+ * @returns Cartesian coordinates {x, y}
  */
-const calculateLEDLayout = (width: number, height: number) => {
+const polarToCartesian = (
+  centerX: number,
+  centerY: number,
+  radius: number,
+  angleInDegrees: number
+): { x: number; y: number } => {
+  // Convert to standard math convention (0° is right, counter-clockwise)
+  // Subtract 90 to adjust for canvas coordinate system (0° should be right, not up)
+  const angleInRadians = ((angleInDegrees - 90) * Math.PI) / 180.0;
+  return {
+    x: centerX + radius * Math.cos(angleInRadians),
+    y: centerY + radius * Math.sin(angleInRadians),
+  };
+};
+
+/**
+ * Calculate label position and text alignment based on position type
+ * 根据位置类型计算标签位置和文本对齐方式
+ */
+const getLabelPosition = (
+  ledX: number,
+  ledY: number,
+  position: "top" | "bottom" | "left" | "right",
+  distance: number = 12
+): {
+  x: number;
+  y: number;
+  align: CanvasTextAlign;
+  baseline: CanvasTextBaseline;
+} => {
+  switch (position) {
+    case "top":
+      return {
+        x: ledX,
+        y: ledY - distance,
+        align: "center",
+        baseline: "bottom",
+      };
+    case "bottom":
+      return {
+        x: ledX,
+        y: ledY + distance,
+        align: "center",
+        baseline: "top",
+      };
+    case "left":
+      return {
+        x: ledX - distance,
+        y: ledY,
+        align: "right",
+        baseline: "middle",
+      };
+    case "right":
+      return {
+        x: ledX + distance,
+        y: ledY,
+        align: "left",
+        baseline: "middle",
+      };
+  }
+};
+
+/**
+ * Calculate LED layout positions and parameters based on circular coordinates
+ * 根据圆形坐标系统计算 LED 位置和参数
+ */
+const calculateLEDLayout = (width: number, height: number, layoutConfig: LEDLayoutConfig) => {
+  // Use visual parameters from layout config, or fallback to defaults
+  // 使用布局配置中的视觉参数，或使用默认值
   const params = {
     canvas: { width, height },
-    padding: { left: 38, right: 38, top: 12, bottom: 12 },
-    ledSpacing: 70,
-    ring: { innerRadius: 20, outerRadius: 28, offsetFromEdge: 35 },
+    ring: { 
+      innerRadius: layoutConfig.visual?.ring?.innerRadius ?? 20,
+      outerRadius: layoutConfig.visual?.ring?.outerRadius ?? 28
+    },
     visual: {
-      led: { radius: 8, radiusSelected: 10, borderWidth: 1, borderWidthSelected: 2 },
-      label: { distance: 10, distanceSelected: 12, fontSize: "8px", fontSizeBold: "bold 8px" },
+      led: { 
+        radius: layoutConfig.visual?.led?.radius ?? 8,
+        radiusSelected: layoutConfig.visual?.led?.radiusSelected ?? 10,
+        borderWidth: layoutConfig.visual?.led?.borderWidth ?? 1,
+        borderWidthSelected: layoutConfig.visual?.led?.borderWidthSelected ?? 2
+      },
+      label: { 
+        distance: layoutConfig.visual?.label?.distance ?? 10,
+        distanceSelected: layoutConfig.visual?.label?.distanceSelected ?? 12,
+        fontSize: layoutConfig.visual?.label?.fontSize ?? "8px",
+        fontSizeBold: layoutConfig.visual?.label?.fontSizeBold ?? "bold 8px"
+      },
     },
   };
 
-  const centerY = height / 2;
-  const leftLedLeft = params.padding.left;
-  const leftLedRight = leftLedLeft + params.ledSpacing;
-  const rightLedLeft = width - params.padding.right - params.ledSpacing;
-  const rightLedRight = width - params.padding.right;
-  const ledTop = params.padding.top;
-  const ledBottom = height - params.padding.bottom;
-  const leftRingX = params.padding.left + params.ring.offsetFromEdge;
-  const rightRingX = width - params.padding.right - params.ring.offsetFromEdge;
+  // Calculate LED positions using circular coordinates from layout config
+  const ledPositions = layoutConfig.zoneMappings.map(mapping => {
+    const center = layoutConfig.circles[mapping.circle];
+    if (!center) {
+      throw new Error(`Circle center not found for: ${mapping.circle}`);
+    }
+    const pos = polarToCartesian(center.x, center.y, mapping.radius, mapping.angle);
+    return {
+      ...pos,
+      arrayIndex: mapping.arrayIndex,
+      circle: mapping.circle,
+      mapping,
+    };
+  });
+
+  // Separate LEDs by circle for gradient ring drawing
+  const leftStickLeds = ledPositions.filter(led => led.circle === "leftStick");
+  const rightStickLeds = ledPositions.filter(led => led.circle === "rightStick");
 
   return {
     params,
-    positions: {
-      centerY,
-      leftLedLeft,
-      leftLedRight,
-      rightLedLeft,
-      rightLedRight,
-      ledTop,
-      ledBottom,
-      leftRingX,
-      rightRingX,
-    },
-    // All clickable LED zones
-    clickableZones: [
-      { x: leftLedLeft, y: ledTop, zone: 5 },       // L6
-      { x: leftLedRight, y: ledTop, zone: 4 },      // L5
-      { x: leftLedLeft, y: ledBottom, zone: 6 },    // L7
-      { x: leftLedRight, y: ledBottom, zone: 7 },   // L8
-      { x: rightLedLeft, y: ledTop, zone: 3 },      // R4
-      { x: rightLedRight, y: ledTop, zone: 2 },     // R3
-      { x: rightLedLeft, y: ledBottom, zone: 0 },   // R1
-      { x: rightLedRight, y: ledBottom, zone: 1 },  // R2
-      { x: width / 2, y: centerY, zone: 8 },        // ABXY
-    ],
+    circles: layoutConfig.circles,
+    ledPositions,
+    leftStickLeds,
+    rightStickLeds,
   };
 };
 
@@ -116,6 +178,7 @@ export const MsiLEDPreview: FC<MsiLEDPreviewProps> = ({
   isPlaying = false,
   speed = 10,
   brightness = 100,
+  layoutConfig = MSI_CLAW_LAYOUT, // Default to MSI Claw layout for backward compatibility
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationFrameRef = useRef<number | undefined>(undefined);
@@ -178,12 +241,11 @@ export const MsiLEDPreview: FC<MsiLEDPreviewProps> = ({
   };
 
   /**
-   * Draw preview with specific colors
-   * 使用特定颜色绘制预览
+   * Draw preview with specific colors using circular layout
+   * 使用圆形布局和特定颜色绘制预览
    */
   const drawPreviewWithColors = (colors: RGBTuple[], highlightZone: number | null = null) => {
     // Use provided highlightZone or fall back to selectedZone
-    // 使用提供的 highlightZone 或回退到 selectedZone
     const activeZone = highlightZone !== null ? highlightZone : selectedZone;
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -201,84 +263,81 @@ export const MsiLEDPreview: FC<MsiLEDPreviewProps> = ({
     ctx.scale(dpr, dpr);
     ctx.clearRect(0, 0, width, height);
 
-    // Get layout from centralized calculation
-    const { params, positions } = calculateLEDLayout(width, height);
+    // Get layout using circular coordinates
+    const { params, circles, ledPositions, leftStickLeds, rightStickLeds } = 
+      calculateLEDLayout(width, height, layoutConfig);
 
-    const layout = {
-      // Gradient ring configuration
-      ring: {
-        left: { x: positions.leftRingX, y: positions.centerY },
-        right: { x: positions.rightRingX, y: positions.centerY },
-        innerRadius: params.ring.innerRadius,
-        outerRadius: params.ring.outerRadius,
-      },
-      
-      // LED configuration
-      leds: {
-        left: [
-          { x: positions.leftLedLeft, y: positions.ledTop, idx: 5, label: "L6" },
-          { x: positions.leftLedRight, y: positions.ledTop, idx: 4, label: "L5" },
-          { x: positions.leftLedLeft, y: positions.ledBottom, idx: 6, label: "L7" },
-          { x: positions.leftLedRight, y: positions.ledBottom, idx: 7, label: "L8" },
-        ],
-        right: [
-          { x: positions.rightLedLeft, y: positions.ledTop, idx: 3, label: "R4" },
-          { x: positions.rightLedRight, y: positions.ledTop, idx: 2, label: "R3" },
-          { x: positions.rightLedLeft, y: positions.ledBottom, idx: 0, label: "R1" },
-          { x: positions.rightLedRight, y: positions.ledBottom, idx: 1, label: "R2" },
-        ],
-      },
-      
-      // ABXY configuration
-      abxy: {
-        x: width / 2,
-        y: positions.centerY,
-        idx: 8,
-        label: "ABXY",
-      },
-      
-      visual: params.visual,
-    };
+    // ===== Draw gradient rings for sticks =====
+    if (leftStickLeds.length > 0) {
+      const leftLedsForGradient = leftStickLeds.map(led => ({
+        x: led.x,
+        y: led.y,
+        idx: led.arrayIndex,
+        label: led.mapping.label.text,
+      }));
+      drawGradientRing(
+        ctx,
+        circles.leftStick,
+        params.ring.innerRadius,
+        params.ring.outerRadius,
+        leftLedsForGradient,
+        colors
+      );
+    }
 
-    // ===== Draw gradient rings =====
-    drawGradientRing(ctx, layout.ring.left, layout.ring.innerRadius, layout.ring.outerRadius, 
-                     layout.leds.left, colors);
-    drawGradientRing(ctx, layout.ring.right, layout.ring.innerRadius, layout.ring.outerRadius, 
-                     layout.leds.right, colors);
+    if (rightStickLeds.length > 0) {
+      const rightLedsForGradient = rightStickLeds.map(led => ({
+        x: led.x,
+        y: led.y,
+        idx: led.arrayIndex,
+        label: led.mapping.label.text,
+      }));
+      drawGradientRing(
+        ctx,
+        circles.rightStick,
+        params.ring.innerRadius,
+        params.ring.outerRadius,
+        rightLedsForGradient,
+        colors
+      );
+    }
 
     // ===== Draw all LEDs =====
-    [...layout.leds.left, ...layout.leds.right].forEach(led => {
-      const isSelected = led.idx === activeZone;
-      drawLED(ctx, led.x, led.y, colors[led.idx], isSelected, led.label, layout.visual, width, params.ledSpacing);
+    ledPositions.forEach(led => {
+      const isSelected = led.arrayIndex === activeZone;
+      const color = colors[led.arrayIndex];
+      const [r, g, b] = color;
+      
+      // Draw LED circle
+      const radius = isSelected ? params.visual.led.radiusSelected : params.visual.led.radius;
+      const borderWidth = isSelected ? params.visual.led.borderWidthSelected : params.visual.led.borderWidth;
+      
+      ctx.beginPath();
+      ctx.arc(led.x, led.y, radius, 0, Math.PI * 2);
+      ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
+      ctx.fill();
+      ctx.strokeStyle = isSelected ? LED_SELECTED : LED_NORMAL;
+      ctx.lineWidth = borderWidth;
+      ctx.stroke();
+
+      // LED index number inside (auto contrast)
+      ctx.fillStyle = getContrastColor(r, g, b);
+      ctx.font = `${params.visual.label.fontSizeBold} sans-serif`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      const ledNumber = led.mapping.label.text.match(/\d+/)?.[0] || "";
+      ctx.fillText(ledNumber, led.x, led.y);
+
+      // LED label outside
+      const labelDistance = led.mapping.label.distance || (isSelected ? params.visual.label.distanceSelected : params.visual.label.distance);
+      const labelPos = getLabelPosition(led.x, led.y, led.mapping.label.position, labelDistance);
+      
+      ctx.fillStyle = "#B8BCBF";
+      ctx.font = `${params.visual.label.fontSize} sans-serif`;
+      ctx.textAlign = labelPos.align;
+      ctx.textBaseline = labelPos.baseline;
+      ctx.fillText(led.mapping.label.text, labelPos.x, labelPos.y);
     });
-
-    // ===== Draw ABXY =====
-    const [ar, ag, ab] = colors[layout.abxy.idx];
-    const isAbxySelected = layout.abxy.idx === activeZone;
-    const abxyRadius = isAbxySelected ? layout.visual.led.radiusSelected : layout.visual.led.radius;
-    const abxyBorderWidth = isAbxySelected ? layout.visual.led.borderWidthSelected : layout.visual.led.borderWidth;
-    
-    ctx.beginPath();
-    ctx.arc(layout.abxy.x, layout.abxy.y, abxyRadius, 0, Math.PI * 2);
-    ctx.fillStyle = `rgb(${ar}, ${ag}, ${ab})`;
-    ctx.fill();
-    ctx.strokeStyle = isAbxySelected ? LED_SELECTED : LED_NORMAL;
-    ctx.lineWidth = abxyBorderWidth;
-    ctx.stroke();
-
-    // ABXY index number inside - auto contrast
-    ctx.fillStyle = getContrastColor(ar, ag, ab);
-    ctx.font = `${layout.visual.label.fontSizeBold} sans-serif`;
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText("9", layout.abxy.x, layout.abxy.y);
-    
-    // ABXY label below
-    ctx.fillStyle = "#B8BCBF";
-    ctx.font = `${layout.visual.label.fontSize} sans-serif`;
-    ctx.textBaseline = "top";
-    const abxyLabelOffset = isAbxySelected ? 15 : 13;
-    ctx.fillText(layout.abxy.label, layout.abxy.x, layout.abxy.y + abxyLabelOffset);
   };
 
   // Animation loop for playing mode
@@ -334,11 +393,11 @@ export const MsiLEDPreview: FC<MsiLEDPreviewProps> = ({
     if (!isPlaying) {
       drawPreview();
     }
-  }, [keyframes, currentFrame, selectedZone, brightness, isPlaying]);
+  }, [keyframes, currentFrame, selectedZone, brightness, isPlaying, layoutConfig]);
 
   /**
-   * Handle canvas click to select zone
-   * 处理画布点击以选择区域
+   * Handle canvas click to select zone using circular coordinates
+   * 使用圆形坐标处理画布点击以选择区域
    */
   const handleCanvasClick = (event: React.MouseEvent<HTMLCanvasElement>) => {
     if (!onZoneClick) return;
@@ -350,14 +409,14 @@ export const MsiLEDPreview: FC<MsiLEDPreviewProps> = ({
     const x = event.clientX - rect.left;
     const y = event.clientY - rect.top;
     
-    // Reuse centralized layout calculation
-    const { clickableZones } = calculateLEDLayout(300, 80);
+    // Get LED positions from circular layout
+    const { ledPositions } = calculateLEDLayout(300, 80, layoutConfig);
     
     // Check clicks with 30px hit radius
-    for (const led of clickableZones) {
+    for (const led of ledPositions) {
       const dist = Math.sqrt((x - led.x) ** 2 + (y - led.y) ** 2);
       if (dist <= 30) {
-        onZoneClick(led.zone);
+        onZoneClick(led.arrayIndex);
         return;
       }
     }
@@ -471,79 +530,6 @@ export const MsiLEDPreview: FC<MsiLEDPreviewProps> = ({
       Math.round(color1[1] + (color2[1] - color1[1]) * t),
       Math.round(color1[2] + (color2[2] - color1[2]) * t),
     ];
-  };
-
-  /**
-   * Draw a single LED
-   * 绘制单个 LED
-   */
-  const drawLED = (
-    ctx: CanvasRenderingContext2D,
-    x: number,
-    y: number,
-    color: RGBTuple,
-    isSelected: boolean,
-    label: string,
-    visualConfig: VisualConfig,
-    canvasWidth: number = 300,
-    ledSpacing: number = 70
-  ) => {
-    const [r, g, b] = color;
-    const radius = isSelected ? visualConfig.led.radiusSelected : visualConfig.led.radius;
-    const borderWidth = isSelected ? visualConfig.led.borderWidthSelected : visualConfig.led.borderWidth;
-    const labelDist = isSelected ? visualConfig.label.distanceSelected : visualConfig.label.distance;
-
-    // Draw LED circle
-    ctx.beginPath();
-    ctx.arc(x, y, radius, 0, Math.PI * 2);
-    ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
-    ctx.fill();
-    ctx.strokeStyle = isSelected ? LED_SELECTED : LED_NORMAL;
-    ctx.lineWidth = borderWidth;
-    ctx.stroke();
-
-    // Index number inside LED - auto contrast
-    ctx.fillStyle = getContrastColor(r, g, b);
-    ctx.font = `${visualConfig.label.fontSizeBold} sans-serif`;
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    const ledNumber = label.match(/\d+/)?.[0] || "";
-    ctx.fillText(ledNumber, x, y);
-
-    // Label position based on LED absolute position in canvas
-    ctx.fillStyle = "#B8BCBF";
-    ctx.font = `${visualConfig.label.fontSize} sans-serif`;
-    
-    let labelX = x;
-    let labelY = y;
-    
-    // Determine label direction based on LED position
-    const centerX = canvasWidth / 2;
-    const quarterPoint = ledSpacing * 0.75;
-    
-    if (x < centerX - quarterPoint) {
-      // Outer left LEDs (L6, L7) - label on the left
-      ctx.textAlign = "right";
-      labelX = x - labelDist;
-      ctx.textBaseline = "middle";
-    } else if (x < centerX) {
-      // Inner left LEDs (L5, L8) - label on the right
-      ctx.textAlign = "left";
-      labelX = x + labelDist;
-      ctx.textBaseline = "middle";
-    } else if (x < centerX + quarterPoint) {
-      // Inner right LEDs (R4, R1) - label on the left
-      ctx.textAlign = "right";
-      labelX = x - labelDist;
-      ctx.textBaseline = "middle";
-    } else {
-      // Outer right LEDs (R3, R2) - label on the right
-      ctx.textAlign = "left";
-      labelX = x + labelDist;
-      ctx.textBaseline = "middle";
-    }
-    
-    ctx.fillText(label, labelX, labelY);
   };
 
   return (

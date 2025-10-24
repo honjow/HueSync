@@ -110,5 +110,14 @@
     "MSI_LED_ZONE_L6": "左摇杆 - 左上 (L6)",
     "MSI_LED_ZONE_L7": "左摇杆 - 左下 (L7)",
     "MSI_LED_ZONE_L8": "左摇杆 - 右下 (L8)",
-    "MSI_LED_ZONE_ABXY": "ABXY 按键"
+    "MSI_LED_ZONE_ABXY": "ABXY 按键",
+    "AYANEO_LED_ZONE_L1": "左手柄 - 区域1",
+    "AYANEO_LED_ZONE_L2": "左手柄 - 区域2",
+    "AYANEO_LED_ZONE_L3": "左手柄 - 区域3",
+    "AYANEO_LED_ZONE_L4": "左手柄 - 区域4",
+    "AYANEO_LED_ZONE_R1": "右手柄 - 区域1",
+    "AYANEO_LED_ZONE_R2": "右手柄 - 区域2",
+    "AYANEO_LED_ZONE_R3": "右手柄 - 区域3",
+    "AYANEO_LED_ZONE_R4": "右手柄 - 区域4",
+    "AYANEO_LED_ZONE_GUIDE": "Guide 键"
 }
