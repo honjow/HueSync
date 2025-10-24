@@ -6,23 +6,45 @@ from led.ayaneo_led_device_ec import AyaNeoLEDDeviceEC
 from utils import AyaJoystickGroup, AyaLedZone, Color, RGBMode, RGBModeCapabilities
 
 from .led_device import BaseLEDDevice
+from .sysfs_led_mixin import SysfsLEDMixin
 
 
-class AyaNeoLEDDevice(BaseLEDDevice):
+class AyaNeoLEDDevice(SysfsLEDMixin, BaseLEDDevice):
     """
     AyaNeoLEDDevice offers advanced control for AyaNeo devices, supporting pixel-level
-    adjustments and various modes.
+    adjustments and various modes via EC control. Falls back to sysfs if available.
 
-    AyaNeoLEDDevice为AyaNeo设备提供高级控制，支持像素级调整和各种模式。
+    AyaNeoLEDDevice为AyaNeo设备提供高级控制，通过 EC 控制支持像素级调整和各种模式。
+    如可用，回退到 sysfs。
     """
+
+    # Define sysfs search keywords for AyaNeo devices with kernel patches
+    # 为带有内核补丁的 AyaNeo 设备定义 sysfs 搜索关键词
+    SYSFS_LED_PATHS = ["ayaneo", "multicolor"]
 
     def __init__(self):
         super().__init__()
         self.aya_led_device_ec = AyaNeoLEDDeviceEC()
+        # Detect sysfs LED path (may or may not exist depending on kernel patches)
+        # 检测 sysfs LED 路径（取决于内核补丁可能存在或不存在）
+        self._detect_sysfs_led_path()
 
     def _set_solid_color(self, color: Color) -> None:
-        # self.set_color_all(color)
-        self.aya_led_device_ec.set_led_color(color)
+        """
+        Set solid color, prioritizing EC control, falling back to sysfs if EC fails.
+        设置纯色，优先使用 EC 控制，如果 EC 失败则回退到 sysfs。
+        """
+        try:
+            # Try EC control first (preferred for advanced features)
+            # 首先尝试 EC 控制（高级功能首选）
+            self.aya_led_device_ec.set_led_color(color)
+        except Exception as e:
+            logger.warning(f"EC control failed, trying sysfs fallback: {e}")
+            # Fallback to sysfs if available
+            # 如可用，回退到 sysfs
+            if not self._set_color_by_sysfs(color):
+                logger.error("Both EC and sysfs control failed")
+                raise
 
     def get_suspend_mode(self) -> str:
         return self.aya_led_device_ec.get_suspend_mode()
