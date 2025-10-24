@@ -11,9 +11,9 @@ import { FC, useMemo } from "react";
 import { FiPlusCircle } from "react-icons/fi";
 import { localizationManager, localizeStrEnum } from "../i18n";
 import { useRgb } from "../hooks";
-import { SlowSliderField, SpeedControl, BrightnessLevelControl, MsiCustomRgbEditor, AyaNeoCustomRgbControl } from ".";
+import { SlowSliderField, SpeedControl, BrightnessLevelControl, MsiCustomRgbEditor } from ".";
 import { Setting } from "../hooks/settings";
-import { useMsiCustomRgb } from "../hooks";
+import { useMsiCustomRgb, useAyaNeoCustomRgb } from "../hooks";
 import { RGBMode } from "../util";
 
 interface ColorControlsProps {
@@ -198,7 +198,10 @@ export const RGBComponent: FC = () => {
   } = useRgb();
 
   // MSI Custom RGB hook
-  const { presets, startEditing, deletePreset, applyPreset } = useMsiCustomRgb();
+  const msiCustomRgb = useMsiCustomRgb();
+  
+  // AyaNeo Custom RGB hook
+  const ayaNeoCustomRgb = useAyaNeoCustomRgb();
 
   // LED Mode Options (single layer)
   const modeOptions = useMemo(() => {
@@ -217,20 +220,20 @@ export const RGBComponent: FC = () => {
       return baseModes;
     }
 
-    // Custom presets as single-layer options, click to apply directly
-    const customPresetModes = Object.keys(presets).map((name) => ({
+    // MSI custom presets as single-layer options, click to apply directly
+    const msiCustomPresetModes = Object.keys(msiCustomRgb.presets).map((name) => ({
       label: name,
       data: `msi_custom:${name}`, // Has data property, can maintain focus
     }));
 
     return [
       ...baseModes,
-      ...customPresetModes,
+      ...msiCustomPresetModes,
     ];
-  }, [presets]);
+  }, [msiCustomRgb.presets]);
 
-  // Manage Custom Effects Options (two-level)
-  const manageOptions = useMemo(() => {
+  // Manage Custom Effects Options (two-level) - MSI
+  const msiManageOptions = useMemo(() => {
     if (!Setting.deviceCapabilities?.custom_rgb) {
       return [];
     }
@@ -243,24 +246,57 @@ export const RGBComponent: FC = () => {
             <span>{localizationManager.getString(localizeStrEnum.MSI_CUSTOM_CREATE_NEW)}</span>
           </div>
         ),
-        data: "create_new",
+        data: "msi_create_new",
       },
     ];
 
-    if (Object.keys(presets).length > 0) {
-      Object.keys(presets).forEach((name) => {
+    if (Object.keys(msiCustomRgb.presets).length > 0) {
+      Object.keys(msiCustomRgb.presets).forEach((name) => {
         options.push({
           label: name,
           options: [
-            { label: localizationManager.getString(localizeStrEnum.MSI_CUSTOM_EDIT), data: { name, action: "edit" } },
-            { label: localizationManager.getString(localizeStrEnum.MSI_CUSTOM_DELETE), data: { name, action: "delete" } },
+            { label: localizationManager.getString(localizeStrEnum.MSI_CUSTOM_EDIT), data: { name, action: "msi_edit" } },
+            { label: localizationManager.getString(localizeStrEnum.MSI_CUSTOM_DELETE), data: { name, action: "msi_delete" } },
           ],
         });
       });
     }
 
     return options;
-  }, [presets]);
+  }, [msiCustomRgb.presets]);
+
+  // Manage Custom Effects Options (two-level) - AyaNeo
+  const ayaNeoManageOptions = useMemo(() => {
+    if (!Setting.deviceCapabilities?.ayaneo_custom_rgb) {
+      return [];
+    }
+
+    const options: DropdownOption[] = [
+      {
+        label: (
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5em" }}>
+            <FiPlusCircle />
+            <span>{localizationManager.getString(localizeStrEnum.AYANEO_CUSTOM_EDIT_EFFECT)}</span>
+          </div>
+        ),
+        data: "ayaneo_create_new",
+      },
+    ];
+
+    if (Object.keys(ayaNeoCustomRgb.presets).length > 0) {
+      Object.keys(ayaNeoCustomRgb.presets).forEach((name) => {
+        options.push({
+          label: name,
+          options: [
+            { label: localizationManager.getString(localizeStrEnum.MSI_CUSTOM_EDIT), data: { name, action: "ayaneo_edit" } },
+            { label: localizationManager.getString(localizeStrEnum.MSI_CUSTOM_DELETE), data: { name, action: "ayaneo_delete" } },
+          ],
+        });
+      });
+    }
+
+    return options;
+  }, [ayaNeoCustomRgb.presets]);
 
   // Get current mode capabilities | 获取当前模式的能力
   const currentModeCapabilities = useMemo(() => {
@@ -302,10 +338,10 @@ export const RGBComponent: FC = () => {
     const selectedData = option.data;
     if (selectedData === "separator") return;
 
-    // Handle custom preset apply
+    // Handle MSI custom preset apply
     if (typeof selectedData === 'string' && selectedData.startsWith('msi_custom:')) {
       const presetName = selectedData.replace('msi_custom:', '');
-      await applyPreset(presetName);
+      await msiCustomRgb.applyPreset(presetName);
       return;
     }
 
@@ -315,26 +351,53 @@ export const RGBComponent: FC = () => {
     }
   };
 
-  // Handle manage actions
-  const handleManageAction = async (option: DropdownOption) => {
+  // Handle MSI manage actions
+  const handleMsiManageAction = async (option: DropdownOption) => {
     const selectedData = option.data;
     if (selectedData === "separator") return;
 
     // Create new effect
-    if (selectedData === "create_new") {
-      startEditing();
-      const modal = showModal(<MsiCustomRgbEditor closeModal={() => modal.Close()} />);
+    if (selectedData === "msi_create_new") {
+      msiCustomRgb.startEditing();
+      const modal = showModal(<MsiCustomRgbEditor closeModal={() => modal.Close()} deviceType="msi" />);
       return;
     }
 
     // Edit or delete operations
     if (typeof selectedData === 'object' && selectedData !== null && 'action' in selectedData && 'name' in selectedData) {
       const { name, action } = selectedData as { name: string; action: string };
-      if (action === "edit") {
-        startEditing(name);
-        const modal = showModal(<MsiCustomRgbEditor closeModal={() => modal.Close()} />);
-      } else if (action === "delete") {
-        const success = await deletePreset(name);
+      if (action === "msi_edit") {
+        msiCustomRgb.startEditing(name);
+        const modal = showModal(<MsiCustomRgbEditor closeModal={() => modal.Close()} deviceType="msi" />);
+      } else if (action === "msi_delete") {
+        const success = await msiCustomRgb.deletePreset(name);
+        if (!success) {
+          alert(`${localizationManager.getString(localizeStrEnum.MSI_CUSTOM_DELETE_FAILED)}: ${name}`);
+        }
+      }
+    }
+  };
+
+  // Handle AyaNeo manage actions
+  const handleAyaNeoManageAction = async (option: DropdownOption) => {
+    const selectedData = option.data;
+    if (selectedData === "separator") return;
+
+    // Create new effect
+    if (selectedData === "ayaneo_create_new") {
+      ayaNeoCustomRgb.startEditing();
+      const modal = showModal(<MsiCustomRgbEditor closeModal={() => modal.Close()} deviceType="ayaneo" />);
+      return;
+    }
+
+    // Edit or delete operations
+    if (typeof selectedData === 'object' && selectedData !== null && 'action' in selectedData && 'name' in selectedData) {
+      const { name, action } = selectedData as { name: string; action: string };
+      if (action === "ayaneo_edit") {
+        ayaNeoCustomRgb.startEditing(name);
+        const modal = showModal(<MsiCustomRgbEditor closeModal={() => modal.Close()} deviceType="ayaneo" />);
+      } else if (action === "ayaneo_delete") {
+        const success = await ayaNeoCustomRgb.deletePreset(name);
         if (!success) {
           alert(`${localizationManager.getString(localizeStrEnum.MSI_CUSTOM_DELETE_FAILED)}: ${name}`);
         }
@@ -386,20 +449,28 @@ export const RGBComponent: FC = () => {
           </PanelSectionRow>
         )}
         {/* Manage Custom Effects Dropdown - MSI */}
-        {Setting.deviceCapabilities?.custom_rgb && manageOptions.length > 0 && (
+        {Setting.deviceCapabilities?.custom_rgb && msiManageOptions.length > 0 && (
           <PanelSectionRow>
             <DropdownItem
               label={localizationManager.getString(localizeStrEnum.MSI_CUSTOM_MANAGE_EFFECTS)}
               strDefaultLabel={localizationManager.getString(localizeStrEnum.MSI_CUSTOM_SELECT_ACTION)}
               selectedOption={undefined}
-              rgOptions={manageOptions}
-              onChange={handleManageAction}
+              rgOptions={msiManageOptions}
+              onChange={handleMsiManageAction}
             />
           </PanelSectionRow>
         )}
-        {/* AyaNeo Custom RGB Control */}
-        {Setting.deviceCapabilities?.ayaneo_custom_rgb && (
-          <AyaNeoCustomRgbControl />
+        {/* Manage Custom Effects Dropdown - AyaNeo */}
+        {Setting.deviceCapabilities?.ayaneo_custom_rgb && ayaNeoManageOptions.length > 0 && (
+          <PanelSectionRow>
+            <DropdownItem
+              label={localizationManager.getString(localizeStrEnum.AYANEO_CUSTOM_EDIT_EFFECT)}
+              strDefaultLabel={localizationManager.getString(localizeStrEnum.MSI_CUSTOM_SELECT_ACTION)}
+              selectedOption={undefined}
+              rgOptions={ayaNeoManageOptions}
+              onChange={handleAyaNeoManageAction}
+            />
+          </PanelSectionRow>
         )}
       </PanelSection>
       {enableControl && (

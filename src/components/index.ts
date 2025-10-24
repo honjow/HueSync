@@ -9,5 +9,3 @@ export * from './PerAppControl';
 export * from './AcStateControl';
 export * from './MsiLEDPreview';
 export * from './MsiCustomRgbEditor';
-export * from './MsiCustomRgbControl';
-export * from './AyaNeoCustomRgbControl';
