@@ -31,6 +31,37 @@ class Plugin:
         logger.debug(f"save Settings: {settings}")
         return True
 
+    def _stop_all_led_effects(self):
+        """
+        Stop all LED effects (software effects and custom RGB animator).
+        停止所有 LED 效果（软件效果和自定义 RGB 动画器）。
+        
+        This method ensures mutual exclusion between all LED control methods.
+        此方法确保所有 LED 控制方法之间的互斥。
+        """
+        stopped_any = False
+        
+        # Stop AyaNeo software animator
+        # 停止 AyaNeo 软件动画器
+        if self._ayaneo_animator and self._ayaneo_animator.is_running():
+            self._ayaneo_animator.stop()
+            logger.info("Stopped AyaNeo custom RGB animator")
+            stopped_any = True
+        
+        # Stop device software effects (Pulse, Rainbow, etc.)
+        # 停止设备软件效果（Pulse、Rainbow 等）
+        try:
+            device = self.ledControl.device
+            if hasattr(device, 'stop_effects'):
+                device.stop_effects()
+                if stopped_any:
+                    logger.debug("Stopped software LED effects")
+                stopped_any = True
+        except Exception as e:
+            logger.debug(f"Error stopping software effects: {e}")
+        
+        return stopped_any
+
     async def set_color(
         self,
         mode: str | None = None,
@@ -50,19 +81,17 @@ class Plugin:
         try:
             from utils import Color, RGBMode
 
-            # Custom RGB is handled separately by device-specific implementations
-            # 自定义 RGB 由设备特定实现单独处理
-            # - MSI: hardware-based keyframes
-            # - AyaNeo: software-based animator
-            # Skip standard set_color processing for custom mode
+            # Custom RGB is handled separately - don't interfere with it
+            # 自定义 RGB 单独处理 - 不要干扰它
+            # Check this BEFORE stopping effects to avoid stopping active custom animations
+            # 在停止效果之前检查，避免停止活动的自定义动画
             if mode and mode.lower() == "custom":
-                # Stop AyaNeo animator if it's running (when switching away from custom)
-                # 停止 AyaNeo 动画器（如果正在运行）
-                if self._ayaneo_animator and self._ayaneo_animator.is_running():
-                    self._ayaneo_animator.stop()
-                    logger.info("Stopped AyaNeo animator (switching modes)")
-                logger.debug("Skipping set_color for custom mode (use set_custom_rgb)")
+                logger.debug("Skipping set_color for custom mode (already active)")
                 return True
+
+            # Stop all LED effects before switching to standard modes
+            # 切换到标准模式前停止所有 LED 效果
+            self._stop_all_led_effects()
 
             color = None
             color2 = None
@@ -570,10 +599,9 @@ class Plugin:
                 logger.error("Invalid AyaNeo custom RGB configuration")
                 return False
 
-            # Stop existing animator if running
-            if self._ayaneo_animator and self._ayaneo_animator.is_running():
-                self._ayaneo_animator.stop()
-                logger.info("Stopped existing AyaNeo animator")
+            # Stop all LED effects before starting custom RGB
+            # 启动自定义 RGB 前停止所有 LED 效果
+            self._stop_all_led_effects()
 
             # Import animator
             from custom_zone_animator import KeyframeAnimator
