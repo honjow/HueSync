@@ -627,6 +627,138 @@ class AyaNeoLEDDeviceEC:
             self.current_color[0], self.current_color[1], self.current_color[2]
         )
 
+    def set_custom_zone_colors(self, left_colors: List[List[int]], right_colors: List[List[int]], button_color: Optional[List[int]] = None):
+        """
+        Set custom colors for individual LED zones (static effect)
+        为每个 LED 区域设置自定义颜色（静态灯效）
+        
+        Args:
+            left_colors: List of 4 RGB colors for left grip zones, e.g. [[255,0,0], [0,255,0], [0,0,255], [255,255,0]]
+                         左手柄 4 个区域的 RGB 颜色列表
+            right_colors: List of 4 RGB colors for right grip zones
+                          右手柄 4 个区域的 RGB 颜色列表  
+            button_color: Optional RGB color for button zone (KUN only)
+                          按钮区域的 RGB 颜色（仅 KUN 设备）
+                          
+        Example:
+            # Rainbow effect on left grip, solid blue on right
+            device.set_custom_zone_colors(
+                left_colors=[[255,0,0], [255,127,0], [255,255,0], [0,255,0]],  # Red→Orange→Yellow→Green
+                right_colors=[[0,0,255], [0,0,255], [0,0,255], [0,0,255]]      # All blue
+            )
+        """
+        if len(left_colors) != 4 or len(right_colors) != 4:
+            logger.error("left_colors and right_colors must each contain exactly 4 RGB values")
+            return
+            
+        # Validate RGB values
+        for colors in [left_colors, right_colors]:
+            for color in colors:
+                if len(color) != 3 or any(c < 0 or c > 255 for c in color):
+                    logger.error(f"Invalid RGB color: {color}. Each value must be 0-255")
+                    return
+        
+        zones = [3, 6, 9, 12]  # Standard 4 zones
+        
+        # Take control of LEDs
+        self._take_control()
+        
+        # Apply brightness adjustment to each color
+        def adjust_brightness(rgb: List[int]) -> List[int]:
+            if self.current_brightness < 255:
+                return [
+                    min(255, int(rgb[0] * self.current_brightness / 255)),
+                    min(255, int(rgb[1] * self.current_brightness / 255)),
+                    min(255, int(rgb[2] * self.current_brightness / 255)),
+                ]
+            return rgb
+        
+        # Apply brightness to all colors
+        left_adjusted = [adjust_brightness(c) for c in left_colors]
+        right_adjusted = [adjust_brightness(c) for c in right_colors]
+        
+        # Handle different device types
+        if self._is_modern_device():
+            # Modern devices (AIR_PLUS, SLIDE)
+            self._led_mc_on()
+            
+            # Apply model-specific scaling
+            scaling = 64 if self.model == AyaNeoModel.AIR_PLUS else 192  # SLIDE uses 192
+            
+            for i, zone in enumerate(zones):
+                left_scaled = self._scale_color(left_adjusted[i], scaling)
+                self._led_mc_set(AyaNeoECConstants.LED_GROUP_LEFT, zone, left_scaled[0])
+                self._led_mc_set(AyaNeoECConstants.LED_GROUP_LEFT, zone + 1, left_scaled[1])
+                self._led_mc_set(AyaNeoECConstants.LED_GROUP_LEFT, zone + 2, left_scaled[2])
+            
+            # Right side with different scaling for AIR_PLUS
+            right_scaling = 32 if self.model == AyaNeoModel.AIR_PLUS else 192
+            for i, zone in enumerate(zones):
+                right_scaled = self._scale_color(right_adjusted[i], right_scaling)
+                self._led_mc_set(AyaNeoECConstants.LED_GROUP_RIGHT, zone, right_scaled[0])
+                self._led_mc_set(AyaNeoECConstants.LED_GROUP_RIGHT, zone + 1, right_scaled[1])
+                self._led_mc_set(AyaNeoECConstants.LED_GROUP_RIGHT, zone + 2, right_scaled[2])
+            
+            self._led_mc_set(AyaNeoECConstants.LED_GROUP_LEFT_RIGHT, 0x00, 0x00)
+            
+        else:
+            # Legacy devices
+            self._led_mc_legacy_on()
+            
+            # Determine scaling based on model
+            if self.model == AyaNeoModel.AIR_PLUS_MENDO:
+                left_scaling, right_scaling = 64, 32
+            elif self.model == AyaNeoModel.AIR_1S_LIMITED:
+                left_scaling, right_scaling = 192, 204
+            else:
+                left_scaling, right_scaling = 192, 192
+            
+            if self.model == AyaNeoModel.KUN:
+                # KUN requires special color channel mapping for each zone
+                zone_channel_mappings = [
+                    [1, 0, 2],  # Zone 3: GRB
+                    [1, 2, 0],  # Zone 6: GBR  
+                    [2, 0, 1],  # Zone 9: BRG
+                    [2, 1, 0],  # Zone 12: BGR
+                ]
+                
+                for i, zone in enumerate(zones):
+                    # Left grip with mapping
+                    left_scaled = self._scale_color(left_adjusted[i], left_scaling)
+                    mapping = zone_channel_mappings[i]
+                    left_remapped = [left_scaled[mapping[0]], left_scaled[mapping[1]], left_scaled[mapping[2]]]
+                    self._led_mc_legacy_intensity_single(AyaNeoECConstants.LED_GROUP_LEFT, left_remapped, zone)
+                    
+                    # Right grip with mapping
+                    right_scaled = self._scale_color(right_adjusted[i], right_scaling)
+                    right_remapped = [right_scaled[mapping[0]], right_scaled[mapping[1]], right_scaled[mapping[2]]]
+                    self._led_mc_legacy_intensity_single(AyaNeoECConstants.LED_GROUP_RIGHT, right_remapped, zone)
+                
+                # Handle button zone if provided
+                if button_color:
+                    button_adjusted = adjust_brightness(button_color)
+                    button_scaled = self._scale_color(button_adjusted, 192)
+                    button_remapped = [button_scaled[2], button_scaled[0], button_scaled[1]]  # BGR for button
+                    self._led_mc_legacy_intensity_single(AyaNeoECConstants.LED_GROUP_BUTTON, button_remapped, 12)
+            else:
+                # Standard legacy devices
+                for i, zone in enumerate(zones):
+                    left_scaled = self._scale_color(left_adjusted[i], left_scaling)
+                    self._led_mc_legacy_intensity_single(AyaNeoECConstants.LED_GROUP_LEFT, left_scaled, zone)
+                    
+                    right_scaled = self._scale_color(right_adjusted[i], right_scaling)
+                    self._led_mc_legacy_intensity_single(AyaNeoECConstants.LED_GROUP_RIGHT, right_scaled, zone)
+            
+            self._led_mc_legacy_set(AyaNeoECConstants.LED_GROUP_LEFT_RIGHT, 0x00, 0x00)
+        
+        # Update software cache with average color (for compatibility with get_led_color)
+        avg_r = sum(c[0] for c in left_colors + right_colors) // 8
+        avg_g = sum(c[1] for c in left_colors + right_colors) // 8
+        avg_b = sum(c[2] for c in left_colors + right_colors) // 8
+        self.current_color = [avg_r, avg_g, avg_b]
+        
+        logger.debug(f"Custom zone colors set - Left: {left_colors}, Right: {right_colors}")
+
     def set_brightness(self, brightness: int):
         """
         Set total brightness - corresponding to C: ayaneo_led_mc_brightness_set
