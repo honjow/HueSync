@@ -171,30 +171,30 @@ export const AYANEO_STANDARD_LAYOUT: LEDLayoutConfig = {
     // Right stick (indices 4-7) - cardinal directions (12/3/6/9 o'clock)
     { 
       arrayIndex: 4, circle: "rightStick", angle: 90, radius: 32,
-      label: { text: "R1", i18nKey: "AYANEO_LED_ZONE_R1", position: "bottom" }
+      label: { text: "R5", i18nKey: "AYANEO_LED_ZONE_R1", position: "bottom" }
     },
     { 
       arrayIndex: 5, circle: "rightStick", angle: 180, radius: 32,
-      label: { text: "R2", i18nKey: "AYANEO_LED_ZONE_R2", position: "right" }
+      label: { text: "R6", i18nKey: "AYANEO_LED_ZONE_R2", position: "right" }
     },
     { 
       arrayIndex: 6, circle: "rightStick", angle: 270, radius: 32,
-      label: { text: "R3", i18nKey: "AYANEO_LED_ZONE_R3", position: "bottom" }
+      label: { text: "R7", i18nKey: "AYANEO_LED_ZONE_R3", position: "bottom" }
     },
     { 
       arrayIndex: 7, circle: "rightStick", angle: 0, radius: 32,
-      label: { text: "R4", i18nKey: "AYANEO_LED_ZONE_R4", position: "right" }
+      label: { text: "R8", i18nKey: "AYANEO_LED_ZONE_R4", position: "right" }
     },
   ],
   
   rotationMappings: {
     leftStick: {
-      clockwise: [3, 0, 1, 2],
-      counterClockwise: [1, 2, 3, 0],
+      clockwise: [1, 2, 3, 0],
+      counterClockwise: [3, 0, 1, 2],
     },
     rightStick: {
-      clockwise: [7, 4, 5, 6],
-      counterClockwise: [5, 6, 7, 4],
+      clockwise: [5, 6, 7, 4],
+      counterClockwise: [7, 4, 5, 6],
     },
   },
 };
