@@ -4,6 +4,22 @@
  * 
  * Defines the physical LED layout for different handheld devices.
  * 定义不同掌机设备的物理 LED 布局。
+ * 
+ * Visual Parameters:
+ * 视觉参数：
+ * All visual parameters are optional and will use defaults if not specified.
+ * 所有视觉参数都是可选的，如果未指定将使用默认值。
+ * 
+ * - circles: LED group centers (required)
+ *   圆心：LED组的中心位置（必需）
+ * - zoneMappings[].radius: Distance from LED to circle center
+ *   半径：LED到圆心的距离
+ * - visual.ring.innerRadius: Gradient ring inner radius (default: 20)
+ *   渐变环内径（默认：20）
+ * - visual.ring.outerRadius: Gradient ring outer radius (default: 28)
+ *   渐变环外径（默认：28）
+ * - visual.led.radius: LED circle radius (default: 8)
+ *   LED圆圈半径（默认：8）
  */
 
 import { LEDLayoutConfig, DeviceType } from "../types/ledLayout";
@@ -13,28 +29,77 @@ import { LEDLayoutConfig, DeviceType } from "../types/ledLayout";
  * MSI Claw LED 布局
  * 
  * Array indices: 0-7 (sticks), 8 (ABXY)
- * Physical layout:
- *   Right stick: R1(0,bottom-left) R2(1,bottom-right) R3(2,top-right) R4(3,top-left)
- *   Left stick:  L5(4,top-right) L6(5,top-left) L7(6,bottom-left) L8(7,bottom-right)
+ * Physical layout (45-degree diagonal positions):
+ *   Right stick: R1(0,225°) R2(1,315°) R3(2,45°) R4(3,135°)
+ *   Left stick:  L5(4,45°) L6(5,135°) L7(6,225°) L8(7,315°)
  *   Center: ABXY(8)
  */
 export const MSI_CLAW_LAYOUT: LEDLayoutConfig = {
   deviceType: "msi_claw",
   numZones: 9,
+  
+  // Circle centers for LED groups
+  circles: {
+    leftStick: { x: 80, y: 40 },
+    rightStick: { x: 220, y: 40 },
+    center: { x: 150, y: 40 }
+  },
+
+  visual: {
+    ring: { 
+      innerRadius: 18,
+      outerRadius: 26
+    },
+    // led: { 
+    //   radius: 6,
+    //   radiusSelected: 6
+    // }
+  },
+  
   zoneMappings: [
-    // Right stick (indices 0-3)
-    { arrayIndex: 0, position: "right-bottom-left", label: "R1", labelKey: "MSI_LED_ZONE_R1" },
-    { arrayIndex: 1, position: "right-bottom-right", label: "R2", labelKey: "MSI_LED_ZONE_R2" },
-    { arrayIndex: 2, position: "right-top-right", label: "R3", labelKey: "MSI_LED_ZONE_R3" },
-    { arrayIndex: 3, position: "right-top-left", label: "R4", labelKey: "MSI_LED_ZONE_R4" },
-    // Left stick (indices 4-7)
-    { arrayIndex: 4, position: "left-top-right", label: "L5", labelKey: "MSI_LED_ZONE_L5" },
-    { arrayIndex: 5, position: "left-top-left", label: "L6", labelKey: "MSI_LED_ZONE_L6" },
-    { arrayIndex: 6, position: "left-bottom-left", label: "L7", labelKey: "MSI_LED_ZONE_L7" },
-    { arrayIndex: 7, position: "left-bottom-right", label: "L8", labelKey: "MSI_LED_ZONE_L8" },
+    // Right stick (indices 0-3) - 45° diagonal layout
+    { 
+      arrayIndex: 0, circle: "rightStick", angle: 225, radius: 38,
+      label: { text: "R1", i18nKey: "MSI_LED_ZONE_R1", position: "left" }
+    },
+    { 
+      arrayIndex: 1, circle: "rightStick", angle: 135, radius: 38,
+      label: { text: "R2", i18nKey: "MSI_LED_ZONE_R2", position: "right" }
+    },
+    { 
+      arrayIndex: 2, circle: "rightStick", angle: 45, radius: 38,
+      label: { text: "R3", i18nKey: "MSI_LED_ZONE_R3", position: "right" }
+    },
+    { 
+      arrayIndex: 3, circle: "rightStick", angle: 315, radius: 38,
+      label: { text: "R4", i18nKey: "MSI_LED_ZONE_R4", position: "left" }
+    },
+    
+    // Left stick (indices 4-7) - 45° diagonal layout
+    { 
+      arrayIndex: 4, circle: "leftStick", angle: 45, radius: 38,
+      label: { text: "L5", i18nKey: "MSI_LED_ZONE_L5", position: "right" }
+    },
+    { 
+      arrayIndex: 5, circle: "leftStick", angle: 315, radius: 38,
+      label: { text: "L6", i18nKey: "MSI_LED_ZONE_L6", position: "left" }
+    },
+    { 
+      arrayIndex: 6, circle: "leftStick", angle: 225, radius: 38,
+      label: { text: "L7", i18nKey: "MSI_LED_ZONE_L7", position: "left" }
+    },
+    { 
+      arrayIndex: 7, circle: "leftStick", angle: 135, radius: 38,
+      label: { text: "L8", i18nKey: "MSI_LED_ZONE_L8", position: "right" }
+    },
+    
     // Center ABXY (index 8)
-    { arrayIndex: 8, position: "center-abxy", label: "ABXY", labelKey: "MSI_LED_ZONE_ABXY" },
+    { 
+      arrayIndex: 8, circle: "center", angle: 0, radius: 0,
+      label: { text: "ABXY", i18nKey: "MSI_LED_ZONE_ABXY", position: "bottom" }
+    },
   ],
+  
   rotationMappings: {
     rightStick: {
       // Clockwise: R1→R2, R2→R3, R3→R4, R4→R1
@@ -44,7 +109,6 @@ export const MSI_CLAW_LAYOUT: LEDLayoutConfig = {
     },
     leftStick: {
       // Clockwise: L5→L6, L6→L7, L7→L8, L8→L5
-      // Indices offset by 4: [4]→[5], [5]→[6], [6]→[7], [7]→[4]
       clockwise: [5, 6, 7, 4],
       // Counter-clockwise: L5→L8, L6→L5, L7→L6, L8→L7
       counterClockwise: [7, 4, 5, 6],
@@ -59,40 +123,78 @@ export const MSI_CLAW_LAYOUT: LEDLayoutConfig = {
  * Note: Actual physical layout needs to be verified on real device!
  * 注意：实际物理布局需要在真实设备上验证！
  * 
- * Assumed layout (subject to change based on testing):
- * 假设布局（根据测试结果可能需要调整）：
- *   Left stick:  L1(0,top-left) L2(1,top-right) L3(2,bottom-left) L4(3,bottom-right)
- *   Right stick: R1(4,top-left) R2(5,top-right) R3(6,bottom-left) R4(7,bottom-right)
+ * Cardinal direction layout (0/90/180/270 degrees):
+ * 正方位布局（0/90/180/270 度）：
+ *   Left stick:  L1(0,90°) L2(1,0°) L3(2,270°) L4(3,180°)
+ *   Right stick: R1(4,90°) R2(5,0°) R3(6,270°) R4(7,180°)
  */
 export const AYANEO_STANDARD_LAYOUT: LEDLayoutConfig = {
   deviceType: "ayaneo_standard",
   numZones: 8,
+  
+  // Circle centers for LED groups
+  circles: {
+    leftStick: { x: 80, y: 40 },
+    rightStick: { x: 220, y: 40 }
+  },
+
+  visual: {
+    ring: { 
+      innerRadius: 12,
+      outerRadius: 20
+    },
+    led: { 
+      radius: 6,
+      radiusSelected: 6
+    }
+  },
+  
   zoneMappings: [
-    // Left stick (indices 0-3) - assumed order, NEEDS VERIFICATION
-    { arrayIndex: 0, position: "left-top-left", label: "L1", labelKey: "AYANEO_LED_ZONE_L1" },
-    { arrayIndex: 1, position: "left-top-right", label: "L2", labelKey: "AYANEO_LED_ZONE_L2" },
-    { arrayIndex: 2, position: "left-bottom-left", label: "L3", labelKey: "AYANEO_LED_ZONE_L3" },
-    { arrayIndex: 3, position: "left-bottom-right", label: "L4", labelKey: "AYANEO_LED_ZONE_L4" },
-    // Right stick (indices 4-7) - assumed order, NEEDS VERIFICATION
-    { arrayIndex: 4, position: "right-top-left", label: "R1", labelKey: "AYANEO_LED_ZONE_R1" },
-    { arrayIndex: 5, position: "right-top-right", label: "R2", labelKey: "AYANEO_LED_ZONE_R2" },
-    { arrayIndex: 6, position: "right-bottom-left", label: "R3", labelKey: "AYANEO_LED_ZONE_R3" },
-    { arrayIndex: 7, position: "right-bottom-right", label: "R4", labelKey: "AYANEO_LED_ZONE_R4" },
+    // Left stick (indices 0-3) - cardinal directions (12/3/6/9 o'clock)
+    { 
+      arrayIndex: 0, circle: "leftStick", angle: 90, radius: 32,
+      label: { text: "L1", i18nKey: "AYANEO_LED_ZONE_L1", position: "bottom" }
+    },
+    { 
+      arrayIndex: 1, circle: "leftStick", angle: 180, radius: 32,
+      label: { text: "L2", i18nKey: "AYANEO_LED_ZONE_L2", position: "right" }
+    },
+    { 
+      arrayIndex: 2, circle: "leftStick", angle: 270, radius: 32,
+      label: { text: "L3", i18nKey: "AYANEO_LED_ZONE_L3", position: "bottom" }
+    },
+    { 
+      arrayIndex: 3, circle: "leftStick", angle: 0, radius: 32,
+      label: { text: "L4", i18nKey: "AYANEO_LED_ZONE_L4", position: "right" }
+    },
+    
+    // Right stick (indices 4-7) - cardinal directions (12/3/6/9 o'clock)
+    { 
+      arrayIndex: 4, circle: "rightStick", angle: 90, radius: 32,
+      label: { text: "R1", i18nKey: "AYANEO_LED_ZONE_R1", position: "bottom" }
+    },
+    { 
+      arrayIndex: 5, circle: "rightStick", angle: 180, radius: 32,
+      label: { text: "R2", i18nKey: "AYANEO_LED_ZONE_R2", position: "right" }
+    },
+    { 
+      arrayIndex: 6, circle: "rightStick", angle: 270, radius: 32,
+      label: { text: "R3", i18nKey: "AYANEO_LED_ZONE_R3", position: "bottom" }
+    },
+    { 
+      arrayIndex: 7, circle: "rightStick", angle: 0, radius: 32,
+      label: { text: "R4", i18nKey: "AYANEO_LED_ZONE_R4", position: "right" }
+    },
   ],
+  
   rotationMappings: {
     leftStick: {
-      // Clockwise: L1→L2, L2→L4, L4→L3, L3→L1
-      // top-left → top-right → bottom-right → bottom-left → top-left
-      clockwise: [1, 3, 0, 2],
-      // Counter-clockwise: L1→L3, L2→L1, L3→L4, L4→L2
-      counterClockwise: [2, 0, 3, 1],
+      clockwise: [3, 0, 1, 2],
+      counterClockwise: [1, 2, 3, 0],
     },
     rightStick: {
-      // Clockwise: R1→R2, R2→R4, R4→R3, R3→R1
-      // Indices offset by 4: [4]→[5], [5]→[7], [7]→[6], [6]→[4]
-      clockwise: [5, 7, 4, 6],
-      // Counter-clockwise: R1→R3, R2→R1, R3→R4, R4→R2
-      counterClockwise: [6, 4, 7, 5],
+      clockwise: [7, 4, 5, 6],
+      counterClockwise: [5, 6, 7, 4],
     },
   },
 };
@@ -107,11 +209,23 @@ export const AYANEO_STANDARD_LAYOUT: LEDLayoutConfig = {
 export const AYANEO_KUN_LAYOUT: LEDLayoutConfig = {
   deviceType: "ayaneo_kun",
   numZones: 9,
+  
+  // Circle centers for LED groups (add center for Guide button)
+  circles: {
+    leftStick: { x: 70, y: 40 },
+    rightStick: { x: 230, y: 40 },
+    center: { x: 150, y: 40 }
+  },
+  
   zoneMappings: [
     ...AYANEO_STANDARD_LAYOUT.zoneMappings,
     // Center Guide button (index 8)
-    { arrayIndex: 8, position: "center-guide", label: "Guide", labelKey: "AYANEO_LED_ZONE_GUIDE" },
+    { 
+      arrayIndex: 8, circle: "center", angle: 0, radius: 0,
+      label: { text: "Guide", i18nKey: "AYANEO_LED_ZONE_GUIDE", position: "bottom" }
+    },
   ],
+  
   rotationMappings: AYANEO_STANDARD_LAYOUT.rotationMappings,
 };
 
@@ -145,6 +259,6 @@ export function getLEDLayout(deviceType: DeviceType | string): LEDLayoutConfig {
  */
 export function getZoneLabelKeys(deviceType: DeviceType | string): string[] {
   const layout = getLEDLayout(deviceType);
-  return layout.zoneMappings.map(m => m.labelKey);
+  return layout.zoneMappings.map(m => m.label.i18nKey);
 }
 

@@ -50,10 +50,23 @@ class Plugin:
         try:
             from utils import Color, RGBMode
 
-            # MSI custom RGB is handled separately by set_msi_custom_rgb
+            # MSI custom RGB is handled separately by set_msi_custom_rgb (hardware-based)
             # Skip standard set_color processing for msi_custom mode
             if mode and mode.lower() == "msi_custom":
-                logger.debug("Skipping set_color for msi_custom mode (handled by set_msi_custom_rgb)")
+                logger.debug("Skipping set_color for msi_custom mode (hardware-based)")
+                return True
+            
+            # Stop AyaNeo animator when switching away from custom mode
+            # 切换到其他模式时停止 AyaNeo 动画器，保证原子性
+            if self._ayaneo_animator and self._ayaneo_animator.is_running():
+                if not mode or mode.lower() != "ayaneo_custom":
+                    self._ayaneo_animator.stop()
+                    logger.info("Stopped AyaNeo animator (switching to different mode)")
+            
+            # Skip standard set_color processing for ayaneo_custom mode
+            # AyaNeo custom should be applied via set_ayaneo_custom_rgb or apply_ayaneo_custom_preset
+            if mode and mode.lower() == "ayaneo_custom":
+                logger.debug("Skipping set_color for ayaneo_custom mode (use set_ayaneo_custom_rgb)")
                 return True
 
             color = None

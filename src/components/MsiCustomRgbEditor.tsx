@@ -25,13 +25,14 @@ import { useMsiCustomRgb, useAyaNeoCustomRgb } from "../hooks";
 import { MsiCustomRgbSetting } from "../hooks/msiCustomRgbSettings";
 import { AyaNeoCustomRgbSetting } from "../hooks/ayaNeoCustomRgbSettings";
 import { MsiLEDPreview } from "./MsiLEDPreview";
-import { MSI_LED_ZONE_KEYS, MSI_MAX_KEYFRAMES, AYANEO_LED_ZONE_KEYS_8, AYANEO_LED_ZONE_KEYS_9_KUN, AYANEO_MAX_KEYFRAMES } from "../util/const";
+import { MSI_LED_ZONE_KEYS, MSI_MAX_KEYFRAMES, AYANEO_LED_ZONE_KEYS_8, AYANEO_LED_ZONE_KEYS_9_KUN, AYANEO_MAX_KEYFRAMES, RGBMode } from "../util/const";
 import { RGBTuple } from "../types/msiCustomRgb";
 import { hsvToRgb, rgbToHsv } from "../util";
 import { SlowSliderField } from "./SlowSliderField";
 import { localizationManager, localizeStrEnum } from "../i18n";
 import { Backend } from "../util/backend";
 import { MSI_CLAW_LAYOUT, AYANEO_STANDARD_LAYOUT, AYANEO_KUN_LAYOUT } from "../util/ledLayouts";
+import { Setting } from "../hooks/settings";
 
 type DeviceType = "msi" | "ayaneo";
 
@@ -61,6 +62,7 @@ export const MsiCustomRgbEditor: FC<MsiCustomRgbEditorProps> = ({
     previewSingleFrame,
     save,
     cancelEditing,
+    applyPreset,
   } = hook;
 
   // Device-specific configuration
@@ -199,14 +201,14 @@ export const MsiCustomRgbEditor: FC<MsiCustomRgbEditorProps> = ({
     const newFrame = [...frame];
     const rotationMappings = config.layout.rotationMappings;
     
-    // Find left and right zones from layout
+    // Find left and right zones from layout using circle identifier
     const leftZones = config.layout.zoneMappings
-      .filter(z => z.position.startsWith("left-"))
+      .filter(z => z.circle === "leftStick")
       .sort((a, b) => a.arrayIndex - b.arrayIndex)
       .map(z => z.arrayIndex);
     
     const rightZones = config.layout.zoneMappings
-      .filter(z => z.position.startsWith("right-"))
+      .filter(z => z.circle === "rightStick")
       .sort((a, b) => a.arrayIndex - b.arrayIndex)
       .map(z => z.arrayIndex);
     
@@ -214,8 +216,9 @@ export const MsiCustomRgbEditor: FC<MsiCustomRgbEditorProps> = ({
     if (rightZones.length === 4) {
       const mapping = clockwise ? rotationMappings.rightStick.clockwise : rotationMappings.rightStick.counterClockwise;
       const rightColors = rightZones.map(idx => frame[idx]);
-      mapping.forEach((srcIdx: number, destIdx: number) => {
-        newFrame[rightZones[destIdx]] = rightColors[srcIdx];
+      // mapping[sourceIdx] = targetArrayIndex
+      mapping.forEach((targetArrayIndex: number, sourceIdx: number) => {
+        newFrame[targetArrayIndex] = rightColors[sourceIdx];
       });
     }
     
@@ -223,8 +226,9 @@ export const MsiCustomRgbEditor: FC<MsiCustomRgbEditorProps> = ({
     if (leftZones.length === 4) {
       const mapping = clockwise ? rotationMappings.leftStick.clockwise : rotationMappings.leftStick.counterClockwise;
       const leftColors = leftZones.map(idx => frame[idx]);
-      mapping.forEach((srcIdx: number, destIdx: number) => {
-        newFrame[leftZones[destIdx]] = leftColors[srcIdx];
+      // mapping[sourceIdx] = targetArrayIndex
+      mapping.forEach((targetArrayIndex: number, sourceIdx: number) => {
+        newFrame[targetArrayIndex] = leftColors[sourceIdx];
       });
     }
     
@@ -301,9 +305,29 @@ export const MsiCustomRgbEditor: FC<MsiCustomRgbEditorProps> = ({
 
   const handleCancel = async () => {
     cancelEditing();
+    
     // Restore the device to the state before editing
     // 恢复设备到编辑前的状态
-    await Backend.applySettings();
+    // For custom modes, need to reapply the active preset; for standard modes, use applySettings
+    // 对于自定义模式，需要重新应用激活的 preset；对于标准模式，使用 applySettings
+    if (deviceType === "ayaneo") {
+      if (Setting.mode === RGBMode.ayaneo_custom && Setting.currentAyaNeoCustomPreset) {
+        // Reapply the previously active preset
+        await applyPreset(Setting.currentAyaNeoCustomPreset);
+      } else {
+        // Standard mode - backend will stop animator
+        await Backend.applySettings();
+      }
+    } else if (deviceType === "msi") {
+      if (Setting.mode === RGBMode.msi_custom && Setting.currentMsiCustomPreset) {
+        // Reapply the previously active preset
+        await applyPreset(Setting.currentMsiCustomPreset);
+      } else {
+        // Standard mode
+        await Backend.applySettings();
+      }
+    }
+    
     closeModal();
   };
 
