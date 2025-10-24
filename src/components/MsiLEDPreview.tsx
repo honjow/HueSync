@@ -174,7 +174,7 @@ export const MsiLEDPreview: FC<MsiLEDPreviewProps> = ({
    * Draw preview with specific colors
    * 使用特定颜色绘制预览
    */
-  const drawPreviewWithColors = (colors: RGBTuple[]) => {
+  const drawPreviewWithColors = (colors: RGBTuple[], highlightZone: number | null = selectedZone) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -238,13 +238,13 @@ export const MsiLEDPreview: FC<MsiLEDPreviewProps> = ({
 
     // ===== Draw all LEDs =====
     [...layout.leds.left, ...layout.leds.right].forEach(led => {
-      const isSelected = led.idx === selectedZone;
+      const isSelected = led.idx === highlightZone;
       drawLED(ctx, led.x, led.y, colors[led.idx], isSelected, led.label, layout.visual, width, params.ledSpacing);
     });
 
     // ===== Draw ABXY =====
     const [ar, ag, ab] = colors[layout.abxy.idx];
-    const isAbxySelected = layout.abxy.idx === selectedZone;
+    const isAbxySelected = layout.abxy.idx === highlightZone;
     const abxyRadius = isAbxySelected ? layout.visual.led.radiusSelected : layout.visual.led.radius;
     const abxyBorderWidth = isAbxySelected ? layout.visual.led.borderWidthSelected : layout.visual.led.borderWidth;
     

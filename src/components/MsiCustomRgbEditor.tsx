@@ -28,6 +28,7 @@ import { RGBTuple } from "../types/msiCustomRgb";
 import { hsvToRgb, rgbToHsv } from "../util";
 import { SlowSliderField } from "./SlowSliderField";
 import { localizationManager, localizeStrEnum } from "../i18n";
+import { Backend } from "../util/backend";
 
 interface MsiCustomRgbEditorProps {
   closeModal: () => void;
@@ -255,8 +256,11 @@ export const MsiCustomRgbEditor: FC<MsiCustomRgbEditorProps> = ({ closeModal }) 
     }
   };
 
-  const handleCancel = () => {
+  const handleCancel = async () => {
     cancelEditing();
+    // Restore the device to the state before editing
+    // 恢复设备到编辑前的状态
+    await Backend.applySettings();
     closeModal();
   };
 
