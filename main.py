@@ -467,6 +467,231 @@ class Plugin:
             logger.error(f"Failed to apply MSI custom RGB: {e}", exc_info=True)
             return False
 
+    # ===== AyaNeo Custom RGB Methods =====
+
+    AYANEO_CUSTOM_PRESETS_KEY = "ayaneo_custom_rgb_presets"
+    _ayaneo_animator = None  # KeyframeAnimator instance
+
+    def _validate_ayaneo_custom_config(self, config: dict) -> bool:
+        """
+        Validate AyaNeo custom RGB configuration.
+        验证 AyaNeo 自定义 RGB 配置。
+
+        Args:
+            config: Configuration dict to validate
+
+        Returns:
+            bool: True if valid
+        """
+        try:
+            # Check required fields
+            if "speed" not in config or "brightness" not in config or "keyframes" not in config:
+                logger.error("Missing required fields in AyaNeo config")
+                return False
+
+            # Validate speed (0-20) and brightness (0-100)
+            if not isinstance(config["speed"], int) or not 0 <= config["speed"] <= 20:
+                logger.error(f"Invalid speed: {config['speed']}")
+                return False
+            if not isinstance(config["brightness"], int) or not 0 <= config["brightness"] <= 100:
+                logger.error(f"Invalid brightness: {config['brightness']}")
+                return False
+
+            # Validate keyframes (1-8 frames)
+            keyframes = config["keyframes"]
+            if not isinstance(keyframes, list) or not 1 <= len(keyframes) <= 8:
+                logger.error(f"Invalid keyframes count: {len(keyframes) if isinstance(keyframes, list) else 'not a list'}")
+                return False
+
+            # Determine expected zones based on device
+            # Note: Need to check device model to determine if it's KUN (9 zones) or standard (8 zones)
+            expected_zones = 8  # Default to 8 zones
+            if hasattr(self.ledControl.device, 'model'):
+                from led.ayaneo_led_device_ec import AyaNeoModel
+                if self.ledControl.device.model == AyaNeoModel.KUN:
+                    expected_zones = 9
+
+            # Validate each keyframe
+            for frame_idx, frame in enumerate(keyframes):
+                if not isinstance(frame, list) or len(frame) != expected_zones:
+                    logger.error(f"Frame {frame_idx}: must have {expected_zones} zones, got {len(frame) if isinstance(frame, list) else 'not a list'}")
+                    return False
+                # Validate each zone color
+                for zone_idx, zone in enumerate(frame):
+                    if not isinstance(zone, list) or len(zone) != 3:
+                        logger.error(f"Frame {frame_idx}, Zone {zone_idx}: must be [R,G,B], got {zone}")
+                        return False
+                    # Check RGB values (0-255)
+                    if not all(isinstance(c, int) and 0 <= c <= 255 for c in zone):
+                        logger.error(f"Frame {frame_idx}, Zone {zone_idx}: RGB values must be 0-255, got {zone}")
+                        return False
+
+            return True
+
+        except Exception as e:
+            logger.error(f"AyaNeo config validation error: {e}", exc_info=True)
+            return False
+
+    async def get_ayaneo_custom_presets(self):
+        """
+        Get all saved AyaNeo custom RGB presets.
+        获取所有保存的 AyaNeo 自定义 RGB 预设。
+
+        Returns:
+            dict: Dictionary of custom presets
+        """
+        try:
+            presets = self.settings.getSetting(self.AYANEO_CUSTOM_PRESETS_KEY)
+            if presets is None:
+                presets = {}
+            logger.debug(f"Retrieved {len(presets)} AyaNeo custom presets")
+            return presets
+        except Exception as e:
+            logger.error(f"Failed to get AyaNeo custom presets: {e}", exc_info=True)
+            return {}
+
+    async def save_ayaneo_custom_preset(self, name: str, config: dict):
+        """
+        Save an AyaNeo custom RGB preset.
+        保存 AyaNeo 自定义 RGB 预设。
+
+        Args:
+            name: Preset name
+            config: Preset configuration
+
+        Returns:
+            bool: True if successful
+        """
+        try:
+            # Validate config
+            if not self._validate_ayaneo_custom_config(config):
+                logger.error(f"Invalid AyaNeo custom preset config: {config}")
+                return False
+
+            # Get existing presets
+            presets = await self.get_ayaneo_custom_presets()
+
+            # Save preset
+            presets[name] = config
+            self.settings.setSetting(self.AYANEO_CUSTOM_PRESETS_KEY, presets)
+
+            logger.info(f"Saved AyaNeo custom preset '{name}'")
+            return True
+
+        except Exception as e:
+            logger.error(f"Failed to save AyaNeo custom preset: {e}", exc_info=True)
+            return False
+
+    async def delete_ayaneo_custom_preset(self, name: str):
+        """
+        Delete an AyaNeo custom RGB preset.
+        删除 AyaNeo 自定义 RGB 预设。
+
+        Args:
+            name: Preset name to delete
+
+        Returns:
+            bool: True if successful
+        """
+        try:
+            presets = await self.get_ayaneo_custom_presets()
+
+            if name not in presets:
+                logger.warning(f"AyaNeo preset '{name}' not found")
+                return False
+
+            del presets[name]
+            self.settings.setSetting(self.AYANEO_CUSTOM_PRESETS_KEY, presets)
+
+            logger.info(f"Deleted AyaNeo custom preset '{name}'")
+            return True
+
+        except Exception as e:
+            logger.error(f"Failed to delete AyaNeo custom preset: {e}", exc_info=True)
+            return False
+
+    async def apply_ayaneo_custom_preset(self, name: str):
+        """
+        Apply a saved AyaNeo custom RGB preset.
+        应用保存的 AyaNeo 自定义 RGB 预设。
+
+        Args:
+            name: Preset name to apply
+
+        Returns:
+            bool: True if successful
+        """
+        try:
+            presets = await self.get_ayaneo_custom_presets()
+
+            if name not in presets:
+                logger.error(f"AyaNeo preset '{name}' not found")
+                return False
+
+            config = presets[name]
+            return await self.set_ayaneo_custom_rgb(config)
+
+        except Exception as e:
+            logger.error(f"Failed to apply AyaNeo custom preset '{name}': {e}", exc_info=True)
+            return False
+
+    async def set_ayaneo_custom_rgb(self, custom_config: dict):
+        """
+        Apply AyaNeo custom RGB configuration with KeyframeAnimator.
+        使用 KeyframeAnimator 应用 AyaNeo 自定义 RGB 配置。
+
+        Args:
+            custom_config: Configuration dict with speed, brightness, and keyframes
+
+        Returns:
+            bool: True if successful
+        """
+        try:
+            # Validate config
+            if not self._validate_ayaneo_custom_config(custom_config):
+                logger.error("Invalid AyaNeo custom RGB configuration")
+                return False
+
+            # Stop existing animator if running
+            if self._ayaneo_animator and self._ayaneo_animator.is_running():
+                self._ayaneo_animator.stop()
+                logger.info("Stopped existing AyaNeo animator")
+
+            # Import animator
+            from custom_zone_animator import KeyframeAnimator
+
+            # Get device reference
+            device = self.ledControl.device
+            if not hasattr(device, 'set_custom_zone_colors'):
+                logger.error("Device does not support custom zone colors")
+                return False
+
+            # Create animator
+            self._ayaneo_animator = KeyframeAnimator(
+                keyframes=custom_config["keyframes"],
+                set_zones_callback=device.set_custom_zone_colors,
+                speed=custom_config["speed"],
+                brightness=custom_config["brightness"],
+                update_rate=30.0,  # 30 FPS
+                num_left_zones=4,
+                num_right_zones=4
+            )
+
+            # Start animation
+            self._ayaneo_animator.start()
+
+            logger.info(
+                f"Started AyaNeo custom RGB animation: "
+                f"{len(custom_config['keyframes'])} frames, "
+                f"speed={custom_config['speed']}, "
+                f"brightness={custom_config['brightness']}"
+            )
+            return True
+
+        except Exception as e:
+            logger.error(f"Failed to apply AyaNeo custom RGB: {e}", exc_info=True)
+            return False
+
     # Function called first during the unload process, utilize this to handle your plugin being removed
     async def _unload(self):
         decky.logger.info("Goodbye World!")

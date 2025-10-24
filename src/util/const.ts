@@ -31,6 +31,9 @@ export enum RGBMode {
     
     // MSI custom RGB mode
     msi_custom = "msi_custom",
+    
+    // AyaNeo custom RGB mode
+    ayaneo_custom = "ayaneo_custom",
   }
 
 // MSI Custom RGB constants
@@ -49,3 +52,25 @@ export const MSI_LED_ZONE_KEYS = [
 
 export const MSI_MAX_KEYFRAMES = 8;
 export const MSI_ZONE_COUNT = 9;
+
+// AyaNeo Custom RGB constants
+// Zone names are i18n keys, use localizationManager.getString() to get localized text
+export const AYANEO_LED_ZONE_KEYS_8 = [
+  "AYANEO_LED_ZONE_L1",
+  "AYANEO_LED_ZONE_L2",
+  "AYANEO_LED_ZONE_L3",
+  "AYANEO_LED_ZONE_L4",
+  "AYANEO_LED_ZONE_R1",
+  "AYANEO_LED_ZONE_R2",
+  "AYANEO_LED_ZONE_R3",
+  "AYANEO_LED_ZONE_R4",
+] as const;
+
+export const AYANEO_LED_ZONE_KEYS_9_KUN = [
+  ...AYANEO_LED_ZONE_KEYS_8,
+  "AYANEO_LED_ZONE_GUIDE"
+] as const;
+
+export const AYANEO_MAX_KEYFRAMES = 8;
+export const AYANEO_ZONE_COUNT_STANDARD = 8;
+export const AYANEO_ZONE_COUNT_KUN = 9;

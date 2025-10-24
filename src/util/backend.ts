@@ -310,4 +310,31 @@ export class Backend {
   public static async setMsiCustomRgb(config: any): Promise<boolean> {
     return (await call("set_msi_custom_rgb", config)) as boolean;
   }
+
+  // ===== AyaNeo Custom RGB Methods =====
+
+  // get_ayaneo_custom_presets
+  public static async getAyaNeoCustomPresets(): Promise<any> {
+    return (await call("get_ayaneo_custom_presets")) as any;
+  }
+
+  // save_ayaneo_custom_preset
+  public static async saveAyaNeoCustomPreset(name: string, config: any): Promise<boolean> {
+    return (await call("save_ayaneo_custom_preset", name, config)) as boolean;
+  }
+
+  // delete_ayaneo_custom_preset
+  public static async deleteAyaNeoCustomPreset(name: string): Promise<boolean> {
+    return (await call("delete_ayaneo_custom_preset", name)) as boolean;
+  }
+
+  // apply_ayaneo_custom_preset
+  public static async applyAyaNeoCustomPreset(name: string): Promise<boolean> {
+    return (await call("apply_ayaneo_custom_preset", name)) as boolean;
+  }
+
+  // set_ayaneo_custom_rgb
+  public static async setAyaNeoCustomRgb(config: any): Promise<boolean> {
+    return (await call("set_ayaneo_custom_rgb", config)) as boolean;
+  }
 }
