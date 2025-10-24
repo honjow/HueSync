@@ -229,11 +229,22 @@ class LedControl:
                 "zones": [{"id": "primary", "name_key": "ZONE_PRIMARY_NAME"}],
                 "power_led": bool,  # Whether power LED control is supported
                 "suspend_mode": bool,  # Whether suspend mode control is supported
+                "device_type": str,  # Device type: "msi", "ayaneo", "generic"
             }
         """
         # Get base capabilities from device
         # 从设备获取基础能力
         base_caps = self.device.get_device_capabilities()
+        
+        # Add device type for frontend to determine which custom RGB implementation to use
+        # 添加设备类型供前端判断使用哪个自定义 RGB 实现
+        device_class_name = self.device.__class__.__name__
+        if "MsiLEDDevice" in device_class_name:
+            base_caps["device_type"] = "msi"
+        elif "AyaNeoLEDDevice" in device_class_name:
+            base_caps["device_type"] = "ayaneo"
+        else:
+            base_caps["device_type"] = "generic"
         
         # Add legacy power_led check for backward compatibility
         # 为向后兼容性添加传统的power_led检查
