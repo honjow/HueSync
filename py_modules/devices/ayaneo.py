@@ -103,3 +103,16 @@ class AyaNeoLEDDevice(BaseLEDDevice):
             speed=True,
         )
         return capabilities
+
+    def get_device_capabilities(self) -> dict:
+        """
+        Get device-specific capabilities including custom RGB support.
+        获取设备特定功能，包括自定义 RGB 支持。
+
+        Returns:
+            dict: Device capabilities including ayaneo_custom_rgb support
+        """
+        base_caps = super().get_device_capabilities()
+        # AyaNeo supports custom RGB configuration via software animation
+        base_caps["ayaneo_custom_rgb"] = True
+        return base_caps

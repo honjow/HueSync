@@ -13,6 +13,7 @@ export interface DeviceCapabilities {
   power_led: boolean;
   suspend_mode: boolean;
   custom_rgb?: boolean;  // MSI custom RGB support
+  ayaneo_custom_rgb?: boolean;  // AyaNeo custom RGB support
 }
 
 interface ApplySettingsOptions {
