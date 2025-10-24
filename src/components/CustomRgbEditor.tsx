@@ -116,7 +116,7 @@ export const CustomRgbEditor: FC<CustomRgbEditorProps> = ({
     }, 300); // 300ms debounce to avoid frequent updates
     
     return () => clearTimeout(timer);
-  }, [currentFrame, editing.keyframes[currentFrame], isPlaying]);
+  }, [currentFrame, editing.keyframes[currentFrame], editing.brightness, editing.speed, isPlaying]);
 
   // Re-send all frames when playing and config changes (speed, brightness, or any frame color)
   useEffect(() => {
