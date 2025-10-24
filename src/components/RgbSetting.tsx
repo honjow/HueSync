@@ -11,7 +11,7 @@ import { FC, useMemo } from "react";
 import { FiPlusCircle } from "react-icons/fi";
 import { localizationManager, localizeStrEnum } from "../i18n";
 import { useRgb } from "../hooks";
-import { SlowSliderField, SpeedControl, BrightnessLevelControl, MsiCustomRgbEditor } from ".";
+import { SlowSliderField, SpeedControl, BrightnessLevelControl, MsiCustomRgbEditor, AyaNeoCustomRgbControl } from ".";
 import { Setting } from "../hooks/settings";
 import { useMsiCustomRgb } from "../hooks";
 import { RGBMode } from "../util";
@@ -385,7 +385,7 @@ export const RGBComponent: FC = () => {
             />
           </PanelSectionRow>
         )}
-        {/* Manage Custom Effects Dropdown */}
+        {/* Manage Custom Effects Dropdown - MSI */}
         {Setting.deviceCapabilities?.custom_rgb && manageOptions.length > 0 && (
           <PanelSectionRow>
             <DropdownItem
@@ -396,6 +396,10 @@ export const RGBComponent: FC = () => {
               onChange={handleManageAction}
             />
           </PanelSectionRow>
+        )}
+        {/* AyaNeo Custom RGB Control */}
+        {Setting.deviceCapabilities?.ayaneo_custom_rgb && (
+          <AyaNeoCustomRgbControl />
         )}
       </PanelSection>
       {enableControl && (
