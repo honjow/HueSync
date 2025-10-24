@@ -87,10 +87,10 @@ const useAyaNeoCustomRgbImpl = createCustomRgbHook<CustomRgbConfig, CustomPreset
  * 适用于任何支持设备类型的统一自定义 RGB hook
  * 
  * This hook automatically returns the correct implementation based on device type.
- * Both MSI and AyaNeo share the same backend storage, so only one will have presets at a time.
+ * Both MSI and AyaNeo share the same backend storage.
  * 
  * 此 hook 根据设备类型自动返回正确的实现。
- * MSI 和 AyaNeo 共享同一个后端存储，所以同一时间只有一个会有预设。
+ * MSI 和 AyaNeo 共享同一个后端存储。
  * 
  * @returns Hook interface for managing custom RGB
  */
@@ -100,13 +100,10 @@ export function useCustomRgb() {
   const msiHook = useMsiCustomRgbImpl();
   const ayaNeoHook = useAyaNeoCustomRgbImpl();
   
-  // Determine by actual presets first (if already created)
-  // 首先根据实际预设判断（如果已创建）
-  if (Object.keys(msiHook.presets).length > 0) return msiHook;
-  if (Object.keys(ayaNeoHook.presets).length > 0) return ayaNeoHook;
-  
-  // If no presets exist, determine by device type from capabilities
-  // 如果没有预设，根据设备能力中的设备类型判断
+  // Determine by device type from capabilities
+  // 根据设备能力中的设备类型判断
+  // Since both hooks share the same storage, we must select based on device type
+  // 由于两个 hook 共享同一存储，必须根据设备类型选择
   const deviceType = Setting.deviceCapabilities?.device_type;
   return deviceType === "ayaneo" ? ayaNeoHook : msiHook;
 }
