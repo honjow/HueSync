@@ -1,8 +1,12 @@
-// MSI LED Preview Component
-// MSI LED 预览组件
+// Multi-Zone LED Preview Component
+// 多区域 LED 预览组件
+// Supports MSI Claw, AyaNeo, and other multi-zone LED devices
 
 import { FC, useEffect, useRef } from "react";
 import { RGBTuple } from "../types/msiCustomRgb";
+import { LEDLayoutConfig } from "../types/ledLayout";
+import { MSI_CLAW_LAYOUT } from "../util/ledLayouts";
+import { localizationManager, localizeStrEnum } from "../i18n";
 
 interface MsiLEDPreviewProps {
   keyframes: RGBTuple[][];
@@ -12,6 +16,7 @@ interface MsiLEDPreviewProps {
   isPlaying?: boolean;
   speed?: number;
   brightness?: number;
+  layoutConfig?: LEDLayoutConfig; // Optional: layout configuration for different devices
 }
 
 // LED colors for canvas drawing
@@ -55,10 +60,10 @@ const getContrastColor = (r: number, g: number, b: number): string => {
 };
 
 /**
- * Calculate LED layout positions and parameters
- * 计算 LED 布局位置和参数
+ * Calculate LED layout positions and parameters based on layout config
+ * 根据布局配置计算 LED 位置和参数
  */
-const calculateLEDLayout = (width: number, height: number) => {
+const calculateLEDLayout = (width: number, height: number, layoutConfig: LEDLayoutConfig) => {
   const params = {
     canvas: { width, height },
     padding: { left: 38, right: 38, top: 12, bottom: 12 },
@@ -80,6 +85,27 @@ const calculateLEDLayout = (width: number, height: number) => {
   const leftRingX = params.padding.left + params.ring.offsetFromEdge;
   const rightRingX = width - params.padding.right - params.ring.offsetFromEdge;
 
+  // Map position strings to actual coordinates
+  const positionMap: Record<string, { x: number; y: number }> = {
+    "left-top-left": { x: leftLedLeft, y: ledTop },
+    "left-top-right": { x: leftLedRight, y: ledTop },
+    "left-bottom-left": { x: leftLedLeft, y: ledBottom },
+    "left-bottom-right": { x: leftLedRight, y: ledBottom },
+    "right-top-left": { x: rightLedLeft, y: ledTop },
+    "right-top-right": { x: rightLedRight, y: ledTop },
+    "right-bottom-left": { x: rightLedLeft, y: ledBottom },
+    "right-bottom-right": { x: rightLedRight, y: ledBottom },
+    "center-abxy": { x: width / 2, y: centerY },
+    "center-guide": { x: width / 2, y: centerY },
+  };
+
+  // Generate clickable zones based on layout config
+  const clickableZones = layoutConfig.zoneMappings.map(mapping => ({
+    x: positionMap[mapping.position].x,
+    y: positionMap[mapping.position].y,
+    zone: mapping.arrayIndex,
+  }));
+
   return {
     params,
     positions: {
@@ -93,18 +119,8 @@ const calculateLEDLayout = (width: number, height: number) => {
       leftRingX,
       rightRingX,
     },
-    // All clickable LED zones
-    clickableZones: [
-      { x: leftLedLeft, y: ledTop, zone: 5 },       // L6
-      { x: leftLedRight, y: ledTop, zone: 4 },      // L5
-      { x: leftLedLeft, y: ledBottom, zone: 6 },    // L7
-      { x: leftLedRight, y: ledBottom, zone: 7 },   // L8
-      { x: rightLedLeft, y: ledTop, zone: 3 },      // R4
-      { x: rightLedRight, y: ledTop, zone: 2 },     // R3
-      { x: rightLedLeft, y: ledBottom, zone: 0 },   // R1
-      { x: rightLedRight, y: ledBottom, zone: 1 },  // R2
-      { x: width / 2, y: centerY, zone: 8 },        // ABXY
-    ],
+    clickableZones,
+    zoneMappings: layoutConfig.zoneMappings, // Include for label lookups
   };
 };
 
@@ -116,6 +132,7 @@ export const MsiLEDPreview: FC<MsiLEDPreviewProps> = ({
   isPlaying = false,
   speed = 10,
   brightness = 100,
+  layoutConfig = MSI_CLAW_LAYOUT, // Default to MSI Claw layout for backward compatibility
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationFrameRef = useRef<number | undefined>(undefined);
@@ -201,8 +218,50 @@ export const MsiLEDPreview: FC<MsiLEDPreviewProps> = ({
     ctx.scale(dpr, dpr);
     ctx.clearRect(0, 0, width, height);
 
-    // Get layout from centralized calculation
-    const { params, positions } = calculateLEDLayout(width, height);
+    // Get layout from centralized calculation with layoutConfig
+    const { params, positions, zoneMappings } = calculateLEDLayout(width, height, layoutConfig);
+
+    // Map position strings to coordinates
+    const positionMap: Record<string, { x: number; y: number }> = {
+      "left-top-left": { x: positions.leftLedLeft, y: positions.ledTop },
+      "left-top-right": { x: positions.leftLedRight, y: positions.ledTop },
+      "left-bottom-left": { x: positions.leftLedLeft, y: positions.ledBottom },
+      "left-bottom-right": { x: positions.leftLedRight, y: positions.ledBottom },
+      "right-top-left": { x: positions.rightLedLeft, y: positions.ledTop },
+      "right-top-right": { x: positions.rightLedRight, y: positions.ledTop },
+      "right-bottom-left": { x: positions.rightLedLeft, y: positions.ledBottom },
+      "right-bottom-right": { x: positions.rightLedRight, y: positions.ledBottom },
+      "center-abxy": { x: width / 2, y: positions.centerY },
+      "center-guide": { x: width / 2, y: positions.centerY },
+    };
+
+    // Build LED list from zoneMappings
+    const leftLeds = zoneMappings
+      .filter(m => m.position.startsWith("left-"))
+      .map(m => ({
+        x: positionMap[m.position].x,
+        y: positionMap[m.position].y,
+        idx: m.arrayIndex,
+        label: localizationManager.getString(localizeStrEnum[m.labelKey as keyof typeof localizeStrEnum]),
+      }));
+    
+    const rightLeds = zoneMappings
+      .filter(m => m.position.startsWith("right-"))
+      .map(m => ({
+        x: positionMap[m.position].x,
+        y: positionMap[m.position].y,
+        idx: m.arrayIndex,
+        label: localizationManager.getString(localizeStrEnum[m.labelKey as keyof typeof localizeStrEnum]),
+      }));
+    
+    // Find center button (ABXY or Guide)
+    const centerMapping = zoneMappings.find(m => m.position.startsWith("center-"));
+    const centerButton = centerMapping ? {
+      x: positionMap[centerMapping.position].x,
+      y: positionMap[centerMapping.position].y,
+      idx: centerMapping.arrayIndex,
+      label: localizationManager.getString(localizeStrEnum[centerMapping.labelKey as keyof typeof localizeStrEnum]),
+    } : null;
 
     const layout = {
       // Gradient ring configuration
@@ -213,29 +272,14 @@ export const MsiLEDPreview: FC<MsiLEDPreviewProps> = ({
         outerRadius: params.ring.outerRadius,
       },
       
-      // LED configuration
+      // LED configuration (dynamically generated from layout)
       leds: {
-        left: [
-          { x: positions.leftLedLeft, y: positions.ledTop, idx: 5, label: "L6" },
-          { x: positions.leftLedRight, y: positions.ledTop, idx: 4, label: "L5" },
-          { x: positions.leftLedLeft, y: positions.ledBottom, idx: 6, label: "L7" },
-          { x: positions.leftLedRight, y: positions.ledBottom, idx: 7, label: "L8" },
-        ],
-        right: [
-          { x: positions.rightLedLeft, y: positions.ledTop, idx: 3, label: "R4" },
-          { x: positions.rightLedRight, y: positions.ledTop, idx: 2, label: "R3" },
-          { x: positions.rightLedLeft, y: positions.ledBottom, idx: 0, label: "R1" },
-          { x: positions.rightLedRight, y: positions.ledBottom, idx: 1, label: "R2" },
-        ],
+        left: leftLeds,
+        right: rightLeds,
       },
       
-      // ABXY configuration
-      abxy: {
-        x: width / 2,
-        y: positions.centerY,
-        idx: 8,
-        label: "ABXY",
-      },
+      // Center button configuration (ABXY, Guide, or null)
+      centerButton,
       
       visual: params.visual,
     };
@@ -252,33 +296,38 @@ export const MsiLEDPreview: FC<MsiLEDPreviewProps> = ({
       drawLED(ctx, led.x, led.y, colors[led.idx], isSelected, led.label, layout.visual, width, params.ledSpacing);
     });
 
-    // ===== Draw ABXY =====
-    const [ar, ag, ab] = colors[layout.abxy.idx];
-    const isAbxySelected = layout.abxy.idx === activeZone;
-    const abxyRadius = isAbxySelected ? layout.visual.led.radiusSelected : layout.visual.led.radius;
-    const abxyBorderWidth = isAbxySelected ? layout.visual.led.borderWidthSelected : layout.visual.led.borderWidth;
-    
-    ctx.beginPath();
-    ctx.arc(layout.abxy.x, layout.abxy.y, abxyRadius, 0, Math.PI * 2);
-    ctx.fillStyle = `rgb(${ar}, ${ag}, ${ab})`;
-    ctx.fill();
-    ctx.strokeStyle = isAbxySelected ? LED_SELECTED : LED_NORMAL;
-    ctx.lineWidth = abxyBorderWidth;
-    ctx.stroke();
+    // ===== Draw Center Button (ABXY, Guide, or none) =====
+    if (layout.centerButton) {
+      const [cr, cg, cb] = colors[layout.centerButton.idx];
+      const isCenterSelected = layout.centerButton.idx === activeZone;
+      const centerRadius = isCenterSelected ? layout.visual.led.radiusSelected : layout.visual.led.radius;
+      const centerBorderWidth = isCenterSelected ? layout.visual.led.borderWidthSelected : layout.visual.led.borderWidth;
+      
+      ctx.beginPath();
+      ctx.arc(layout.centerButton.x, layout.centerButton.y, centerRadius, 0, Math.PI * 2);
+      ctx.fillStyle = `rgb(${cr}, ${cg}, ${cb})`;
+      ctx.fill();
+      ctx.strokeStyle = isCenterSelected ? LED_SELECTED : LED_NORMAL;
+      ctx.lineWidth = centerBorderWidth;
+      ctx.stroke();
 
-    // ABXY index number inside - auto contrast
-    ctx.fillStyle = getContrastColor(ar, ag, ab);
-    ctx.font = `${layout.visual.label.fontSizeBold} sans-serif`;
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText("9", layout.abxy.x, layout.abxy.y);
+      // Center button index number inside - auto contrast
+      ctx.fillStyle = getContrastColor(cr, cg, cb);
+      ctx.font = `${layout.visual.label.fontSizeBold} sans-serif`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(`${layout.centerButton.idx + 1}`, layout.centerButton.x, layout.centerButton.y);
+    }
     
-    // ABXY label below
-    ctx.fillStyle = "#B8BCBF";
-    ctx.font = `${layout.visual.label.fontSize} sans-serif`;
-    ctx.textBaseline = "top";
-    const abxyLabelOffset = isAbxySelected ? 15 : 13;
-    ctx.fillText(layout.abxy.label, layout.abxy.x, layout.abxy.y + abxyLabelOffset);
+    // Center button label below (if exists)
+    if (layout.centerButton) {
+      ctx.fillStyle = "#B8BCBF";
+      ctx.font = `${layout.visual.label.fontSize} sans-serif`;
+      ctx.textBaseline = "top";
+      const isCenterSelected = layout.centerButton.idx === activeZone;
+      const centerLabelOffset = isCenterSelected ? 15 : 13;
+      ctx.fillText(layout.centerButton.label, layout.centerButton.x, layout.centerButton.y + centerLabelOffset);
+    }
   };
 
   // Animation loop for playing mode
@@ -334,7 +383,7 @@ export const MsiLEDPreview: FC<MsiLEDPreviewProps> = ({
     if (!isPlaying) {
       drawPreview();
     }
-  }, [keyframes, currentFrame, selectedZone, brightness, isPlaying]);
+  }, [keyframes, currentFrame, selectedZone, brightness, isPlaying, layoutConfig]);
 
   /**
    * Handle canvas click to select zone
@@ -350,8 +399,8 @@ export const MsiLEDPreview: FC<MsiLEDPreviewProps> = ({
     const x = event.clientX - rect.left;
     const y = event.clientY - rect.top;
     
-    // Reuse centralized layout calculation
-    const { clickableZones } = calculateLEDLayout(300, 80);
+    // Reuse centralized layout calculation with layoutConfig
+    const { clickableZones } = calculateLEDLayout(300, 80, layoutConfig);
     
     // Check clicks with 30px hit radius
     for (const led of clickableZones) {
