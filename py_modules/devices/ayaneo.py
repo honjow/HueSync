@@ -57,6 +57,24 @@ class AyaNeoLEDDevice(SysfsLEDMixin, BaseLEDDevice):
             logger.error(f"Both sysfs and EC control failed: {e}")
             raise
 
+    def set_custom_zone_colors(self, left_colors, right_colors, button_color=None):
+        """
+        Set custom colors for individual LED zones (for custom RGB animations)
+        为每个 LED 区域设置自定义颜色（用于自定义 RGB 动画）
+        
+        Delegates to AyaNeoLEDDeviceEC for zone-level control via EC.
+        委托给 AyaNeoLEDDeviceEC 通过 EC 进行区域级控制。
+        
+        Args:
+            left_colors: List of 4 RGB colors for left grip zones
+                         左手柄 4 个区域的 RGB 颜色列表
+            right_colors: List of 4 RGB colors for right grip zones
+                          右手柄 4 个区域的 RGB 颜色列表
+            button_color: Optional RGB color for button zone (KUN only)
+                          按钮区域的 RGB 颜色（仅 KUN 设备）
+        """
+        return self.aya_led_device_ec.set_custom_zone_colors(left_colors, right_colors, button_color)
+
     def get_suspend_mode(self) -> str:
         return self.aya_led_device_ec.get_suspend_mode()
 

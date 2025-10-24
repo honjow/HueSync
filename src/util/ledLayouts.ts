@@ -23,17 +23,17 @@ export const MSI_CLAW_LAYOUT: LEDLayoutConfig = {
   numZones: 9,
   zoneMappings: [
     // Right stick (indices 0-3)
-    { arrayIndex: 0, position: "right-bottom-left", labelKey: "MSI_LED_ZONE_R1" },
-    { arrayIndex: 1, position: "right-bottom-right", labelKey: "MSI_LED_ZONE_R2" },
-    { arrayIndex: 2, position: "right-top-right", labelKey: "MSI_LED_ZONE_R3" },
-    { arrayIndex: 3, position: "right-top-left", labelKey: "MSI_LED_ZONE_R4" },
+    { arrayIndex: 0, position: "right-bottom-left", label: "R1", labelKey: "MSI_LED_ZONE_R1" },
+    { arrayIndex: 1, position: "right-bottom-right", label: "R2", labelKey: "MSI_LED_ZONE_R2" },
+    { arrayIndex: 2, position: "right-top-right", label: "R3", labelKey: "MSI_LED_ZONE_R3" },
+    { arrayIndex: 3, position: "right-top-left", label: "R4", labelKey: "MSI_LED_ZONE_R4" },
     // Left stick (indices 4-7)
-    { arrayIndex: 4, position: "left-top-right", labelKey: "MSI_LED_ZONE_L5" },
-    { arrayIndex: 5, position: "left-top-left", labelKey: "MSI_LED_ZONE_L6" },
-    { arrayIndex: 6, position: "left-bottom-left", labelKey: "MSI_LED_ZONE_L7" },
-    { arrayIndex: 7, position: "left-bottom-right", labelKey: "MSI_LED_ZONE_L8" },
+    { arrayIndex: 4, position: "left-top-right", label: "L5", labelKey: "MSI_LED_ZONE_L5" },
+    { arrayIndex: 5, position: "left-top-left", label: "L6", labelKey: "MSI_LED_ZONE_L6" },
+    { arrayIndex: 6, position: "left-bottom-left", label: "L7", labelKey: "MSI_LED_ZONE_L7" },
+    { arrayIndex: 7, position: "left-bottom-right", label: "L8", labelKey: "MSI_LED_ZONE_L8" },
     // Center ABXY (index 8)
-    { arrayIndex: 8, position: "center-abxy", labelKey: "MSI_LED_ZONE_ABXY" },
+    { arrayIndex: 8, position: "center-abxy", label: "ABXY", labelKey: "MSI_LED_ZONE_ABXY" },
   ],
   rotationMappings: {
     rightStick: {
@@ -69,15 +69,15 @@ export const AYANEO_STANDARD_LAYOUT: LEDLayoutConfig = {
   numZones: 8,
   zoneMappings: [
     // Left stick (indices 0-3) - assumed order, NEEDS VERIFICATION
-    { arrayIndex: 0, position: "left-top-left", labelKey: "AYANEO_LED_ZONE_L1" },
-    { arrayIndex: 1, position: "left-top-right", labelKey: "AYANEO_LED_ZONE_L2" },
-    { arrayIndex: 2, position: "left-bottom-left", labelKey: "AYANEO_LED_ZONE_L3" },
-    { arrayIndex: 3, position: "left-bottom-right", labelKey: "AYANEO_LED_ZONE_L4" },
+    { arrayIndex: 0, position: "left-top-left", label: "L1", labelKey: "AYANEO_LED_ZONE_L1" },
+    { arrayIndex: 1, position: "left-top-right", label: "L2", labelKey: "AYANEO_LED_ZONE_L2" },
+    { arrayIndex: 2, position: "left-bottom-left", label: "L3", labelKey: "AYANEO_LED_ZONE_L3" },
+    { arrayIndex: 3, position: "left-bottom-right", label: "L4", labelKey: "AYANEO_LED_ZONE_L4" },
     // Right stick (indices 4-7) - assumed order, NEEDS VERIFICATION
-    { arrayIndex: 4, position: "right-top-left", labelKey: "AYANEO_LED_ZONE_R1" },
-    { arrayIndex: 5, position: "right-top-right", labelKey: "AYANEO_LED_ZONE_R2" },
-    { arrayIndex: 6, position: "right-bottom-left", labelKey: "AYANEO_LED_ZONE_R3" },
-    { arrayIndex: 7, position: "right-bottom-right", labelKey: "AYANEO_LED_ZONE_R4" },
+    { arrayIndex: 4, position: "right-top-left", label: "R1", labelKey: "AYANEO_LED_ZONE_R1" },
+    { arrayIndex: 5, position: "right-top-right", label: "R2", labelKey: "AYANEO_LED_ZONE_R2" },
+    { arrayIndex: 6, position: "right-bottom-left", label: "R3", labelKey: "AYANEO_LED_ZONE_R3" },
+    { arrayIndex: 7, position: "right-bottom-right", label: "R4", labelKey: "AYANEO_LED_ZONE_R4" },
   ],
   rotationMappings: {
     leftStick: {
@@ -110,7 +110,7 @@ export const AYANEO_KUN_LAYOUT: LEDLayoutConfig = {
   zoneMappings: [
     ...AYANEO_STANDARD_LAYOUT.zoneMappings,
     // Center Guide button (index 8)
-    { arrayIndex: 8, position: "center-guide", labelKey: "AYANEO_LED_ZONE_GUIDE" },
+    { arrayIndex: 8, position: "center-guide", label: "Guide", labelKey: "AYANEO_LED_ZONE_GUIDE" },
   ],
   rotationMappings: AYANEO_STANDARD_LAYOUT.rotationMappings,
 };

@@ -276,7 +276,7 @@ export const RGBComponent: FC = () => {
         label: (
           <div style={{ display: "flex", alignItems: "center", gap: "0.5em" }}>
             <FiPlusCircle />
-            <span>{localizationManager.getString(localizeStrEnum.AYANEO_CUSTOM_EDIT_EFFECT)}</span>
+            <span>{localizationManager.getString(localizeStrEnum.MSI_CUSTOM_CREATE_NEW)}</span>
           </div>
         ),
         data: "ayaneo_create_new",
@@ -464,7 +464,7 @@ export const RGBComponent: FC = () => {
         {Setting.deviceCapabilities?.ayaneo_custom_rgb && ayaNeoManageOptions.length > 0 && (
           <PanelSectionRow>
             <DropdownItem
-              label={localizationManager.getString(localizeStrEnum.AYANEO_CUSTOM_EDIT_EFFECT)}
+              label={localizationManager.getString(localizeStrEnum.MSI_CUSTOM_MANAGE_EFFECTS)}
               strDefaultLabel={localizationManager.getString(localizeStrEnum.MSI_CUSTOM_SELECT_ACTION)}
               selectedOption={undefined}
               rgOptions={ayaNeoManageOptions}

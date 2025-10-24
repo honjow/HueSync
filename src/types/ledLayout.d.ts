@@ -29,7 +29,9 @@ export interface LEDZoneMapping {
   arrayIndex: number;
   /** Physical position on device */
   position: LEDPosition;
-  /** Display label i18n key */
+  /** Short display label (e.g., "R1", "L1") for preview canvas */
+  label: string;
+  /** Display label i18n key for detailed descriptions */
   labelKey: string;
 }
 

@@ -451,7 +451,7 @@ export const MsiCustomRgbEditor: FC<MsiCustomRgbEditorProps> = ({
                 width: "100%",
                 display: "flex",
                 justifyContent: "space-evenly",
-                padding: "0 4px",
+                padding: "6px 4px",
               }}
             >
               <FrameControlButton
@@ -577,9 +577,9 @@ export const MsiCustomRgbEditor: FC<MsiCustomRgbEditorProps> = ({
               />
 
               {/* Info */}
-              <div style={{ fontSize: "12px", color: "#93979C", marginTop: "8px" }}>
+              {/* <div style={{ fontSize: "12px", color: "#93979C", marginTop: "8px" }}>
                 {localizationManager.getString(localizeStrEnum.MSI_CUSTOM_KEYFRAMES_INFO)}: {editing!.keyframes.length} / {config.maxKeyframes}
-              </div>
+              </div> */}
             </PanelSection>
 
             {/* CSS for HSV sliders and keyframe timeline */}
@@ -640,7 +640,7 @@ export const MsiCustomRgbEditor: FC<MsiCustomRgbEditorProps> = ({
           gridTemplateColumns: "repeat(2, 1fr)",
           gridTemplateRows: "repeat(1, 1fr)",
           gridGap: "0.5rem",
-          padding: "8px 0",
+          padding: "4px 0",
         }}
       >
         <DialogButton onClick={handleCancel}>{localizationManager.getString(localizeStrEnum.MSI_CUSTOM_CANCEL)}</DialogButton>

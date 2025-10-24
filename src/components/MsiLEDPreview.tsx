@@ -6,7 +6,6 @@ import { FC, useEffect, useRef } from "react";
 import { RGBTuple } from "../types/msiCustomRgb";
 import { LEDLayoutConfig } from "../types/ledLayout";
 import { MSI_CLAW_LAYOUT } from "../util/ledLayouts";
-import { localizationManager, localizeStrEnum } from "../i18n";
 
 interface MsiLEDPreviewProps {
   keyframes: RGBTuple[][];
@@ -242,7 +241,7 @@ export const MsiLEDPreview: FC<MsiLEDPreviewProps> = ({
         x: positionMap[m.position].x,
         y: positionMap[m.position].y,
         idx: m.arrayIndex,
-        label: localizationManager.getString(localizeStrEnum[m.labelKey as keyof typeof localizeStrEnum]),
+        label: m.label, // Use short label directly
       }));
     
     const rightLeds = zoneMappings
@@ -251,7 +250,7 @@ export const MsiLEDPreview: FC<MsiLEDPreviewProps> = ({
         x: positionMap[m.position].x,
         y: positionMap[m.position].y,
         idx: m.arrayIndex,
-        label: localizationManager.getString(localizeStrEnum[m.labelKey as keyof typeof localizeStrEnum]),
+        label: m.label, // Use short label directly
       }));
     
     // Find center button (ABXY or Guide)
@@ -260,7 +259,7 @@ export const MsiLEDPreview: FC<MsiLEDPreviewProps> = ({
       x: positionMap[centerMapping.position].x,
       y: positionMap[centerMapping.position].y,
       idx: centerMapping.arrayIndex,
-      label: localizationManager.getString(localizeStrEnum[centerMapping.labelKey as keyof typeof localizeStrEnum]),
+      label: centerMapping.label, // Use short label directly
     } : null;
 
     const layout = {
