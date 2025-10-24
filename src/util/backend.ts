@@ -12,8 +12,7 @@ export interface DeviceCapabilities {
   zones: ZoneInfo[];
   power_led: boolean;
   suspend_mode: boolean;
-  custom_rgb?: boolean;  // MSI custom RGB support
-  ayaneo_custom_rgb?: boolean;  // AyaNeo custom RGB support
+  custom_rgb?: boolean;  // Multi-zone custom RGB support (MSI, AyaNeo, etc.)
 }
 
 interface ApplySettingsOptions {
@@ -285,57 +284,104 @@ export class Backend {
     return call("log_debug", message);
   }
 
-  // ===== MSI Custom RGB Methods =====
+  // ===== Unified Custom RGB API =====
+  // 统一的自定义 RGB API
+  // Device-agnostic interface for multi-zone custom RGB
+  // 设备无关的多区域自定义 RGB 接口
+
+  /**
+   * Get all custom RGB presets for any device type
+   * 获取任何设备类型的所有自定义 RGB 预设
+   */
+  public static async getCustomRgbPresets(deviceType: string): Promise<Record<string, any>> {
+    return (await call("get_custom_rgb_presets", deviceType)) as Record<string, any>;
+  }
+
+  /**
+   * Save a custom RGB preset for any device type
+   * 为任何设备类型保存自定义 RGB 预设
+   */
+  public static async saveCustomRgbPreset(deviceType: string, name: string, config: any): Promise<boolean> {
+    return (await call("save_custom_rgb_preset", deviceType, name, config)) as boolean;
+  }
+
+  /**
+   * Delete a custom RGB preset for any device type
+   * 删除任何设备类型的自定义 RGB 预设
+   */
+  public static async deleteCustomRgbPreset(deviceType: string, name: string): Promise<boolean> {
+    return (await call("delete_custom_rgb_preset", deviceType, name)) as boolean;
+  }
+
+  /**
+   * Apply a custom RGB preset for any device type
+   * 应用任何设备类型的自定义 RGB 预设
+   */
+  public static async applyCustomRgbPreset(deviceType: string, name: string): Promise<boolean> {
+    return (await call("apply_custom_rgb_preset", deviceType, name)) as boolean;
+  }
+
+  /**
+   * Apply custom RGB configuration for any device type
+   * 为任何设备类型应用自定义 RGB 配置
+   */
+  public static async setCustomRgb(deviceType: string, config: any): Promise<boolean> {
+    return (await call("set_custom_rgb", deviceType, config)) as boolean;
+  }
+
+  // ===== MSI Custom RGB Methods (Legacy - Use unified API above) =====
+  // MSI 自定义 RGB 方法（旧版 - 请使用上方的统一 API）
 
   // get_msi_custom_presets
   public static async getMsiCustomPresets(): Promise<Record<string, any>> {
-    return (await call("get_msi_custom_presets")) as Record<string, any>;
+    return await this.getCustomRgbPresets("msi");
   }
 
   // save_msi_custom_preset
   public static async saveMsiCustomPreset(name: string, config: any): Promise<boolean> {
-    return (await call("save_msi_custom_preset", name, config)) as boolean;
+    return await this.saveCustomRgbPreset("msi", name, config);
   }
 
   // delete_msi_custom_preset
   public static async deleteMsiCustomPreset(name: string): Promise<boolean> {
-    return (await call("delete_msi_custom_preset", name)) as boolean;
+    return await this.deleteCustomRgbPreset("msi", name);
   }
 
   // apply_msi_custom_preset
   public static async applyMsiCustomPreset(name: string): Promise<boolean> {
-    return (await call("apply_msi_custom_preset", name)) as boolean;
+    return await this.applyCustomRgbPreset("msi", name);
   }
 
   // set_msi_custom_rgb
   public static async setMsiCustomRgb(config: any): Promise<boolean> {
-    return (await call("set_msi_custom_rgb", config)) as boolean;
+    return await this.setCustomRgb("msi", config);
   }
 
-  // ===== AyaNeo Custom RGB Methods =====
+  // ===== AyaNeo Custom RGB Methods (Legacy - Use unified API above) =====
+  // AyaNeo 自定义 RGB 方法（旧版 - 请使用上方的统一 API）
 
   // get_ayaneo_custom_presets
   public static async getAyaNeoCustomPresets(): Promise<any> {
-    return (await call("get_ayaneo_custom_presets")) as any;
+    return await this.getCustomRgbPresets("ayaneo");
   }
 
   // save_ayaneo_custom_preset
   public static async saveAyaNeoCustomPreset(name: string, config: any): Promise<boolean> {
-    return (await call("save_ayaneo_custom_preset", name, config)) as boolean;
+    return await this.saveCustomRgbPreset("ayaneo", name, config);
   }
 
   // delete_ayaneo_custom_preset
   public static async deleteAyaNeoCustomPreset(name: string): Promise<boolean> {
-    return (await call("delete_ayaneo_custom_preset", name)) as boolean;
+    return await this.deleteCustomRgbPreset("ayaneo", name);
   }
 
   // apply_ayaneo_custom_preset
   public static async applyAyaNeoCustomPreset(name: string): Promise<boolean> {
-    return (await call("apply_ayaneo_custom_preset", name)) as boolean;
+    return await this.applyCustomRgbPreset("ayaneo", name);
   }
 
   // set_ayaneo_custom_rgb
   public static async setAyaNeoCustomRgb(config: any): Promise<boolean> {
-    return (await call("set_ayaneo_custom_rgb", config)) as boolean;
+    return await this.setCustomRgb("ayaneo", config);
   }
 }

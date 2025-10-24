@@ -22,7 +22,7 @@ interface BackendApi<TConfig extends CustomRgbConfig> {
 
 interface CustomRgbSettingConfig<TConfig extends CustomRgbConfig> {
   deviceName: string; // "msi" or "ayaneo"
-  rgbMode: RGBMode; // RGBMode.msi_custom or RGBMode.ayaneo_custom
+  rgbMode: RGBMode; // RGBMode.custom (unified for all devices)
   backendApi: BackendApi<TConfig>;
   defaultZoneCount: number; // Default zone count for new keyframes
   currentPresetGetter: () => string | null;

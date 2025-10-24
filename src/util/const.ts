@@ -29,11 +29,9 @@ export enum RGBMode {
     // MSI specific preset modes
     msi_frostfire = "msi_frostfire",
     
-    // MSI custom RGB mode
-    msi_custom = "msi_custom",
-    
-    // AyaNeo custom RGB mode
-    ayaneo_custom = "ayaneo_custom",
+    // Unified custom RGB mode for all multi-zone devices
+    // 所有多区域设备的统一自定义 RGB 模式
+    custom = "custom",
   }
 
 // MSI Custom RGB constants

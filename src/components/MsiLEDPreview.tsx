@@ -3,7 +3,7 @@
 // Supports MSI Claw, AyaNeo, and other multi-zone LED devices
 
 import { FC, useEffect, useRef } from "react";
-import { RGBTuple } from "../types/msiCustomRgb";
+import { RGBTuple } from "../types/customRgb";
 import { LEDLayoutConfig } from "../types/ledLayout";
 import { MSI_CLAW_LAYOUT } from "../util/ledLayouts";
 

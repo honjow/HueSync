@@ -117,18 +117,15 @@ export class SettingsData {
   public powerLedEnabled = true;
   public powerLedSuspendOff = false;
   
-  // MSI Custom RGB - currently applied preset name
-  public currentMsiCustomPreset: string | null = null;
-  
-  // AyaNeo Custom RGB - currently applied preset name
-  public currentAyaNeoCustomPreset: string | null = null;
+  // Unified Custom RGB - currently applied preset name
+  // 统一的自定义 RGB - 当前应用的预设名称
+  public currentCustomPreset: string | null = null;
 
   public deepCopy(source: SettingsData) {
     this.suspendMode = source.suspendMode;
     this.powerLedEnabled = source.powerLedEnabled;
     this.powerLedSuspendOff = source.powerLedSuspendOff;
-    this.currentMsiCustomPreset = source.currentMsiCustomPreset;
-    this.currentAyaNeoCustomPreset = source.currentAyaNeoCustomPreset;
+    this.currentCustomPreset = source.currentCustomPreset;
     
     this.perApp = {};
     Object.entries(source.perApp).forEach(([key, value]) => {
@@ -150,11 +147,16 @@ export class SettingsData {
     if (dict.powerLedSuspendOff !== undefined) {
       this.powerLedSuspendOff = dict.powerLedSuspendOff;
     }
-    if (dict.currentMsiCustomPreset !== undefined) {
-      this.currentMsiCustomPreset = dict.currentMsiCustomPreset;
-    }
-    if (dict.currentAyaNeoCustomPreset !== undefined) {
-      this.currentAyaNeoCustomPreset = dict.currentAyaNeoCustomPreset;
+    // Unified custom preset (with backward compatibility)
+    // 统一的自定义预设（向后兼容）
+    if (dict.currentCustomPreset !== undefined) {
+      this.currentCustomPreset = dict.currentCustomPreset;
+    } else if (dict.currentMsiCustomPreset !== undefined) {
+      // Migrate from old MSI field
+      this.currentCustomPreset = dict.currentMsiCustomPreset;
+    } else if (dict.currentAyaNeoCustomPreset !== undefined) {
+      // Migrate from old AyaNeo field
+      this.currentCustomPreset = dict.currentAyaNeoCustomPreset;
     }
     
     // Handle per-app settings
@@ -227,13 +229,9 @@ export class Setting {
   public static modeCapabilities: Record<string, RGBModeCapabilities> = {};
   public static deviceCapabilities: DeviceCapabilities | null = null;
   
-  // MSI Custom RGB - currently applied preset name
-  // MSI 自定义 RGB - 当前应用的预设名称
-  public static currentMsiCustomPreset: string | null = null;
-  
-  // AyaNeo Custom RGB - currently applied preset name
-  // AyaNeo 自定义 RGB - 当前应用的预设名称
-  public static currentAyaNeoCustomPreset: string | null = null;
+  // Unified Custom RGB - currently applied preset name
+  // 统一的自定义 RGB - 当前应用的预设名称
+  public static currentCustomPreset: string | null = null;
 
   // Event system for configuration changes | 配置变更事件系统
   private static settingChangeEvent = new EventTarget();
@@ -377,15 +375,13 @@ export class Setting {
   public static async loadSettingsData() {
     const _settingsData = await Backend.getSettings();
     this.settingsData.deepCopy(_settingsData);
-    // Sync custom presets to static properties
-    this.currentMsiCustomPreset = this.settingsData.currentMsiCustomPreset;
-    this.currentAyaNeoCustomPreset = this.settingsData.currentAyaNeoCustomPreset;
+    // Sync custom preset to static properties
+    this.currentCustomPreset = this.settingsData.currentCustomPreset;
   }
 
   public static async saveSettingsData() {
     // Sync static properties to settingsData before saving
-    this.settingsData.currentMsiCustomPreset = this.currentMsiCustomPreset;
-    this.settingsData.currentAyaNeoCustomPreset = this.currentAyaNeoCustomPreset;
+    this.settingsData.currentCustomPreset = this.currentCustomPreset;
     // Logger.debug(`HueSync: saveSettingsData: ${JSON.stringify(this.settingsData)}`);
     await Backend.setSettings(this.settingsData);
   }

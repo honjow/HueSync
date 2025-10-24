@@ -50,23 +50,18 @@ class Plugin:
         try:
             from utils import Color, RGBMode
 
-            # MSI custom RGB is handled separately by set_msi_custom_rgb (hardware-based)
-            # Skip standard set_color processing for msi_custom mode
-            if mode and mode.lower() == "msi_custom":
-                logger.debug("Skipping set_color for msi_custom mode (hardware-based)")
-                return True
-            
-            # Stop AyaNeo animator when switching away from custom mode
-            # 切换到其他模式时停止 AyaNeo 动画器，保证原子性
-            if self._ayaneo_animator and self._ayaneo_animator.is_running():
-                if not mode or mode.lower() != "ayaneo_custom":
+            # Custom RGB is handled separately by device-specific implementations
+            # 自定义 RGB 由设备特定实现单独处理
+            # - MSI: hardware-based keyframes
+            # - AyaNeo: software-based animator
+            # Skip standard set_color processing for custom mode
+            if mode and mode.lower() == "custom":
+                # Stop AyaNeo animator if it's running (when switching away from custom)
+                # 停止 AyaNeo 动画器（如果正在运行）
+                if self._ayaneo_animator and self._ayaneo_animator.is_running():
                     self._ayaneo_animator.stop()
-                    logger.info("Stopped AyaNeo animator (switching to different mode)")
-            
-            # Skip standard set_color processing for ayaneo_custom mode
-            # AyaNeo custom should be applied via set_ayaneo_custom_rgb or apply_ayaneo_custom_preset
-            if mode and mode.lower() == "ayaneo_custom":
-                logger.debug("Skipping set_color for ayaneo_custom mode (use set_ayaneo_custom_rgb)")
+                    logger.info("Stopped AyaNeo animator (switching modes)")
+                logger.debug("Skipping set_color for custom mode (use set_custom_rgb)")
                 return True
 
             color = None
@@ -261,9 +256,125 @@ class Plugin:
             logger.error(f"Failed to get power light: {e}", exc_info=True)
             return None
 
-    # ===== MSI Custom RGB Methods =====
+    # ===== Unified Custom RGB API =====
+    # 统一的自定义 RGB API
+    # Provides device-agnostic interface for multi-zone custom RGB
+    # 为多区域自定义 RGB 提供设备无关的接口
 
-    MSI_CUSTOM_PRESETS_KEY = "msi_custom_rgb_presets"
+    # Unified custom RGB presets key for all device types
+    # 所有设备类型共享的统一自定义 RGB 预设 key
+    CUSTOM_RGB_PRESETS_KEY = "custom_rgb_presets"
+
+    async def get_custom_rgb_presets(self, device_type: str):
+        """
+        Get all custom RGB presets for any device type.
+        获取任何设备类型的所有自定义 RGB 预设。
+        
+        All device types share the same preset storage.
+        所有设备类型共享同一个预设存储。
+        """
+        try:
+            presets = self.settings.getSetting(self.CUSTOM_RGB_PRESETS_KEY)
+            if presets is None:
+                presets = {}
+            logger.debug(f"Retrieved {len(presets)} custom RGB presets")
+            return presets if isinstance(presets, dict) else {}
+        except Exception as e:
+            logger.error(f"Failed to get custom RGB presets: {e}", exc_info=True)
+            return {}
+
+    async def save_custom_rgb_preset(self, device_type: str, name: str, config: dict):
+        """
+        Save a custom RGB preset for any device type.
+        为任何设备类型保存自定义 RGB 预设。
+        """
+        try:
+            # Validate config
+            if device_type == "msi":
+                if not self._validate_msi_custom_config(config):
+                    logger.error(f"Invalid MSI custom preset config")
+                    return False
+            elif device_type == "ayaneo":
+                if not self._validate_ayaneo_custom_config(config):
+                    logger.error(f"Invalid AyaNeo custom preset config")
+                    return False
+            else:
+                logger.error(f"Unknown device type: {device_type}")
+                return False
+
+            # Get existing presets
+            presets = await self.get_custom_rgb_presets(device_type)
+            presets[name] = config
+            
+            # Save to unified storage
+            self.settings.setSetting(self.CUSTOM_RGB_PRESETS_KEY, presets)
+            logger.info(f"Saved custom RGB preset '{name}' (device: {device_type})")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to save {device_type} preset '{name}': {e}", exc_info=True)
+            return False
+
+    async def delete_custom_rgb_preset(self, device_type: str, name: str):
+        """
+        Delete a custom RGB preset for any device type.
+        删除任何设备类型的自定义 RGB 预设。
+        """
+        try:
+            presets = await self.get_custom_rgb_presets(device_type)
+            if name not in presets:
+                logger.warning(f"{device_type.upper()} preset '{name}' not found")
+                return False
+
+            del presets[name]
+            self.settings.setSetting(self.CUSTOM_RGB_PRESETS_KEY, presets)
+            logger.info(f"Deleted custom RGB preset '{name}' (device: {device_type})")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to delete {device_type} preset '{name}': {e}", exc_info=True)
+            return False
+
+    async def apply_custom_rgb_preset(self, device_type: str, name: str):
+        """
+        Apply a custom RGB preset for any device type.
+        应用任何设备类型的自定义 RGB 预设。
+        """
+        try:
+            presets = await self.get_custom_rgb_presets(device_type)
+            if name not in presets:
+                logger.error(f"{device_type.upper()} preset '{name}' not found")
+                return False
+
+            config = presets[name]
+            return await self.set_custom_rgb(device_type, config)
+        except Exception as e:
+            logger.error(f"Failed to apply {device_type} preset '{name}': {e}", exc_info=True)
+            return False
+
+    async def set_custom_rgb(self, device_type: str, custom_config: dict):
+        """
+        Apply custom RGB configuration for any device type.
+        为任何设备类型应用自定义 RGB 配置。
+        
+        Unified interface - device-specific implementation is dispatched internally.
+        统一接口 - 设备特定实现在内部分发。
+        
+        Args:
+            device_type: "msi" or "ayaneo"
+            custom_config: Configuration dict with speed, brightness, and keyframes
+            
+        Returns:
+            bool: True if successful
+        """
+        if device_type == "msi":
+            return await self._apply_msi_custom_rgb(custom_config)
+        elif device_type == "ayaneo":
+            return await self._apply_ayaneo_custom_rgb(custom_config)
+        else:
+            logger.error(f"Unknown device type: {device_type}")
+            return False
+
+    # ===== MSI Custom RGB Methods (Device-Specific Implementation) =====
+    # MSI 自定义 RGB 方法（设备特定实现）
 
     def _validate_msi_custom_config(self, config: dict) -> bool:
         """
@@ -321,113 +432,10 @@ class Plugin:
             logger.error(f"Validation error: {e}", exc_info=True)
             return False
 
-    async def get_msi_custom_presets(self):
+    async def _apply_msi_custom_rgb(self, custom_config: dict):
         """
-        Get all saved MSI custom RGB presets.
-        获取所有保存的 MSI 自定义 RGB 预设。
-
-        Returns:
-            dict: Dictionary of custom presets
-        """
-        try:
-            presets = self.settings.getSetting(self.MSI_CUSTOM_PRESETS_KEY)
-            if presets is None:
-                presets = {}
-            logger.debug(f"Retrieved {len(presets)} MSI custom presets")
-            return presets
-        except Exception as e:
-            logger.error(f"Failed to get MSI custom presets: {e}", exc_info=True)
-            return {}
-
-    async def save_msi_custom_preset(self, name: str, config: dict):
-        """
-        Save an MSI custom RGB preset.
-        保存 MSI 自定义 RGB 预设。
-
-        Args:
-            name: Preset name
-            config: Preset configuration
-
-        Returns:
-            bool: True if successful
-        """
-        try:
-            # Validate config
-            if not self._validate_msi_custom_config(config):
-                logger.error(f"Invalid MSI custom preset config: {config}")
-                return False
-
-            # Get existing presets
-            presets = await self.get_msi_custom_presets()
-
-            # Add or update preset
-            presets[name] = config
-
-            # Save to settings
-            self.settings.setSetting(self.MSI_CUSTOM_PRESETS_KEY, presets)
-            logger.info(f"Saved MSI custom preset: {name}")
-            return True
-
-        except Exception as e:
-            logger.error(f"Failed to save MSI custom preset '{name}': {e}", exc_info=True)
-            return False
-
-    async def delete_msi_custom_preset(self, name: str):
-        """
-        Delete an MSI custom RGB preset.
-        删除 MSI 自定义 RGB 预设。
-
-        Args:
-            name: Preset name to delete
-
-        Returns:
-            bool: True if successful
-        """
-        try:
-            presets = await self.get_msi_custom_presets()
-
-            if name not in presets:
-                logger.warning(f"MSI preset '{name}' not found")
-                return False
-
-            del presets[name]
-            self.settings.setSetting(self.MSI_CUSTOM_PRESETS_KEY, presets)
-            logger.info(f"Deleted MSI custom preset: {name}")
-            return True
-
-        except Exception as e:
-            logger.error(f"Failed to delete MSI custom preset '{name}': {e}", exc_info=True)
-            return False
-
-    async def apply_msi_custom_preset(self, name: str):
-        """
-        Apply a saved MSI custom RGB preset.
-        应用保存的 MSI 自定义 RGB 预设。
-
-        Args:
-            name: Preset name to apply
-
-        Returns:
-            bool: True if successful
-        """
-        try:
-            presets = await self.get_msi_custom_presets()
-
-            if name not in presets:
-                logger.error(f"MSI preset '{name}' not found")
-                return False
-
-            config = presets[name]
-            return await self.set_msi_custom_rgb(config)
-
-        except Exception as e:
-            logger.error(f"Failed to apply MSI custom preset '{name}': {e}", exc_info=True)
-            return False
-
-    async def set_msi_custom_rgb(self, custom_config: dict):
-        """
-        Apply MSI custom RGB configuration.
-        应用 MSI 自定义 RGB 配置。
+        Apply MSI custom RGB configuration (device-specific implementation).
+        应用 MSI 自定义 RGB 配置（设备特定实现）。
 
         Args:
             custom_config: Configuration dict with speed, brightness, and keyframes
@@ -480,9 +488,9 @@ class Plugin:
             logger.error(f"Failed to apply MSI custom RGB: {e}", exc_info=True)
             return False
 
-    # ===== AyaNeo Custom RGB Methods =====
+    # ===== AyaNeo Custom RGB Methods (Device-Specific Implementation) =====
+    # AyaNeo 自定义 RGB 方法（设备特定实现）
 
-    AYANEO_CUSTOM_PRESETS_KEY = "ayaneo_custom_rgb_presets"
     _ayaneo_animator = None  # KeyframeAnimator instance
 
     def _validate_ayaneo_custom_config(self, config: dict) -> bool:
@@ -545,113 +553,10 @@ class Plugin:
             logger.error(f"AyaNeo config validation error: {e}", exc_info=True)
             return False
 
-    async def get_ayaneo_custom_presets(self):
+    async def _apply_ayaneo_custom_rgb(self, custom_config: dict):
         """
-        Get all saved AyaNeo custom RGB presets.
-        获取所有保存的 AyaNeo 自定义 RGB 预设。
-
-        Returns:
-            dict: Dictionary of custom presets
-        """
-        try:
-            presets = self.settings.getSetting(self.AYANEO_CUSTOM_PRESETS_KEY)
-            if presets is None:
-                presets = {}
-            logger.debug(f"Retrieved {len(presets)} AyaNeo custom presets")
-            return presets
-        except Exception as e:
-            logger.error(f"Failed to get AyaNeo custom presets: {e}", exc_info=True)
-            return {}
-
-    async def save_ayaneo_custom_preset(self, name: str, config: dict):
-        """
-        Save an AyaNeo custom RGB preset.
-        保存 AyaNeo 自定义 RGB 预设。
-
-        Args:
-            name: Preset name
-            config: Preset configuration
-
-        Returns:
-            bool: True if successful
-        """
-        try:
-            # Validate config
-            if not self._validate_ayaneo_custom_config(config):
-                logger.error(f"Invalid AyaNeo custom preset config: {config}")
-                return False
-
-            # Get existing presets
-            presets = await self.get_ayaneo_custom_presets()
-
-            # Save preset
-            presets[name] = config
-            self.settings.setSetting(self.AYANEO_CUSTOM_PRESETS_KEY, presets)
-
-            logger.info(f"Saved AyaNeo custom preset '{name}'")
-            return True
-
-        except Exception as e:
-            logger.error(f"Failed to save AyaNeo custom preset: {e}", exc_info=True)
-            return False
-
-    async def delete_ayaneo_custom_preset(self, name: str):
-        """
-        Delete an AyaNeo custom RGB preset.
-        删除 AyaNeo 自定义 RGB 预设。
-
-        Args:
-            name: Preset name to delete
-
-        Returns:
-            bool: True if successful
-        """
-        try:
-            presets = await self.get_ayaneo_custom_presets()
-
-            if name not in presets:
-                logger.warning(f"AyaNeo preset '{name}' not found")
-                return False
-
-            del presets[name]
-            self.settings.setSetting(self.AYANEO_CUSTOM_PRESETS_KEY, presets)
-
-            logger.info(f"Deleted AyaNeo custom preset '{name}'")
-            return True
-
-        except Exception as e:
-            logger.error(f"Failed to delete AyaNeo custom preset: {e}", exc_info=True)
-            return False
-
-    async def apply_ayaneo_custom_preset(self, name: str):
-        """
-        Apply a saved AyaNeo custom RGB preset.
-        应用保存的 AyaNeo 自定义 RGB 预设。
-
-        Args:
-            name: Preset name to apply
-
-        Returns:
-            bool: True if successful
-        """
-        try:
-            presets = await self.get_ayaneo_custom_presets()
-
-            if name not in presets:
-                logger.error(f"AyaNeo preset '{name}' not found")
-                return False
-
-            config = presets[name]
-            return await self.set_ayaneo_custom_rgb(config)
-
-        except Exception as e:
-            logger.error(f"Failed to apply AyaNeo custom preset '{name}': {e}", exc_info=True)
-            return False
-
-    async def set_ayaneo_custom_rgb(self, custom_config: dict):
-        """
-        Apply AyaNeo custom RGB configuration with KeyframeAnimator.
-        使用 KeyframeAnimator 应用 AyaNeo 自定义 RGB 配置。
+        Apply AyaNeo custom RGB configuration with KeyframeAnimator (device-specific implementation).
+        使用 KeyframeAnimator 应用 AyaNeo 自定义 RGB 配置（设备特定实现）。
 
         Args:
             custom_config: Configuration dict with speed, brightness, and keyframes

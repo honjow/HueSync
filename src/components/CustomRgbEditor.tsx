@@ -1,6 +1,7 @@
-// Multi-Zone Custom RGB Editor Modal
-// 多区域自定义 RGB 编辑器弹窗
+// Unified Custom RGB Editor Modal
+// 统一的自定义 RGB 编辑器弹窗
 // Supports MSI Claw, AyaNeo, and other multi-zone LED devices
+// 支持 MSI Claw、AyaNeo 等多区域 LED 设备
 
 import { FC, useState, useEffect } from "react";
 import {
@@ -21,34 +22,32 @@ import {
   FiRotateCw,
   FiRotateCcw,
 } from "react-icons/fi";
-import { useMsiCustomRgb, useAyaNeoCustomRgb } from "../hooks";
-import { MsiCustomRgbSetting } from "../hooks/msiCustomRgbSettings";
-import { AyaNeoCustomRgbSetting } from "../hooks/ayaNeoCustomRgbSettings";
+import { useCustomRgb, MsiCustomRgbSetting, AyaNeoCustomRgbSetting } from "../hooks";
 import { MsiLEDPreview } from "./MsiLEDPreview";
 import { MSI_LED_ZONE_KEYS, MSI_MAX_KEYFRAMES, AYANEO_LED_ZONE_KEYS_8, AYANEO_LED_ZONE_KEYS_9_KUN, AYANEO_MAX_KEYFRAMES, RGBMode } from "../util/const";
-import { RGBTuple } from "../types/msiCustomRgb";
+import { RGBTuple } from "../types/customRgb";
 import { hsvToRgb, rgbToHsv } from "../util";
 import { SlowSliderField } from "./SlowSliderField";
 import { localizationManager, localizeStrEnum } from "../i18n";
 import { Backend } from "../util/backend";
 import { MSI_CLAW_LAYOUT, AYANEO_STANDARD_LAYOUT, AYANEO_KUN_LAYOUT } from "../util/ledLayouts";
 import { Setting } from "../hooks/settings";
+import { CustomRgbDeviceType } from "../types/customRgb";
 
-type DeviceType = "msi" | "ayaneo";
+type DeviceType = CustomRgbDeviceType; // Unified type from customRgb.d.ts
 
-interface MsiCustomRgbEditorProps {
+interface CustomRgbEditorProps {
   closeModal: () => void;
   deviceType?: DeviceType; // Device type: "msi" or "ayaneo"
 }
 
-export const MsiCustomRgbEditor: FC<MsiCustomRgbEditorProps> = ({ 
+export const CustomRgbEditor: FC<CustomRgbEditorProps> = ({ 
   closeModal,
   deviceType = "msi" // Default to MSI for backward compatibility
 }) => {
-  // Use appropriate hook based on device type
-  const msiHook = useMsiCustomRgb();
-  const ayaNeoHook = useAyaNeoCustomRgb();
-  const hook = (deviceType === "msi" ? msiHook : ayaNeoHook) as ReturnType<typeof useMsiCustomRgb>;
+  // Use unified custom RGB hook (automatically selects correct implementation)
+  // 使用统一的自定义 RGB hook（自动选择正确的实现）
+  const hook = useCustomRgb();
   
   const {
     editing,
@@ -308,24 +307,14 @@ export const MsiCustomRgbEditor: FC<MsiCustomRgbEditorProps> = ({
     
     // Restore the device to the state before editing
     // 恢复设备到编辑前的状态
-    // For custom modes, need to reapply the active preset; for standard modes, use applySettings
+    // For custom mode, need to reapply the active preset; for standard modes, use applySettings
     // 对于自定义模式，需要重新应用激活的 preset；对于标准模式，使用 applySettings
-    if (deviceType === "ayaneo") {
-      if (Setting.mode === RGBMode.ayaneo_custom && Setting.currentAyaNeoCustomPreset) {
-        // Reapply the previously active preset
-        await applyPreset(Setting.currentAyaNeoCustomPreset);
-      } else {
-        // Standard mode - backend will stop animator
-        await Backend.applySettings();
-      }
-    } else if (deviceType === "msi") {
-      if (Setting.mode === RGBMode.msi_custom && Setting.currentMsiCustomPreset) {
-        // Reapply the previously active preset
-        await applyPreset(Setting.currentMsiCustomPreset);
-      } else {
-        // Standard mode
-        await Backend.applySettings();
-      }
+    if (Setting.mode === RGBMode.custom && Setting.currentCustomPreset) {
+      // Reapply the previously active preset
+      await applyPreset(Setting.currentCustomPreset);
+    } else {
+      // Standard mode (or no active custom preset)
+      await Backend.applySettings();
     }
     
     closeModal();

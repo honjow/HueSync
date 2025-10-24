@@ -165,5 +165,6 @@ class AyaNeoLEDDevice(SysfsLEDMixin, BaseLEDDevice):
         """
         base_caps = super().get_device_capabilities()
         # AyaNeo supports custom RGB configuration via software animation
-        base_caps["ayaneo_custom_rgb"] = True
+        # 支持通过软件动画实现自定义 RGB 配置
+        base_caps["custom_rgb"] = True
         return base_caps
