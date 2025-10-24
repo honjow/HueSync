@@ -120,6 +120,13 @@ export const MsiLEDPreview: FC<MsiLEDPreviewProps> = ({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationFrameRef = useRef<number | undefined>(undefined);
   const startTimeRef = useRef<number>(0);
+  const selectedZoneRef = useRef<number | null>(selectedZone);
+
+  // Keep selectedZoneRef in sync with selectedZone prop
+  // 保持 selectedZoneRef 与 selectedZone prop 同步
+  useEffect(() => {
+    selectedZoneRef.current = selectedZone;
+  }, [selectedZone]);
 
   /**
    * Calculate interpolated colors between keyframes for animation
@@ -174,7 +181,10 @@ export const MsiLEDPreview: FC<MsiLEDPreviewProps> = ({
    * Draw preview with specific colors
    * 使用特定颜色绘制预览
    */
-  const drawPreviewWithColors = (colors: RGBTuple[], highlightZone: number | null = selectedZone) => {
+  const drawPreviewWithColors = (colors: RGBTuple[], highlightZone: number | null = null) => {
+    // Use provided highlightZone or fall back to selectedZone
+    // 使用提供的 highlightZone 或回退到 selectedZone
+    const activeZone = highlightZone !== null ? highlightZone : selectedZone;
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -238,13 +248,13 @@ export const MsiLEDPreview: FC<MsiLEDPreviewProps> = ({
 
     // ===== Draw all LEDs =====
     [...layout.leds.left, ...layout.leds.right].forEach(led => {
-      const isSelected = led.idx === highlightZone;
+      const isSelected = led.idx === activeZone;
       drawLED(ctx, led.x, led.y, colors[led.idx], isSelected, led.label, layout.visual, width, params.ledSpacing);
     });
 
     // ===== Draw ABXY =====
     const [ar, ag, ab] = colors[layout.abxy.idx];
-    const isAbxySelected = layout.abxy.idx === highlightZone;
+    const isAbxySelected = layout.abxy.idx === activeZone;
     const abxyRadius = isAbxySelected ? layout.visual.led.radiusSelected : layout.visual.led.radius;
     const abxyBorderWidth = isAbxySelected ? layout.visual.led.borderWidthSelected : layout.visual.led.borderWidth;
     
@@ -302,8 +312,9 @@ export const MsiLEDPreview: FC<MsiLEDPreviewProps> = ({
       const interpolatedColors = getInterpolatedFrame(progress);
       const finalColors = applyBrightness(interpolatedColors);
 
-      // Draw with interpolated colors
-      drawPreviewWithColors(finalColors);
+      // Draw with interpolated colors, using latest selectedZone from ref
+      // 使用 ref 中最新的 selectedZone 绘制插值颜色
+      drawPreviewWithColors(finalColors, selectedZoneRef.current);
 
       animationFrameRef.current = requestAnimationFrame(animate);
     };
