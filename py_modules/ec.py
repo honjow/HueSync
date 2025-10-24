@@ -101,9 +101,9 @@ class EC:
         portio.outb(0x12, reg_data)
         portio.outb(0x2F, reg_addr)
         portio.outb(data, reg_data)
-        logger.debug(
-            f"ECRamWrite high_byte={hex(high_byte)} low_byte={hex(low_byte)} address:{hex(address)} value:{data}"
-        )
+        # logger.debug(
+        #     f"ECRamWrite high_byte={hex(high_byte)} low_byte={hex(low_byte)} address:{hex(address)} value:{data}"
+        # )
 
     @staticmethod
     def RamRead(reg_addr: int, reg_data: int, address: int):

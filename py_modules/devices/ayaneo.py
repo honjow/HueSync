@@ -31,20 +31,31 @@ class AyaNeoLEDDevice(SysfsLEDMixin, BaseLEDDevice):
 
     def _set_solid_color(self, color: Color) -> None:
         """
-        Set solid color, prioritizing EC control, falling back to sysfs if EC fails.
-        设置纯色，优先使用 EC 控制，如果 EC 失败则回退到 sysfs。
+        Set solid color, prioritizing sysfs (if available), falling back to EC control.
+        设置纯色，优先使用 sysfs（如可用），回退到 EC 控制。
+        
+        For solid color mode, prefer sysfs kernel driver (more stable and standard).
+        EC control is reserved for advanced features like custom RGB.
+        对于纯色模式，优先使用 sysfs 内核驱动（更稳定和标准）。
+        EC 控制保留给高级功能，如自定义 RGB。
         """
+        # Try sysfs first if available (preferred for solid colors)
+        # 如可用，首先尝试 sysfs（纯色首选）
+        if self._has_sysfs_support():
+            if self._set_color_by_sysfs(color):
+                logger.debug("Set solid color via sysfs")
+                return
+            else:
+                logger.warning("sysfs control failed, trying EC fallback")
+        
+        # Fallback to EC control
+        # 回退到 EC 控制
         try:
-            # Try EC control first (preferred for advanced features)
-            # 首先尝试 EC 控制（高级功能首选）
             self.aya_led_device_ec.set_led_color(color)
+            logger.debug("Set solid color via EC")
         except Exception as e:
-            logger.warning(f"EC control failed, trying sysfs fallback: {e}")
-            # Fallback to sysfs if available
-            # 如可用，回退到 sysfs
-            if not self._set_color_by_sysfs(color):
-                logger.error("Both EC and sysfs control failed")
-                raise
+            logger.error(f"Both sysfs and EC control failed: {e}")
+            raise
 
     def get_suspend_mode(self) -> str:
         return self.aya_led_device_ec.get_suspend_mode()
