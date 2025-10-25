@@ -73,8 +73,8 @@
 **ASUS ROG Ally**  
 ![Ally 自定义编辑器](./screenshot/ally_custom_editor.png)
 
-<!-- **AYANEO**  
-![AyaNeo 自定义编辑器](./screenshot/ayaneo_custom_editor.png) -->
+**AYANEO**  
+![AyaNeo 自定义编辑器](./screenshot/ayaneo_custom_editor.png)
 
 ## 一键安装
 

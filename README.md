@@ -69,8 +69,8 @@ These devices have commands to set individual LED zone colors, which makes custo
 **ASUS ROG Ally**  
 ![Ally Custom Editor](./screenshot/ally_custom_editor.png)
 
-<!-- **AYANEO**  
-![AyaNeo Custom Editor](./screenshot/ayaneo_custom_editor.png) -->
+**AYANEO**  
+![AyaNeo Custom Editor](./screenshot/ayaneo_custom_editor.png)
 
 ## One-step Installation
 ```
