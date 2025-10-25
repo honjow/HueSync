@@ -20,13 +20,20 @@ This module provides LED control functionality for AYANEO x86 handheld devices
 by communicating directly with the Embedded Controller (EC).
 """
 
+import os
 import time
 from enum import Enum
 from typing import List, Optional
+from pathlib import Path
 
 from config import logger
 from ec import EC
 from utils import Color
+
+# Persistent storage path for suspend mode (for devices without kernel driver)
+# 休眠模式持久化存储路径（用于没有内核驱动的设备）
+CONFIG_DIR = "/var/lib/huesync"
+SUSPEND_MODE_CONFIG_PATH = os.path.join(CONFIG_DIR, "ayaneo_suspend_mode")
 
 
 class AyaNeoECConstants:
@@ -129,7 +136,10 @@ class AyaNeoLEDDeviceEC:
     def __init__(self):
         self.ec = EC()
         self.model = self._detect_model()
-        self.suspend_mode = AyaNeoSuspendMode.OEM
+        
+        # Load saved suspend mode from file (for devices without kernel driver)
+        # 从文件加载保存的休眠模式（用于没有内核驱动的设备）
+        self.suspend_mode = self._load_suspend_mode()
 
         # Software cache (corresponding to C: ayaneo_led_mc_update_color[3] and led_cdev->brightness)
         self.current_color = [0, 0, 0]  # RGB
@@ -138,7 +148,48 @@ class AyaNeoLEDDeviceEC:
         # Control status tracking - avoid frequent reinitialization during software effects
         self._has_control = False
 
-        logger.info(f"AyaNeo LED Device initialized, model: {self.model}")
+        logger.info(f"AyaNeo LED Device initialized, model: {self.model}, suspend_mode: {self.suspend_mode.value}")
+
+    def _load_suspend_mode(self) -> AyaNeoSuspendMode:
+        """
+        Load suspend mode from persistent storage.
+        从持久化存储加载休眠模式。
+        
+        This provides persistence for devices without kernel driver support.
+        为没有内核驱动支持的设备提供持久化。
+        
+        Returns:
+            AyaNeoSuspendMode: Loaded mode, or default (OEM)
+        """
+        try:
+            if os.path.exists(SUSPEND_MODE_CONFIG_PATH):
+                with open(SUSPEND_MODE_CONFIG_PATH, "r") as f:
+                    mode_str = f.read().strip()
+                    if mode_str:
+                        mode = AyaNeoSuspendMode(mode_str)
+                        logger.info(f"Loaded suspend mode from file: {mode.value}")
+                        return mode
+        except Exception as e:
+            logger.warning(f"Failed to load suspend mode from file: {e}")
+        
+        logger.info("Using default suspend mode: oem")
+        return AyaNeoSuspendMode.OEM
+    
+    def _save_suspend_mode(self, mode: AyaNeoSuspendMode) -> None:
+        """
+        Save suspend mode to persistent storage.
+        将休眠模式保存到持久化存储。
+        """
+        try:
+            # Ensure directory exists
+            # 确保目录存在
+            Path(CONFIG_DIR).mkdir(parents=True, exist_ok=True)
+            
+            with open(SUSPEND_MODE_CONFIG_PATH, "w") as f:
+                f.write(mode.value)
+            logger.debug(f"Saved suspend mode to file: {mode.value}")
+        except Exception as e:
+            logger.error(f"Failed to save suspend mode to file: {e}", exc_info=True)
 
     def _detect_model(self) -> Optional[AyaNeoModel]:
         """Detect AyaNeo device model - corresponding to C code dmi_table matching"""
@@ -824,16 +875,33 @@ class AyaNeoLEDDeviceEC:
         return [mode.value for mode in AyaNeoSuspendMode]
 
     def set_suspend_mode(self, mode: str):
-        """Set suspend mode - corresponding to C: suspend_mode_store"""
+        """
+        Set suspend mode with file-based persistence.
+        设置休眠模式并持久化到文件。
+        
+        Note: For devices with kernel driver, huesync.py will use sysfs instead.
+        注意：对于有内核驱动的设备，huesync.py 会使用 sysfs。
+        
+        Corresponding to C: suspend_mode_store
+        """
         try:
             if mode == "":
                 mode = "oem"
+            
             self.suspend_mode = AyaNeoSuspendMode(mode)
-            logger.info(f"Suspend mode set to: {mode}")
+            
+            # Persist to file (survives plugin restart)
+            # 持久化到文件（插件重启后保留）
+            self._save_suspend_mode(self.suspend_mode)
+            
+            logger.info(f"Suspend mode set to: {mode} (persisted to file)")
         except ValueError:
             valid_modes = [m.value for m in AyaNeoSuspendMode]
             logger.error(f"Invalid suspend mode: {mode}. Valid modes: {valid_modes}")
             raise ValueError(f"Invalid suspend mode. Valid modes: {valid_modes}")
+        except Exception as e:
+            logger.error(f"Failed to set suspend mode: {e}", exc_info=True)
+            raise
 
     def suspend(self):
         """Suspend processing - corresponding to C: ayaneo_platform_suspend"""
