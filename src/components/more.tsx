@@ -2,38 +2,8 @@ import { ButtonItem, Field, PanelSection, PanelSectionRow } from "@decky/ui";
 import { FC, useEffect, useState } from "react";
 import { localizationManager, localizeStrEnum } from "../i18n";
 import { Backend, compareVersions } from "../util";
+import { getVersionCache, setVersionCache, getStaleCache } from "../util/versionCache";
 import { ActionButtonItem } from ".";
-
-interface VersionCache {
-    latestVersion: string;
-    lastCheckTime: number;
-    cacheExpiry: number;
-}
-
-const CACHE_KEY = 'huesync_version_cache';
-const CACHE_DURATION = 6 * 60 * 60 * 1000; // 6小时
-
-const getVersionCache = (): VersionCache | null => {
-    const cached = localStorage.getItem(CACHE_KEY);
-    if (!cached) return null;
-
-    const cache = JSON.parse(cached);
-    if (Date.now() > cache.cacheExpiry) {
-        localStorage.removeItem(CACHE_KEY);
-        return null;
-    }
-
-    return cache;
-};
-
-const setVersionCache = (latest: string) => {
-    const cache: VersionCache = {
-        latestVersion: latest,
-        lastCheckTime: Date.now(),
-        cacheExpiry: Date.now() + CACHE_DURATION
-    };
-    localStorage.setItem(CACHE_KEY, JSON.stringify(cache));
-};
 
 const getLastCheckText = (lastCheckTime: number): string => {
     const now = Date.now();
@@ -79,11 +49,11 @@ export const MoreComponent: FC = () => {
         } catch (error) {
             console.error('版本检查失败:', error);
             // 失败时尝试显示过期缓存
-            const expiredCache = localStorage.getItem(CACHE_KEY);
-            if (expiredCache) {
-                const cache = JSON.parse(expiredCache);
-                setLatestVersion(cache.latestVersion);
-                setLastCheckTime(cache.lastCheckTime);
+            // Try to display stale cache on failure
+            const staleCache = getStaleCache();
+            if (staleCache) {
+                setLatestVersion(staleCache.latestVersion);
+                setLastCheckTime(staleCache.lastCheckTime);
             }
         }
     };

@@ -45,6 +45,8 @@ interface ApplyColorOptions {
 // export const getLatestVersion = callable<[], string>("get_latest_version");
 // export const updateLatest = callable<[], any>("update_latest");
 
+import { getVersionCache, setVersionCache, getStaleCache } from './versionCache';
+
 export class BackendData {
   private current_version = "";
   private latest_version = "";
@@ -55,10 +57,35 @@ export class BackendData {
       this.current_version = result;
     });
 
-    await call<[], string>("get_latest_version").then((result) => {
-      console.info("latest_version = " + result);
+    // Check cache first to avoid excessive API requests
+    // 优先检查缓存以避免过度的 API 请求
+    const cache = getVersionCache();
+    if (cache) {
+      console.info("latest_version (cached) = " + cache.latestVersion);
+      this.latest_version = cache.latestVersion;
+      return; // Use cache, skip API request / 使用缓存，跳过 API 请求
+    }
+
+    // Cache miss or expired, fetch from backend
+    // 缓存未命中或过期，从后端获取
+    try {
+      const result = await call<[], string>("get_latest_version");
+      console.info("latest_version (fresh) = " + result);
       this.latest_version = result;
-    });
+      
+      // Save to cache
+      // 保存到缓存
+      setVersionCache(result);
+    } catch (e) {
+      console.error("Failed to fetch latest version:", e);
+      // If API fails, try to use stale cache
+      // API 失败时，尝试使用过期缓存
+      const staleCache = getStaleCache();
+      if (staleCache) {
+        this.latest_version = staleCache.latestVersion;
+        console.info("latest_version (stale cache) = " + staleCache.latestVersion);
+      }
+    }
   }
 
   public getCurrentVersion() {
