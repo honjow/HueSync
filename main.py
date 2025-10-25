@@ -128,17 +128,20 @@ class Plugin:
 
     async def get_suspend_mode(self):
         try:
-            return self.ledControl.get_suspend_mode()
+            mode = self.ledControl.get_suspend_mode()
+            logger.debug(f"get_suspend_mode() -> '{mode}'")
+            return mode
         except Exception as e:
-            logger.error(e, exc_info=True)
+            logger.error(f"get_suspend_mode() failed: {e}", exc_info=True)
             return ""
 
     async def set_suspend_mode(self, mode: str):
         try:
+            logger.debug(f"set_suspend_mode('{mode}') called from frontend")
             self.ledControl.set_suspend_mode(mode)
             return True
         except Exception as e:
-            logger.error(e, exc_info=True)
+            logger.error(f"set_suspend_mode('{mode}') failed: {e}", exc_info=True)
             return False
 
     async def is_support_suspend_mode(self):

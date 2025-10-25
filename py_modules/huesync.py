@@ -6,6 +6,7 @@ from config import (
     LED_SUSPEND_MODE_PATH,
     PRODUCT_NAME,
     SYS_VENDOR,
+    USE_SYSFS_SUSPEND_MODE,
     logger,
 )
 from devices.asus import AsusLEDDevice
@@ -167,37 +168,77 @@ class LedControl:
     def get_suspend_mode(self) -> str | None:
         """
         Retrieves the current suspend mode from the LED device if supported.
-
         如果支持，从LED设备检索当前的挂起模式。
+        
+        Priority: sysfs > device EC method
+        优先级：sysfs > 设备 EC 方法
 
         Returns:
             str: The current suspend mode, or an empty string if not supported.
             str: 当前的挂起模式，如果不支持则为空字符串。
         """
-        if IS_LED_SUPPORTED:
-            if os.path.exists(LED_SUSPEND_MODE_PATH):
+        # Try sysfs first (kernel driver)
+        # 优先尝试 sysfs（内核驱动）
+        if USE_SYSFS_SUSPEND_MODE and IS_LED_SUPPORTED and os.path.exists(LED_SUSPEND_MODE_PATH):
+            try:
                 with open(LED_SUSPEND_MODE_PATH, "r") as f:
                     # eg: [oem] keep off, read the part between []
-                    return f.read().split("[")[1].split("]")[0]
-        else:
-            return self.device.get_suspend_mode()
+                    content = f.read().strip()
+                    mode = content.split("[")[1].split("]")[0]
+                    logger.debug(f"Read suspend mode from sysfs: '{mode}' (raw: '{content}')")
+                    return mode
+            except Exception as e:
+                logger.warning(f"Failed to read suspend mode from sysfs: {e}, falling back to device method")
+        
+        # Fallback to device method (EC or other implementation)
+        # 回退到设备方法（EC 或其他实现）
+        try:
+            mode = self.device.get_suspend_mode()
+            logger.debug(f"Read suspend mode from device method ({self.device.__class__.__name__}): '{mode}'")
+            return mode
+        except Exception as e:
+            logger.debug(f"Device does not support suspend mode: {e}")
+            return ""
 
     def set_suspend_mode(self, mode: str) -> None:
         """
         Sets the suspend mode for the LED device if supported.
-
         如果支持，为LED设备设置挂起模式。
+        
+        Priority: sysfs > device EC method
+        优先级：sysfs > 设备 EC 方法
 
         Args:
             mode (str): The suspend mode to set.
             mode (str): 要设置的挂起模式。
         """
-        if IS_LED_SUPPORTED:
-            if os.path.exists(LED_SUSPEND_MODE_PATH):
+        # Validate mode - reject empty values
+        # 验证模式 - 拒绝空值
+        if not mode or mode.strip() == "":
+            logger.warning("Attempted to set empty suspend mode, ignoring")
+            return
+        
+        logger.debug(f"Setting suspend mode: '{mode}' (USE_SYSFS={USE_SYSFS_SUSPEND_MODE}, IS_LED_SUPPORTED={IS_LED_SUPPORTED}, sysfs_exists={os.path.exists(LED_SUSPEND_MODE_PATH) if IS_LED_SUPPORTED else False})")
+        
+        # Try sysfs first (kernel driver)
+        # 优先尝试 sysfs（内核驱动）
+        if USE_SYSFS_SUSPEND_MODE and IS_LED_SUPPORTED and os.path.exists(LED_SUSPEND_MODE_PATH):
+            try:
                 with open(LED_SUSPEND_MODE_PATH, "w") as f:
                     f.write(f"{mode}")
-        else:
+                logger.info(f"Suspend mode set to '{mode}' via sysfs")
+                return
+            except Exception as e:
+                logger.warning(f"Failed to set suspend mode via sysfs: {e}, falling back to device method")
+        
+        # Fallback to device method (EC or other implementation)
+        # 回退到设备方法（EC 或其他实现）
+        try:
+            logger.debug(f"Setting suspend mode via device method: {self.device.__class__.__name__}")
             self.device.set_suspend_mode(mode)
+            logger.info(f"Suspend mode set to '{mode}' via device method")
+        except Exception as e:
+            logger.error(f"Failed to set suspend mode via device method: {e}", exc_info=True)
 
     def suspend(self) -> None:
         self.device.suspend()

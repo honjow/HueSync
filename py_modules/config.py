@@ -83,6 +83,12 @@ IS_LED_SUSPEND_MODE_SUPPORTED = is_led_suspend_mode_supported()
 
 IS_ALLY_LED_SUPPORTED = os.path.exists(ALLY_LED_PATH)
 
+# Enable/disable sysfs for suspend mode control
+# 启用/禁用 sysfs 处理休眠模式
+# Set to False to always use device EC method (for debugging or compatibility)
+# 设置为 False 以始终使用设备 EC 方法（用于调试或兼容性）
+USE_SYSFS_SUSPEND_MODE = True
+
 
 # AYANEO_EC_SUPPORT_LIST = [
 #     "AIR",

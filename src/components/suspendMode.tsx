@@ -44,8 +44,13 @@ export const SuspendModeComponent: FC = () => {
 
     useEffect(() => {
         Logger.info(`HueSync: suspendMode: ${suspendMode}`);
-        if (Setting.suspendMode !== suspendMode && Setting.suspendMode !== "") {
+        // Only update if new value is not empty and different from current
+        // 只有当新值不为空且与当前值不同时才更新
+        if (Setting.suspendMode !== suspendMode && suspendMode !== "") {
+            Logger.info(`HueSync: updating suspend mode from '${Setting.suspendMode}' to '${suspendMode}'`);
             Setting.suspendMode = suspendMode;
+        } else if (suspendMode === "") {
+            Logger.warn(`HueSync: ignoring empty suspend mode value`);
         }
     }, [suspendMode]);
 

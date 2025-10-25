@@ -76,9 +76,12 @@ class AyaNeoLEDDevice(SysfsLEDMixin, BaseLEDDevice):
         return self.aya_led_device_ec.set_custom_zone_colors(left_colors, right_colors, button_color)
 
     def get_suspend_mode(self) -> str:
-        return self.aya_led_device_ec.get_suspend_mode()
+        mode = self.aya_led_device_ec.get_suspend_mode()
+        logger.debug(f"AyaNeoLEDDevice.get_suspend_mode() -> '{mode}'")
+        return mode
 
     def set_suspend_mode(self, mode: str) -> None:
+        logger.debug(f"AyaNeoLEDDevice.set_suspend_mode('{mode}')")
         self.aya_led_device_ec.set_suspend_mode(mode)
 
     def suspend(self) -> None:
