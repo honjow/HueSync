@@ -14,7 +14,7 @@
 export type RGBTuple = [number, number, number];
 
 /** Device type for multi-zone custom RGB */
-export type CustomRgbDeviceType = "msi" | "ayaneo";
+export type CustomRgbDeviceType = "msi" | "ayaneo" | "rog_ally";
 
 /** 
  * Unified Custom RGB Configuration

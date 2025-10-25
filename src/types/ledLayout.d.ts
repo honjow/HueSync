@@ -50,7 +50,7 @@ export interface LEDZoneMapping {
 }
 
 /** Device type identifier */
-export type DeviceType = "msi_claw" | "ayaneo_standard" | "ayaneo_kun";
+export type DeviceType = "msi_claw" | "ayaneo_standard" | "ayaneo_kun" | "rog_ally";
 
 /** Rotation mapping for a stick (4 zones) */
 export interface StickRotationMapping {

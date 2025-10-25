@@ -319,21 +319,42 @@ export const RGBComponent: FC = () => {
     }
   };
 
-  // Determine device type based on which preset has data
-  // 根据哪个预设有数据来确定设备类型
-  const getDeviceType = (): "msi" | "ayaneo" => {
-    // Check if this is an AyaNeo device by checking zone count in a preset
-    // AyaNeo typically has 8 zones (or 9 for KUN), MSI has 9 zones
+  // Determine device type from backend capabilities
+  // 从后端能力确定设备类型
+  const getDeviceType = (): "msi" | "ayaneo" | "rog_ally" => {
+    // ALWAYS prioritize backend capabilities
+    // 始终优先使用后端能力
+    const deviceType = Setting.deviceCapabilities?.device_type;
+    
+    console.log('[RgbSetting] getDeviceType:', {
+      backendDeviceType: deviceType,
+      capabilities: Setting.deviceCapabilities,
+      presetsCount: Object.keys(customRgb.presets).length
+    });
+    
+    if (deviceType === "rog_ally" || deviceType === "ayaneo" || deviceType === "msi") {
+      console.log('[RgbSetting] Using backend device_type:', deviceType);
+      return deviceType;
+    }
+    
+    // Fallback: check zone count in presets if device_type not available
+    // 备用方案：如果 device_type 不可用，检查预设中的 zone 数量
     const presetKeys = Object.keys(customRgb.presets);
     if (presetKeys.length > 0) {
       const firstPreset = customRgb.presets[presetKeys[0]];
       if (firstPreset && 'keyframes' in firstPreset && firstPreset.keyframes && firstPreset.keyframes[0]) {
         const zoneCount = firstPreset.keyframes[0].length;
-        // If 8 zones, likely AyaNeo; if 9 zones, could be either, default to MSI
-        return zoneCount === 8 ? "ayaneo" : "msi";
+        console.log('[RgbSetting] Falling back to zone count detection:', zoneCount);
+        // 4 zones = ROG Ally, 8 zones = AyaNeo, 9 zones = MSI
+        if (zoneCount === 4) return "rog_ally";
+        if (zoneCount === 8) return "ayaneo";
+        return "msi";
       }
     }
-    // Default to MSI if no presets exist yet
+    
+    // This should NEVER happen if backend is working correctly
+    // 如果后端正常工作，这不应该发生
+    console.error('[RgbSetting] No device type detected! Using MSI as fallback');
     return "msi";
   };
 

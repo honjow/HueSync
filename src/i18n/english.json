@@ -89,6 +89,7 @@
     "MSI_CUSTOM_KEYFRAMES_INFO": "Keyframes",
     "MSI_CUSTOM_ADD_FRAME": "Add Frame",
     "MSI_CUSTOM_COPY_FRAME": "Copy Frame",
+    "MSI_CUSTOM_FILL_ALL_ZONES": "Fill All Zones",
     "MSI_CUSTOM_COPY_ROTATE_CW": "Copy & Rotate Clockwise",
     "MSI_CUSTOM_COPY_ROTATE_CCW": "Copy & Rotate Counterclockwise",
     "MSI_CUSTOM_DELETE_FRAME": "Delete Frame",
@@ -119,5 +120,9 @@
     "AYANEO_LED_ZONE_R2": "Right Grip - Zone 2",
     "AYANEO_LED_ZONE_R3": "Right Grip - Zone 3",
     "AYANEO_LED_ZONE_R4": "Right Grip - Zone 4",
-    "AYANEO_LED_ZONE_GUIDE": "Guide Button"
+    "AYANEO_LED_ZONE_GUIDE": "Guide Button",
+    "ALLY_LED_ZONE_L1": "Left Stick Left",
+    "ALLY_LED_ZONE_L2": "Left Stick Right",
+    "ALLY_LED_ZONE_R1": "Right Stick Left",
+    "ALLY_LED_ZONE_R2": "Right Stick Right"
 }

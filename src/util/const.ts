@@ -72,3 +72,15 @@ export const AYANEO_LED_ZONE_KEYS_9_KUN = [
 export const AYANEO_MAX_KEYFRAMES = 8;
 export const AYANEO_ZONE_COUNT_STANDARD = 8;
 export const AYANEO_ZONE_COUNT_KUN = 9;
+
+// ROG Ally Custom RGB constants
+// Zone names are i18n keys, use localizationManager.getString() to get localized text
+export const ALLY_LED_ZONE_KEYS = [
+  "ALLY_LED_ZONE_L1",
+  "ALLY_LED_ZONE_L2",
+  "ALLY_LED_ZONE_R1",
+  "ALLY_LED_ZONE_R2",
+] as const;
+
+export const ALLY_MAX_KEYFRAMES = 8;
+export const ALLY_ZONE_COUNT = 4;

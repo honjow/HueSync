@@ -89,6 +89,7 @@
     "MSI_CUSTOM_KEYFRAMES_INFO": "Images clés",
     "MSI_CUSTOM_ADD_FRAME": "Ajouter une image",
     "MSI_CUSTOM_COPY_FRAME": "Copier l'image",
+    "MSI_CUSTOM_FILL_ALL_ZONES": "Remplir Toutes les Zones",
     "MSI_CUSTOM_COPY_ROTATE_CW": "Copier et pivoter dans le sens horaire",
     "MSI_CUSTOM_COPY_ROTATE_CCW": "Copier et pivoter dans le sens antihoraire",
     "MSI_CUSTOM_DELETE_FRAME": "Supprimer l'image",
@@ -119,5 +120,9 @@
     "AYANEO_LED_ZONE_R2": "Right Grip - Zone 2",
     "AYANEO_LED_ZONE_R3": "Right Grip - Zone 3",
     "AYANEO_LED_ZONE_R4": "Right Grip - Zone 4",
-    "AYANEO_LED_ZONE_GUIDE": "Guide Button"
+    "AYANEO_LED_ZONE_GUIDE": "Guide Button",
+    "ALLY_LED_ZONE_L1": "Left Stick Left",
+    "ALLY_LED_ZONE_L2": "Left Stick Right",
+    "ALLY_LED_ZONE_R1": "Right Stick Left",
+    "ALLY_LED_ZONE_R2": "Right Stick Right"
 }

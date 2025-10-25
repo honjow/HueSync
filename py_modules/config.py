@@ -67,7 +67,8 @@ LED_MODE_PATH = os.path.join(LED_PATH, "device", "led_mode")
 # Value: oem, off, keep. Default: oem
 LED_SUSPEND_MODE_PATH = os.path.join(LED_PATH, "suspend_mode")
 
-ALLY_LED_PATH = "/sys/class/leds/ally:rgb:joystick_rings"
+# ALLY_LED_PATH removed - now auto-detected by SysfsLEDMixin
+# ALLY_LED_PATH 已移除 - 现在由 SysfsLEDMixin 自动检测
 
 
 def is_led_supported():
@@ -81,7 +82,9 @@ def is_led_suspend_mode_supported():
 IS_LED_SUPPORTED = is_led_supported()
 IS_LED_SUSPEND_MODE_SUPPORTED = is_led_suspend_mode_supported()
 
-IS_ALLY_LED_SUPPORTED = os.path.exists(ALLY_LED_PATH)
+# IS_ALLY_LED_SUPPORTED removed - detection now handled by factory pattern in AsusLEDDevice
+# IS_ALLY_LED_SUPPORTED 已移除 - 检测现在由 AsusLEDDevice 中的工厂模式处理
+IS_ALLY_LED_SUPPORTED = False  # Kept for backward compatibility in huesync.py | 保留以便 huesync.py 向后兼容
 
 # Enable/disable sysfs for suspend mode control
 # 启用/禁用 sysfs 处理休眠模式

@@ -89,6 +89,7 @@
     "MSI_CUSTOM_KEYFRAMES_INFO": "キーフレーム数",
     "MSI_CUSTOM_ADD_FRAME": "フレーム追加",
     "MSI_CUSTOM_COPY_FRAME": "フレーム複製",
+    "MSI_CUSTOM_FILL_ALL_ZONES": "すべてのゾーンを塗りつぶす",
     "MSI_CUSTOM_COPY_ROTATE_CW": "複製して時計回りに回転",
     "MSI_CUSTOM_COPY_ROTATE_CCW": "複製して反時計回りに回転",
     "MSI_CUSTOM_DELETE_FRAME": "フレーム削除",
@@ -119,5 +120,9 @@
     "AYANEO_LED_ZONE_R2": "Right Grip - Zone 2",
     "AYANEO_LED_ZONE_R3": "Right Grip - Zone 3",
     "AYANEO_LED_ZONE_R4": "Right Grip - Zone 4",
-    "AYANEO_LED_ZONE_GUIDE": "Guide Button"
+    "AYANEO_LED_ZONE_GUIDE": "Guide Button",
+    "ALLY_LED_ZONE_L1": "左スティック 左",
+    "ALLY_LED_ZONE_L2": "左スティック 右",
+    "ALLY_LED_ZONE_R1": "右スティック 左",
+    "ALLY_LED_ZONE_R2": "右スティック 右"
 }

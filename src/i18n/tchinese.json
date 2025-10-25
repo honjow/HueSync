@@ -89,6 +89,7 @@
     "MSI_CUSTOM_KEYFRAMES_INFO": "關鍵幀數",
     "MSI_CUSTOM_ADD_FRAME": "新建幀",
     "MSI_CUSTOM_COPY_FRAME": "複製幀",
+    "MSI_CUSTOM_FILL_ALL_ZONES": "填充所有區域",
     "MSI_CUSTOM_COPY_ROTATE_CW": "複製並順時針旋轉",
     "MSI_CUSTOM_COPY_ROTATE_CCW": "複製並逆時針旋轉",
     "MSI_CUSTOM_DELETE_FRAME": "刪除幀",
@@ -119,5 +120,9 @@
     "AYANEO_LED_ZONE_R2": "Right Grip - Zone 2",
     "AYANEO_LED_ZONE_R3": "Right Grip - Zone 3",
     "AYANEO_LED_ZONE_R4": "Right Grip - Zone 4",
-    "AYANEO_LED_ZONE_GUIDE": "Guide Button"
+    "AYANEO_LED_ZONE_GUIDE": "Guide Button",
+    "ALLY_LED_ZONE_L1": "左搖桿 左",
+    "ALLY_LED_ZONE_L2": "左搖桿 右",
+    "ALLY_LED_ZONE_R1": "右搖桿 左",
+    "ALLY_LED_ZONE_R2": "右搖桿 右"
 }
