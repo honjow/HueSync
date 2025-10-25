@@ -184,11 +184,11 @@ export const CustomRgbEditor: FC<CustomRgbEditorProps> = ({
           height: "32px",
           flex: "1",
           minWidth: 0,
-          padding: "10px 12px",
+          padding: "8px 8px",
           display: "flex",
           justifyContent: "center",
           alignItems: "center",
-          margin: "0 4px",
+          margin: "0 2px",
         }}
         disabled={disabled}
         onOKActionDescription={onOKActionDescription}
@@ -384,11 +384,11 @@ export const CustomRgbEditor: FC<CustomRgbEditorProps> = ({
       </h1>
       <div
         style={{
-          marginBlockEnd: "20px",
+          marginBlockEnd: "8px",
           marginBlockStart: "0px",
           display: "grid",
           gridTemplateColumns: "1fr 1fr",
-          padding: "8px 0",
+          padding: "4px 2px",
           gap: "16px",
         }}
       >
@@ -406,7 +406,11 @@ export const CustomRgbEditor: FC<CustomRgbEditorProps> = ({
           />
 
           {/* Zone selection slider */}
-          <div style={{ marginTop: "8px" }}>
+          <div style={{ 
+            // padding: "8px 0",
+            width: "280px"
+          }}
+          >
             <SlowSliderField
               value={selectedZone}
               min={0}
@@ -428,7 +432,11 @@ export const CustomRgbEditor: FC<CustomRgbEditorProps> = ({
           </div>
 
           {/* Keyframe color timeline */}
-          <div style={{ marginTop: "4px", marginBottom: "4px" }}>
+          <div style={{ 
+            marginTop: "4px", 
+            marginBottom: "4px"
+            }}
+          >
             <div style={{ 
               fontSize: "10px", 
               color: "#B8BCBF", 
@@ -508,7 +516,8 @@ export const CustomRgbEditor: FC<CustomRgbEditorProps> = ({
             {/* @ts-ignore */}
             <Focusable
               style={{
-                width: "100%",
+                // width: "100%",
+                width: "280px",
                 display: "flex",
                 justifyContent: "space-evenly",
                 padding: "6px 4px",
@@ -579,7 +588,7 @@ export const CustomRgbEditor: FC<CustomRgbEditorProps> = ({
         {/* Right: HSV Controls */}
         <div
           style={{
-            width: "300px",
+            width: "280px",
             height: "280px",
             overflowX: "hidden",
             overflowY: "scroll",
