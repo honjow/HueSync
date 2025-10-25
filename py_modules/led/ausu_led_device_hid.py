@@ -62,7 +62,7 @@ def config_rgb(boot: bool = False, charging: bool = False) -> bytes:
         val += 0x04  # Add charging sleep enable
     
     return buf([
-        0x5D,  # FEATURE_KBD_ID (FEATURE_KBD_APP)
+        0x5A,  # FEATURE_KBD_DRIVER (CRITICAL: Must be 0x5A, not 0x5D!)
         0xD1,  # Control command group
         0x09,  # RGB configuration command
         0x01,  # Data length (1 byte)
@@ -80,6 +80,7 @@ class AsusLEDDeviceHID:
         interface: int | None = None,
         rgb_boot: bool = False,
         rgb_charging: bool = False,
+        disable_dynamic_lighting: bool = True,
     ):
         self._vid = vid
         self._pid = pid
@@ -91,7 +92,55 @@ class AsusLEDDeviceHID:
         # RGB configuration
         self.rgb_boot = rgb_boot
         self.rgb_charging = rgb_charging
+        self.disable_dynamic_lighting = disable_dynamic_lighting
         self._last_rgb_config = None
+        self._last_mode = None  # Track mode changes for optimized initialization
+        self._dynamic_lighting_disabled = False  # Track if we've disabled dynamic lighting
+
+    def _disable_ally_x_dynamic_lighting(self) -> None:
+        """
+        Disable Ally X Windows dynamic lighting that interferes with custom RGB.
+        禁用 Ally X Windows 动态灯光，它会干扰自定义 RGB 控制。
+        
+        This sends a command to the Ally X's dynamic lighting interface (0x00590001)
+        to disable the Windows driver's automatic lighting control.
+        向 Ally X 的动态灯光接口发送命令以禁用 Windows 驱动的自动灯光控制。
+        """
+        if not self.disable_dynamic_lighting or self._dynamic_lighting_disabled:
+            return
+        
+        # Ally X PID
+        ALLY_X_PID = 0x1B4C
+        
+        # Only attempt for Ally X devices
+        if ALLY_X_PID not in self._pid:
+            return
+        
+        try:
+            # Find the dynamic lighting interface (application 0x00590001)
+            hid_device_list = hid.enumerate()
+            for device in hid_device_list:
+                if device["vendor_id"] not in self._vid:
+                    continue
+                if device["product_id"] != ALLY_X_PID:
+                    continue
+                
+                # Look for the dynamic lighting application ID
+                # Note: lib_hid might not expose application ID, so we try the main interface
+                try:
+                    dynled_device = hid.Device(path=device["path"])
+                    # Send disable command: [0x06, 0x01]
+                    dynled_device.write(bytes([0x06, 0x01]))
+                    dynled_device.close()
+                    logger.info("Disabled Ally X dynamic lighting interface")
+                    self._dynamic_lighting_disabled = True
+                    break
+                except Exception as e:
+                    # Not the right interface, continue searching
+                    logger.debug(f"Failed to disable dynamic lighting on {device['path']}: {e}")
+                    continue
+        except Exception as e:
+            logger.warning(f"Failed to disable Ally X dynamic lighting: {e}")
 
     def is_ready(self) -> bool:
         if self.hid_device:
@@ -117,9 +166,13 @@ class AsusLEDDeviceHID:
             ):
                 self.hid_device = hid.Device(path=device["path"])
                 self._last_rgb_config = None  # Reset config for new device
+                self._last_mode = None  # Reset mode tracking for new device
+                self._dynamic_lighting_disabled = False  # Reset dynamic lighting state
                 logger.debug(
                     f"Found device: {device}, \npath: {device['path']}, \ninterface: {device['interface_number']}"
                 )
+                # Attempt to disable Ally X dynamic lighting if applicable
+                self._disable_ally_x_dynamic_lighting()
                 return True
         return False
 
@@ -134,6 +187,13 @@ class AsusLEDDeviceHID:
     ) -> bool:
         if not self.is_ready():
             return False
+
+        # Check if mode changed - force initialization on mode change
+        # 检查模式是否变化 - 模式变化时强制初始化
+        if mode != self._last_mode:
+            init = True
+            self._last_mode = mode
+            logger.debug(f"Mode changed to {mode}, forcing initialization")
 
         # Check if config_rgb needs to be sent
         current_config = (self.rgb_boot, self.rgb_charging)
