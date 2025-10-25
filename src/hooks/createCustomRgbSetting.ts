@@ -163,15 +163,13 @@ export function createCustomRgbSetting<TConfig extends CustomRgbConfig>(
       }
 
       try {
-        const success = await config.backendApi.applyPreset(name);
-        if (success) {
-          config.currentPresetSetter(name);
-          // Setting.mode setter will automatically call saveSettingsData() and Backend.applySettings()
-          // Setting.mode 的 setter 会自动调用 saveSettingsData() 和 Backend.applySettings()
-          Setting.mode = config.rgbMode;
-          Setting.notifyChange();
-        }
-        return success;
+        // Set preset name and mode, which will trigger applySettings() to handle backend call
+        // 设置预设名称和模式，这会触发 applySettings() 来处理后端调用
+        config.currentPresetSetter(name);
+        Setting.mode = config.rgbMode;  // This setter will trigger applySettings()
+        await Setting.saveSettingsData();
+        Setting.notifyChange();
+        return true;
       } catch (error) {
         console.error(`Failed to apply ${config.deviceName} preset '${name}':`, error);
         return false;

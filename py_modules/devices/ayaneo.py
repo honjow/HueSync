@@ -123,6 +123,13 @@ class AyaNeoLEDDevice(SysfsLEDMixin, BaseLEDDevice):
             color2=True,
             speed=True,
         )
+        capabilities[RGBMode.Battery] = RGBModeCapabilities(
+            mode=RGBMode.Battery,
+            color=False,
+            color2=False,
+            speed=False,
+            brightness=True,
+        )
         return capabilities
 
     def get_device_capabilities(self) -> dict:

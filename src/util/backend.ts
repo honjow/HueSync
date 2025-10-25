@@ -2,6 +2,7 @@ import { Setting, SettingsData } from "../hooks";
 import { call } from "@decky/api";
 import { debounce } from "lodash";
 import { Logger, RGBModeCapabilities } from ".";
+import { RGBMode } from "./const";
 
 export interface ZoneInfo {
   id: string;
@@ -214,6 +215,21 @@ export class Backend {
   private static _applySettings = ({ isInit = false }: ApplySettingsOptions = {}) => {
     if (!Setting.enableControl) {
       return;
+    }
+
+    // Handle custom RGB mode separately
+    // 自定义 RGB 模式单独处理
+    if (Setting.mode === RGBMode.custom) {
+      const deviceType = Setting.deviceCapabilities?.device_type;
+      const presetName = Setting.currentCustomPreset;
+      
+      if (deviceType && presetName) {
+        Logger.info(`Applying custom preset '${presetName}' for device '${deviceType}'`);
+        Backend.applyCustomRgbPreset(deviceType, presetName);
+      } else {
+        Logger.warn(`Custom mode active but missing info: deviceType=${deviceType}, preset=${presetName}`);
+      }
+      return; // Don't continue with standard mode logic
     }
 
     if (Setting.isSupportSuspendMode) {
