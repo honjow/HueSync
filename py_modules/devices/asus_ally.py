@@ -25,6 +25,7 @@ class AllyLEDDevice(SysfsLEDMixin, AsusLEDDevice):
         # SysfsLEDMixin will auto-detect sysfs path | SysfsLEDMixin 会自动检测 sysfs 路径
         self._ally_hid_device: AsusLEDDeviceHID | None = None
         self._custom_rgb_capable = False
+        self._custom_zone_initialized = False  # Track if custom zones have been initialized
 
     def _get_or_create_ally_device(self) -> AsusLEDDeviceHID | None:
         """
@@ -102,6 +103,7 @@ class AllyLEDDevice(SysfsLEDMixin, AsusLEDDevice):
         # Priority 1: Try sysfs interface (faster and more stable)
         # 优先级 1：尝试 sysfs 接口（更快更稳定）
         if self._sysfs_led_path and self._set_zone_colors_by_sysfs(all_colors):
+            self._custom_zone_initialized = True
             return True
         
         # Priority 2: Fallback to HID interface for compatibility
@@ -112,7 +114,13 @@ class AllyLEDDevice(SysfsLEDMixin, AsusLEDDevice):
             logger.error("Ally HID device not available for custom zone colors")
             return False
         
-        return device.set_custom_zone_colors(all_colors)
+        # Send init commands only on first call to avoid flicker
+        # 只在首次调用时发送初始化命令以避免闪烁
+        init = not self._custom_zone_initialized
+        result = device.set_custom_zone_colors(all_colors, init=init)
+        if result:
+            self._custom_zone_initialized = True
+        return result
 
 
     def _set_color_by_sysfs(self, color: Color, brightness: Optional[int] = None) -> bool:

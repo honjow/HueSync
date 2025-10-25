@@ -358,7 +358,7 @@ class AsusLEDDeviceHID:
     # ===== Custom RGB Methods (Software Animation) =====
     # 自定义 RGB 方法（软件动画）
 
-    def set_custom_zone_colors(self, colors: list[tuple[int, int, int]]) -> bool:
+    def set_custom_zone_colors(self, colors: list[tuple[int, int, int]], init: bool = False) -> bool:
         """
         Set static custom colors for all LED zones (ROG Ally: 4 zones).
         为所有 LED 区域设置静态自定义颜色（ROG Ally：4个区域）。
@@ -366,6 +366,8 @@ class AsusLEDDeviceHID:
         Args:
             colors: List of 4 RGB tuples (left_left, left_right, right_left, right_right)
                     4个 RGB 元组的列表（左左、左右、右左、右右）
+            init: Whether to send RGB_SET and RGB_APPLY commands (only needed on first frame)
+                  是否发送 RGB_SET 和 RGB_APPLY 命令（仅首帧需要）
         
         Returns:
             bool: True if successful
@@ -385,21 +387,23 @@ class AsusLEDDeviceHID:
             # Build command sequence
             commands = []
             
-            # 1. Set brightness (once)
-            commands.append(rgb_set_brightness("high"))
+            # 1. Set brightness (once per init)
+            if init:
+                commands.append(rgb_set_brightness("high"))
             
             # 2. Set each zone to solid mode with its color
             for zone, (r, g, b) in zip(zones, colors):
                 commands.extend(rgb_set(zone, "solid", "left", "low", r, g, b, 0, 0, 0))
             
-            # 3. Apply changes
-            commands.extend([RGB_SET, RGB_APPLY])
+            # 3. Apply changes (only on init to avoid flicker)
+            if init:
+                commands.extend([RGB_SET, RGB_APPLY])
             
             # 4. Send all commands
             for cmd in commands:
                 self.hid_device.write(cmd)
             
-            logger.debug(f"Set custom zone colors: {colors}")
+            logger.debug(f"Set custom zone colors: {colors} (init={init})")
             return True
         
         except Exception as e:

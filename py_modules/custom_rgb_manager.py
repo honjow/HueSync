@@ -324,6 +324,12 @@ class CustomRgbManager:
                 if stopped_any:
                     logger.debug("Stopped software LED effects")
                 stopped_any = True
+            
+            # Reset custom zone initialization flag so next animation starts fresh
+            # 重置自定义区域初始化标志，使下次动画重新初始化
+            if hasattr(device, '_custom_zone_initialized'):
+                device._custom_zone_initialized = False
+                logger.debug("Reset custom zone initialization flag")
         except Exception as e:
             logger.debug(f"Error stopping software effects: {e}")
         
