@@ -89,6 +89,14 @@ class AllyLEDDevice(SysfsLEDMixin, AsusLEDDevice):
             bool: True if successful
                   bool：成功返回 True
         """
+        # Priority 1: Try sysfs interface (faster and more stable)
+        # 优先级 1：尝试 sysfs 接口（更快更稳定）
+        if self._sysfs_led_path and self._set_zone_colors_by_sysfs(colors):
+            return True
+        
+        # Priority 2: Fallback to HID interface for compatibility
+        # 优先级 2：降级到 HID 接口以保持兼容性
+        logger.debug("sysfs not available or failed, using HID interface")
         device = self._get_or_create_ally_device()
         if not device:
             logger.error("Ally HID device not available for custom zone colors")
@@ -190,6 +198,61 @@ class AllyLEDDevice(SysfsLEDMixin, AsusLEDDevice):
             
         except Exception as e:
             logger.warning(f"Ally sysfs set color failed: {e}")
+            return False
+
+    def _set_zone_colors_by_sysfs(self, colors: list[tuple[int, int, int]]) -> bool:
+        """
+        Set different colors for 4 LED zones via sysfs interface.
+        通过 sysfs 接口为 4 个 LED 区域设置不同颜色。
+        
+        This method is optimized for animation engines - faster and more stable than HID.
+        此方法为动画引擎优化 - 比 HID 更快更稳定。
+        
+        Args:
+            colors: List of 4 RGB tuples, one for each zone
+                    4 个 RGB 元组列表，每个区域一个
+        
+        Returns:
+            bool: True if successful, False otherwise
+        """
+        if not self._sysfs_led_path:
+            return False
+        
+        if len(colors) != 4:
+            logger.error(f"Expected 4 colors for Ally zones, got {len(colors)}")
+            return False
+        
+        try:
+            multi_index_path = os.path.join(self._sysfs_led_path, "multi_index")
+            if not os.path.exists(multi_index_path):
+                return False
+            
+            with open(multi_index_path, "r") as f:
+                multi_index = f.read().strip()
+                count = len(multi_index.split(" "))
+                
+                multi_intensity_path = os.path.join(self._sysfs_led_path, "multi_intensity")
+                with open(multi_intensity_path, "w") as f:
+                    if count == 12:
+                        # 4 zones × RGB (decimal format) | 4 区域 × RGB（十进制格式）
+                        # Format: "R1 G1 B1 R2 G2 B2 R3 G3 B3 R4 G4 B4"
+                        color_str = " ".join([f"{r} {g} {b}" for r, g, b in colors])
+                        f.write(color_str)
+                        logger.debug(f"Set zone colors via sysfs (decimal): {color_str}")
+                    elif count == 4:
+                        # 4 zones (hex format) | 4 区域（十六进制格式）
+                        # Format: "0xRRGGBB 0xRRGGBB 0xRRGGBB 0xRRGGBB"
+                        hex_colors = " ".join([f"0x{r:02x}{g:02x}{b:02x}" for r, g, b in colors])
+                        f.write(hex_colors)
+                        logger.debug(f"Set zone colors via sysfs (hex): {hex_colors}")
+                    else:
+                        logger.warning(f"Unexpected multi_index count: {count}")
+                        return False
+            
+            return True
+            
+        except Exception as e:
+            logger.error(f"Failed to set zone colors via sysfs: {e}")
             return False
 
     def _set_solid_color(self, color: Color) -> None:
