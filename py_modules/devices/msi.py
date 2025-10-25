@@ -232,4 +232,49 @@ class MSILEDDevice(BaseLEDDevice):
         base_caps = super().get_device_capabilities()
         # MSI Claw supports custom RGB configuration
         base_caps["custom_rgb"] = True
+        base_caps["device_type"] = "msi"
         return base_caps
+
+    def set_custom_preset(self, keyframes: list, speed: int, brightness: int) -> bool:
+        """
+        Apply custom RGB preset with keyframes.
+        应用自定义 RGB 关键帧预设。
+        
+        Args:
+            keyframes: List of keyframes, each containing 9 RGB tuples
+                      关键帧列表，每个包含 9 个 RGB 元组
+            speed: Animation speed (0-20, higher = faster)
+                   动画速度（0-20，越高越快）
+            brightness: Brightness level (0-100)
+                        亮度级别（0-100）
+            
+        Returns:
+            bool: True if successful
+        """
+        try:
+            from utils import Color
+            from led.msi_led_device_hid import MSIRGBConfig, MSIKeyFrame, MSIEffect, normalize_speed
+            
+            # Build keyframes
+            # 构建关键帧
+            msi_keyframes = []
+            for frame_data in keyframes:
+                colors = [Color(zone[0], zone[1], zone[2]) for zone in frame_data]
+                msi_keyframes.append(MSIKeyFrame(rgb_zones=colors))
+            
+            # Build MSI config
+            # 构建 MSI 配置
+            msi_config = MSIRGBConfig(
+                speed=normalize_speed(speed),
+                brightness=brightness,
+                effect=MSIEffect.UNKNOWN_09,
+                keyframes=msi_keyframes
+            )
+            
+            # Send to device
+            # 发送到设备
+            return self.led_device.send_rgb_config(msi_config)
+            
+        except Exception as e:
+            logger.error(f"Failed to set MSI custom preset: {e}", exc_info=True)
+            return False

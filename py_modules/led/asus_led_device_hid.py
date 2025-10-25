@@ -2,7 +2,6 @@ from typing import Sequence
 
 import lib_hid as hid
 from config import logger
-from custom_zone_animator import KeyframeAnimator
 from utils import Color, RGBMode
 
 from .hhd.hhd_asus_hid import RGB_APPLY, RGB_INIT, RGB_SET, rgb_set, rgb_set_brightness
@@ -81,8 +80,7 @@ class AsusLEDDeviceHID:
     
     Features:
     - Standard RGB modes (solid, pulse, rainbow, etc.)
-    - Static custom zone colors
-    - Software-based keyframe animation (using KeyframeAnimator)
+    - Static custom zone colors (per-zone control)
     """
     
     def __init__(
@@ -112,9 +110,8 @@ class AsusLEDDeviceHID:
         self._last_mode = None  # Track mode changes for optimized initialization
         self._dynamic_lighting_disabled = False  # Track if we've disabled dynamic lighting
         
-        # Custom RGB support (software animation)
-        self._num_zones = num_zones  # Number of LED zones (9 for MSI, 4 for Ally)
-        self._animator: KeyframeAnimator | None = None
+        # Custom RGB support
+        self._num_zones = num_zones  # Number of LED zones (4 for Ally)
 
     def _disable_ally_x_dynamic_lighting(self) -> None:
         """
@@ -409,79 +406,3 @@ class AsusLEDDeviceHID:
             logger.error(f"Failed to set custom zone colors: {e}", exc_info=True)
             return False
 
-    def start_custom_animation(
-        self, 
-        keyframes: list[list[tuple[int, int, int]]], 
-        speed: int, 
-        brightness: int
-    ) -> bool:
-        """
-        Start software-based custom RGB animation.
-        启动基于软件的自定义 RGB 动画。
-        
-        Args:
-            keyframes: List of keyframes, each containing RGB tuples for all zones
-                       关键帧列表，每个包含所有区域的 RGB 元组
-            speed: Animation speed (1-20, higher = faster)
-            brightness: Brightness level (0-100)
-        
-        Returns:
-            bool: True if started successfully
-        """
-        if not self.is_ready():
-            logger.error("Device not ready for custom animation")
-            return False
-        
-        # Stop existing animation
-        self.stop_custom_animation()
-        
-        try:
-            # Convert tuple format to list format for KeyframeAnimator
-            # 将元组格式转换为 KeyframeAnimator 需要的列表格式
-            converted_keyframes = [
-                [[int(c) for c in rgb] for rgb in frame]
-                for frame in keyframes
-            ]
-            
-            # Create callback function for setting zone colors
-            # 创建用于设置区域颜色的回调函数
-            def set_zones_callback(left_colors: list[list[int]], right_colors: list[list[int]]) -> None:
-                """Set LED colors for left and right zones"""
-                # Combine left and right colors into a single list
-                # 将左右区域颜色合并为单个列表
-                all_colors = left_colors + right_colors
-                # Call set_custom_zone_colors with the combined colors
-                # 使用合并后的颜色调用 set_custom_zone_colors
-                self.set_custom_zone_colors(all_colors)
-            
-            # For ROG Ally: 4 zones total, 2 per joystick
-            # 对于 ROG Ally：共 4 个区域，每个摇杆 2 个
-            num_left = self._num_zones // 2  # Left joystick zones
-            num_right = self._num_zones - num_left  # Right joystick zones
-            
-            self._animator = KeyframeAnimator(
-                keyframes=converted_keyframes,
-                set_zones_callback=set_zones_callback,
-                speed=speed,
-                brightness=brightness,
-                num_left_zones=num_left,
-                num_right_zones=num_right
-            )
-            self._animator.start()
-            logger.info(f"Started custom RGB animation: {len(keyframes)} keyframes, speed={speed}, brightness={brightness}, zones={num_left}+{num_right}")
-            return True
-        
-        except Exception as e:
-            logger.error(f"Failed to start custom animation: {e}", exc_info=True)
-            return False
-
-    def stop_custom_animation(self) -> None:
-        """Stop the running custom RGB animation."""
-        if self._animator and self._animator.is_running():
-            self._animator.stop()
-            logger.info("Stopped custom RGB animation")
-        self._animator = None
-
-    def is_custom_animation_running(self) -> bool:
-        """Check if custom animation is currently running."""
-        return self._animator is not None and self._animator.is_running()

@@ -39,7 +39,7 @@ class CustomRgbManager:
             led_control: LedControl instance
         """
         self.led_control = led_control
-        self._ayaneo_animator: KeyframeAnimator | None = None
+        self._software_animator: KeyframeAnimator | None = None
     
     # ===== Validation Methods =====
     # 验证方法
@@ -155,32 +155,47 @@ class CustomRgbManager:
             logger.error(f"Invalid {device_type} custom config")
             return False
         
-        # Dispatch to device-specific implementation
+        # Dispatch based on implementation method
+        # 根据实现方式分发
         if device_type == "msi":
-            return self._apply_msi_custom_rgb(custom_config)
+            # MSI uses hardware keyframe engine
+            # MSI 使用硬件关键帧引擎
+            return self._apply_hardware_keyframe(custom_config)
         elif device_type == "ayaneo":
+            # AyaNeo uses software animation
+            # AyaNeo 使用软件动画
             return self._apply_software_animation(
                 custom_config, 
                 num_zones=8, 
                 device_name="AyaNeo"
             )
         elif device_type == "rog_ally":
-            return self._apply_ally_custom_rgb(custom_config)
+            # ROG Ally uses software animation
+            # ROG Ally 使用软件动画
+            return self._apply_software_animation(
+                custom_config, 
+                num_zones=4, 
+                device_name="ROG Ally"
+            )
         else:
             logger.error(f"Unknown device type: {device_type}")
             return False
     
-    def _apply_msi_custom_rgb(self, custom_config: dict) -> bool:
+    def _apply_hardware_keyframe(self, custom_config: dict) -> bool:
         """
-        Apply MSI custom RGB (hardware keyframe engine).
-        应用 MSI 自定义 RGB（硬件关键帧引擎）。
+        Apply custom RGB using hardware keyframe engine.
+        使用硬件关键帧引擎应用自定义 RGB。
+        
+        Devices with hardware keyframe support can receive all keyframes at once
+        and play them back without software intervention.
+        支持硬件关键帧的设备可以一次性接收所有关键帧并自主播放，无需软件干预。
         """
         try:
             self.stop_all_effects()
             
             device = self.led_control.device
             if not hasattr(device, 'set_custom_preset'):
-                logger.error("Device does not support MSI custom RGB")
+                logger.error("Device does not support hardware keyframe")
                 return False
             
             success = device.set_custom_preset(
@@ -191,16 +206,14 @@ class CustomRgbManager:
             
             if success:
                 logger.info(
-                    f"Applied MSI custom RGB: {len(custom_config['keyframes'])} frames, "
+                    f"Applied hardware keyframe: {len(custom_config['keyframes'])} frames, "
                     f"speed={custom_config['speed']}, brightness={custom_config['brightness']}"
                 )
-            else:
-                logger.error("Failed to apply MSI custom RGB")
             
             return success
         
         except Exception as e:
-            logger.error(f"Failed to apply MSI custom RGB: {e}", exc_info=True)
+            logger.error(f"Failed to apply hardware keyframe: {e}", exc_info=True)
             return False
     
     def _apply_software_animation(
@@ -240,15 +253,9 @@ class CustomRgbManager:
             # 创建用于设置区域颜色的回调函数
             def set_zones_callback(left_colors: list[list[int]], right_colors: list[list[int]]) -> None:
                 """Set LED colors for all zones"""
-                # Combine left and right colors into a single list
-                # 将左右区域颜色合并为单个列表
-                all_colors = left_colors + right_colors
-                # Convert to tuple format for device
-                # 转换为设备需要的元组格式
-                all_colors_tuples = [tuple(rgb) for rgb in all_colors]
-                # Call set_custom_zone_colors with the combined colors
-                # 使用合并后的颜色调用 set_custom_zone_colors
-                device.set_custom_zone_colors(all_colors_tuples)
+                # AyaNeo expects separate left_colors and right_colors parameters
+                # AyaNeo 期望分开的 left_colors 和 right_colors 参数
+                device.set_custom_zone_colors(left_colors, right_colors)
             
             # Split zones evenly between left and right
             # 将区域平均分配给左右两侧
@@ -256,7 +263,7 @@ class CustomRgbManager:
             num_right = num_zones - num_left
             
             # Create and start animator
-            self._ayaneo_animator = KeyframeAnimator(
+            self._software_animator = KeyframeAnimator(
                 keyframes=converted_keyframes,
                 set_zones_callback=set_zones_callback,
                 speed=custom_config["speed"],
@@ -264,7 +271,7 @@ class CustomRgbManager:
                 num_left_zones=num_left,
                 num_right_zones=num_right
             )
-            self._ayaneo_animator.start()
+            self._software_animator.start()
             
             logger.info(
                 f"Started {device_name} custom RGB animation: "
@@ -277,47 +284,6 @@ class CustomRgbManager:
             logger.error(f"Failed to apply {device_name} custom RGB: {e}", exc_info=True)
             return False
     
-    def _apply_ally_custom_rgb(self, custom_config: dict) -> bool:
-        """
-        Apply ROG Ally custom RGB (device-managed software animation).
-        应用 ROG Ally 自定义 RGB（设备管理的软件动画）。
-        """
-        try:
-            self.stop_all_effects()
-            
-            device = self.led_control.device
-            if not hasattr(device, 'start_custom_animation'):
-                logger.error("Device does not support custom animation")
-                return False
-            
-            # Convert keyframes
-            keyframes = [
-                [tuple(zone) for zone in frame]
-                for frame in custom_config["keyframes"]
-            ]
-            
-            # Ally device manages its own animation
-            success = device.start_custom_animation(
-                keyframes=keyframes,
-                speed=custom_config["speed"],
-                brightness=custom_config["brightness"]
-            )
-            
-            if success:
-                logger.info(
-                    f"Started Ally custom RGB animation: "
-                    f"{len(custom_config['keyframes'])} frames, "
-                    f"speed={custom_config['speed']}, brightness={custom_config['brightness']}"
-                )
-            else:
-                logger.error("Failed to start Ally custom animation")
-            
-            return success
-        
-        except Exception as e:
-            logger.error(f"Failed to apply Ally custom RGB: {e}", exc_info=True)
-            return False
-    
     # ===== Lifecycle Management =====
     # 生命周期管理
     
@@ -325,24 +291,30 @@ class CustomRgbManager:
         """
         Stop all LED effects (software effects and custom RGB animators).
         停止所有 LED 效果（软件效果和自定义 RGB 动画器）。
+        
+        Waits for animations to fully stop to prevent race conditions.
+        等待动画完全停止以防止竞态条件。
         """
+        import time
         stopped_any = False
         
-        # Stop AyaNeo software animator
-        if self._ayaneo_animator and self._ayaneo_animator.is_running():
-            self._ayaneo_animator.stop()
-            logger.info("Stopped AyaNeo custom RGB animator")
+        # Stop software animator with synchronous wait
+        # 停止软件动画器并同步等待
+        if self._software_animator and self._software_animator.is_running():
+            self._software_animator.stop()
+            
+            # Wait for animator thread to fully stop
+            # 等待动画器线程完全停止
+            timeout = 2.0  # 2 seconds timeout
+            start_time = time.time()
+            while self._software_animator.is_running():
+                if time.time() - start_time > timeout:
+                    logger.warning("Software animator stop timeout")
+                    break
+                time.sleep(0.05)  # 50ms check interval
+            
+            logger.info("Stopped software custom RGB animator")
             stopped_any = True
-        
-        # Stop Ally custom animation
-        try:
-            device = self.led_control.device
-            if hasattr(device, 'is_custom_animation_running') and device.is_custom_animation_running():
-                device.stop_custom_animation()
-                logger.info("Stopped Ally custom RGB animation")
-                stopped_any = True
-        except Exception as e:
-            logger.debug(f"Error stopping Ally custom animation: {e}")
         
         # Stop device software effects (Pulse, Rainbow, etc.)
         try:
@@ -354,6 +326,12 @@ class CustomRgbManager:
                 stopped_any = True
         except Exception as e:
             logger.debug(f"Error stopping software effects: {e}")
+        
+        # Add stabilization delay if anything was stopped
+        # 如果停止了任何效果，添加稳定延迟
+        if stopped_any:
+            time.sleep(0.1)  # 100ms stabilization delay
+            logger.debug("Stabilization delay completed")
         
         return stopped_any
 

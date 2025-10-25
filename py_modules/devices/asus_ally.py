@@ -76,22 +76,32 @@ class AllyLEDDevice(SysfsLEDMixin, AsusLEDDevice):
         """
         return self._get_or_create_ally_device() is not None
 
-    def set_custom_zone_colors(self, colors: list[tuple[int, int, int]]) -> bool:
+    def set_custom_zone_colors(
+        self, 
+        left_colors: list[list[int]], 
+        right_colors: list[list[int]]
+    ) -> bool:
         """
-        Set static custom colors for all LED zones.
-        为所有 LED 区域设置静态自定义颜色。
+        Set static custom colors for LED zones (unified API).
+        为 LED 区域设置静态自定义颜色（统一 API）。
         
         Args:
-            colors: List of RGB tuples for each zone
-                    每个区域的 RGB 元组列表
+            left_colors: List of RGB colors for left zones (2 zones)
+                        左侧区域的 RGB 颜色列表（2个区域）
+            right_colors: List of RGB colors for right zones (2 zones)
+                         右侧区域的 RGB 颜色列表（2个区域）
         
         Returns:
             bool: True if successful
                   bool：成功返回 True
         """
+        # Combine colors for 4-zone format
+        # 合并颜色为 4 区域格式
+        all_colors = [(r, g, b) for r, g, b in left_colors + right_colors]
+        
         # Priority 1: Try sysfs interface (faster and more stable)
         # 优先级 1：尝试 sysfs 接口（更快更稳定）
-        if self._sysfs_led_path and self._set_zone_colors_by_sysfs(colors):
+        if self._sysfs_led_path and self._set_zone_colors_by_sysfs(all_colors):
             return True
         
         # Priority 2: Fallback to HID interface for compatibility
@@ -102,53 +112,8 @@ class AllyLEDDevice(SysfsLEDMixin, AsusLEDDevice):
             logger.error("Ally HID device not available for custom zone colors")
             return False
         
-        return device.set_custom_zone_colors(colors)
+        return device.set_custom_zone_colors(all_colors)
 
-    def start_custom_animation(
-        self, 
-        keyframes: list[list[tuple[int, int, int]]], 
-        speed: int, 
-        brightness: int
-    ) -> bool:
-        """
-        Start custom RGB animation with keyframes.
-        使用关键帧启动自定义 RGB 动画。
-        
-        Args:
-            keyframes: List of keyframes
-                       关键帧列表
-            speed: Animation speed (1-20)
-                   动画速度（1-20）
-            brightness: Brightness level (0-100)
-                        亮度级别（0-100）
-        
-        Returns:
-            bool: True if started successfully
-                  bool：成功启动返回 True
-        """
-        device = self._get_or_create_ally_device()
-        if not device:
-            logger.error("Ally HID device not available for custom animation")
-            return False
-        
-        return device.start_custom_animation(keyframes, speed, brightness)
-
-    def stop_custom_animation(self) -> None:
-        """
-        Stop the running custom RGB animation.
-        停止正在运行的自定义 RGB 动画。
-        """
-        if self._ally_hid_device:
-            self._ally_hid_device.stop_custom_animation()
-
-    def is_custom_animation_running(self) -> bool:
-        """
-        Check if custom animation is currently running.
-        检查自定义动画是否正在运行。
-        """
-        if not self._ally_hid_device:
-            return False
-        return self._ally_hid_device.is_custom_animation_running()
 
     def _set_color_by_sysfs(self, color: Color, brightness: Optional[int] = None) -> bool:
         """
