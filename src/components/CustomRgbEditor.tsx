@@ -144,23 +144,35 @@ export const CustomRgbEditor: FC<CustomRgbEditorProps> = ({
   useEffect(() => {
     if (isPlaying || !editing) return;
     
+    let mounted = true;
     const timer = setTimeout(() => {
-      previewSingleFrame(currentFrame);
+      if (mounted) {
+        previewSingleFrame(currentFrame);
+      }
     }, 300); // 300ms debounce to avoid frequent updates
     
-    return () => clearTimeout(timer);
-  }, [currentFrame, editing, isPlaying]);
+    return () => {
+      mounted = false;
+      clearTimeout(timer);
+    };
+  }, [currentFrame, editing, isPlaying, previewSingleFrame]);
 
   // Re-send all frames when playing and config changes (speed, brightness, or any frame color)
   useEffect(() => {
     if (!isPlaying || !editing) return;
     
+    let mounted = true;
     const timer = setTimeout(() => {
-      preview();
+      if (mounted) {
+        preview();
+      }
     }, 300); // 300ms debounce to avoid frequent updates
     
-    return () => clearTimeout(timer);
-  }, [editing, isPlaying]);
+    return () => {
+      mounted = false;
+      clearTimeout(timer);
+    };
+  }, [editing, isPlaying, preview]);
 
   const [hue, saturation, value] = hsvState;
 
@@ -352,8 +364,12 @@ export const CustomRgbEditor: FC<CustomRgbEditorProps> = ({
   const handleCancel = async () => {
     cancelEditing();
     
-    // Restore the device to the state before editing
-    // 恢复设备到编辑前的状态
+    // Close modal immediately to avoid state updates during unmounting
+    // 立即关闭弹窗，避免在卸载过程中更新状态
+    closeModal();
+    
+    // Restore the device to the state before editing in the background
+    // 在后台恢复设备到编辑前的状态
     // For custom mode, need to reapply the active preset; for standard modes, use applySettings
     // 对于自定义模式，需要重新应用激活的 preset；对于标准模式，使用 applySettings
     if (Setting.mode === RGBMode.custom && Setting.currentCustomPreset) {
@@ -363,8 +379,6 @@ export const CustomRgbEditor: FC<CustomRgbEditorProps> = ({
       // Standard mode (or no active custom preset)
       await Backend.applySettings();
     }
-    
-    closeModal();
   };
 
   return (
