@@ -53,6 +53,29 @@
 - AYN
   - Loki Max
 
+## 自定义灯效
+
+部分设备支持高级自定义灯效，可以创建多帧动画，每个灯光区域都能单独控制。
+
+### 支持自定义灯效的设备
+
+- **MSI Claw 系列** - 硬件加速，动画更流畅
+- **ASUS ROG Ally / Ally X** - 软件动画引擎
+- **AYANEO 设备** - 软件动画引擎
+
+之所以能做自定义灯效，是因为这些设备都有单独控制每个 LED 区域颜色的指令。MSI 用的是硬件动画接口，ROG Ally 和 AYANEO 用软件算法实现关键帧之间的平滑过渡。
+
+### 编辑器界面
+
+**MSI Claw**  
+![MSI 自定义编辑器](./screenshot/msi_custom_editor.png)
+
+**ASUS ROG Ally**  
+![Ally 自定义编辑器](./screenshot/ally_custom_editor.png)
+
+<!-- **AYANEO**  
+![AyaNeo 自定义编辑器](./screenshot/ayaneo_custom_editor.png) -->
+
 ## 一键安装
 
 ```

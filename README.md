@@ -49,6 +49,29 @@ Similarly, Support for Ayn devices through [ayn-platform](https://github.com/Sha
 - AYN
   - Loki Max
 
+## Custom RGB Effects
+
+Some devices support advanced custom RGB effects with multi-frame animations and individual zone color control.
+
+### Supported Devices
+
+- **MSI Claw Series** - Hardware-accelerated for smoother animations
+- **ASUS ROG Ally / Ally X** - Software animation engine
+- **AYANEO Devices** - Software animation engine
+
+These devices have commands to set individual LED zone colors, which makes custom effects possible. MSI devices use hardware animation interface, while ROG Ally and AYANEO use software algorithms to smoothly interpolate between keyframes.
+
+### Editor Interfaces
+
+**MSI Claw**  
+![MSI Custom Editor](./screenshot/msi_custom_editor.png)
+
+**ASUS ROG Ally**  
+![Ally Custom Editor](./screenshot/ally_custom_editor.png)
+
+<!-- **AYANEO**  
+![AyaNeo Custom Editor](./screenshot/ayaneo_custom_editor.png) -->
+
 ## One-step Installation
 ```
 curl -L https://raw.githubusercontent.com/honjow/huesync/main/install.sh | sh
