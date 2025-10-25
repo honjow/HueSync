@@ -3,7 +3,7 @@ import time
 
 from config import PRODUCT_NAME, logger
 from id_info import ID_MAP
-from led.ausu_led_device_hid import AsusLEDDeviceHID
+from led.asus_led_device_hid import AsusLEDDeviceHID
 from utils import Color, RGBMode, RGBModeCapabilities
 
 from .led_device import BaseLEDDevice
@@ -17,7 +17,40 @@ class AsusLEDDevice(BaseLEDDevice):
     AsusLEDDevice为Asus设备提供控制，集成特定产品ID以进行定制设置。
     """
 
+    def __new__(cls):
+        """
+        Factory method to return the appropriate subclass based on device type.
+        根据设备类型返回适当的子类的工厂方法。
+        """
+        # If already a subclass, create directly | 如果已经是子类，直接创建
+        if cls is not AsusLEDDevice:
+            logger.debug(f"Creating subclass directly: {cls.__name__}")
+            return super().__new__(cls)
+        
+        # Check if this is an Ally device | 检查是否是 Ally 设备
+        from config import PRODUCT_NAME, logger as config_logger
+        from id_info import ID_MAP
+        
+        logger.debug(f"Factory pattern: checking PRODUCT_NAME='{PRODUCT_NAME}'")
+        for product_name, id_info in ID_MAP.items():
+            if product_name in PRODUCT_NAME:
+                logger.debug(f"Matched product: {product_name}")
+                # Check if it's ROG Ally series | 判断是否是 ROG Ally 系列
+                if "Ally" in product_name:
+                    logger.info(f"Factory pattern: Detected ROG Ally, returning AllyLEDDevice")
+                    from .asus_ally import AllyLEDDevice
+                    return super().__new__(AllyLEDDevice)
+        
+        # Default to base class | 默认返回基类实例
+        logger.debug("Factory pattern: Returning base AsusLEDDevice")
+        return super().__new__(cls)
+
     def __init__(self):
+        # Prevent re-initialization | 防止重复初始化
+        if hasattr(self, '_initialized'):
+            return
+        self._initialized = True
+        
         super().__init__()
         self._current_real_mode: RGBMode = RGBMode.Disabled
         self._hid_device_cache = None  # Cache HID device instance | 缓存HID设备实例

@@ -6,6 +6,7 @@ from settings import SettingsManager
 try:
     import update
     from config import CONFIG_KEY, logger
+    from custom_rgb_manager import CustomRgbManager
     from huesync import LedControl
 
     decky.logger.info("HueSync main.py")
@@ -20,6 +21,7 @@ class Plugin:
         )
         try:
             self.ledControl = LedControl()
+            self.custom_rgb_manager = CustomRgbManager(self.ledControl)
         except Exception as e:
             logger.error(e, exc_info=True)
 
@@ -36,31 +38,10 @@ class Plugin:
         Stop all LED effects (software effects and custom RGB animator).
         停止所有 LED 效果（软件效果和自定义 RGB 动画器）。
         
-        This method ensures mutual exclusion between all LED control methods.
-        此方法确保所有 LED 控制方法之间的互斥。
+        Delegates to CustomRgbManager for centralized management.
+        委托给 CustomRgbManager 进行集中管理。
         """
-        stopped_any = False
-        
-        # Stop AyaNeo software animator
-        # 停止 AyaNeo 软件动画器
-        if self._ayaneo_animator and self._ayaneo_animator.is_running():
-            self._ayaneo_animator.stop()
-            logger.info("Stopped AyaNeo custom RGB animator")
-            stopped_any = True
-        
-        # Stop device software effects (Pulse, Rainbow, etc.)
-        # 停止设备软件效果（Pulse、Rainbow 等）
-        try:
-            device = self.ledControl.device
-            if hasattr(device, 'stop_effects'):
-                device.stop_effects()
-                if stopped_any:
-                    logger.debug("Stopped software LED effects")
-                stopped_any = True
-        except Exception as e:
-            logger.debug(f"Error stopping software effects: {e}")
-        
-        return stopped_any
+        return self.custom_rgb_manager.stop_all_effects()
 
     async def set_color(
         self,
@@ -321,17 +302,10 @@ class Plugin:
         为任何设备类型保存自定义 RGB 预设。
         """
         try:
-            # Validate config
-            if device_type == "msi":
-                if not self._validate_msi_custom_config(config):
-                    logger.error(f"Invalid MSI custom preset config")
-                    return False
-            elif device_type == "ayaneo":
-                if not self._validate_ayaneo_custom_config(config):
-                    logger.error(f"Invalid AyaNeo custom preset config")
-                    return False
-            else:
-                logger.error(f"Unknown device type: {device_type}")
+            # Validate config using unified method from custom_rgb_manager
+            # 使用 custom_rgb_manager 的统一验证方法
+            if not self.custom_rgb_manager.validate_config(device_type, config):
+                logger.error(f"Invalid {device_type} custom preset config")
                 return False
 
             # Get existing presets
@@ -387,259 +361,14 @@ class Plugin:
         Apply custom RGB configuration for any device type.
         为任何设备类型应用自定义 RGB 配置。
         
-        Unified interface - device-specific implementation is dispatched internally.
-        统一接口 - 设备特定实现在内部分发。
-        
         Args:
-            device_type: "msi" or "ayaneo"
+            device_type: "msi", "ayaneo", or "rog_ally"
             custom_config: Configuration dict with speed, brightness, and keyframes
             
         Returns:
             bool: True if successful
         """
-        if device_type == "msi":
-            return await self._apply_msi_custom_rgb(custom_config)
-        elif device_type == "ayaneo":
-            return await self._apply_ayaneo_custom_rgb(custom_config)
-        else:
-            logger.error(f"Unknown device type: {device_type}")
-            return False
-
-    # ===== MSI Custom RGB Methods (Device-Specific Implementation) =====
-    # MSI 自定义 RGB 方法（设备特定实现）
-
-    def _validate_msi_custom_config(self, config: dict) -> bool:
-        """
-        Validate MSI custom RGB configuration.
-        验证 MSI 自定义 RGB 配置。
-
-        Args:
-            config: Configuration dict to validate
-
-        Returns:
-            bool: True if valid
-        """
-        try:
-            # Check required fields
-            if "speed" not in config or "brightness" not in config or "keyframes" not in config:
-                logger.error("Missing required fields in config")
-                return False
-
-            # Validate speed (0-20)
-            if not isinstance(config["speed"], int) or not 0 <= config["speed"] <= 20:
-                logger.error(f"Invalid speed: {config['speed']}")
-                return False
-
-            # Validate brightness (0-100)
-            if not isinstance(config["brightness"], int) or not 0 <= config["brightness"] <= 100:
-                logger.error(f"Invalid brightness: {config['brightness']}")
-                return False
-
-            # Validate keyframes (1-8 frames)
-            keyframes = config["keyframes"]
-            if not isinstance(keyframes, list) or not 1 <= len(keyframes) <= 8:
-                logger.error(f"Invalid keyframes count: {len(keyframes) if isinstance(keyframes, list) else 'not a list'}")
-                return False
-
-            # Validate each keyframe
-            for frame_idx, frame in enumerate(keyframes):
-                # Must have exactly 9 zones
-                if not isinstance(frame, list) or len(frame) != 9:
-                    logger.error(f"Frame {frame_idx}: must have 9 zones, got {len(frame) if isinstance(frame, list) else 'not a list'}")
-                    return False
-
-                # Validate each zone color
-                for zone_idx, zone in enumerate(frame):
-                    if not isinstance(zone, list) or len(zone) != 3:
-                        logger.error(f"Frame {frame_idx}, Zone {zone_idx}: must be [R,G,B], got {zone}")
-                        return False
-                    # Check RGB values (0-255)
-                    if not all(isinstance(c, int) and 0 <= c <= 255 for c in zone):
-                        logger.error(f"Frame {frame_idx}, Zone {zone_idx}: RGB values must be 0-255, got {zone}")
-                        return False
-
-            return True
-
-        except Exception as e:
-            logger.error(f"Validation error: {e}", exc_info=True)
-            return False
-
-    async def _apply_msi_custom_rgb(self, custom_config: dict):
-        """
-        Apply MSI custom RGB configuration (device-specific implementation).
-        应用 MSI 自定义 RGB 配置（设备特定实现）。
-
-        Args:
-            custom_config: Configuration dict with speed, brightness, and keyframes
-
-        Returns:
-            bool: True if successful
-        """
-        try:
-            from utils import Color
-            from led.msi_led_device_hid import MSIRGBConfig, MSIKeyFrame, MSIEffect, normalize_speed
-
-            # Validate config
-            if not self._validate_msi_custom_config(custom_config):
-                logger.error(f"Invalid MSI custom config: {custom_config}")
-                return False
-
-            # Build keyframes
-            keyframes = []
-            for frame_data in custom_config["keyframes"]:
-                colors = [
-                    Color(zone[0], zone[1], zone[2])
-                    for zone in frame_data
-                ]
-                keyframes.append(MSIKeyFrame(rgb_zones=colors))
-
-            # Build MSI config
-            msi_config = MSIRGBConfig(
-                speed=normalize_speed(custom_config["speed"]),
-                brightness=custom_config["brightness"],
-                effect=MSIEffect.UNKNOWN_09,
-                keyframes=keyframes
-            )
-
-            # Get MSI LED device from ledControl
-            if not hasattr(self.ledControl.device, 'led_device'):
-                logger.error("Device does not support MSI custom RGB")
-                return False
-
-            # Send to device
-            success = self.ledControl.device.led_device.send_rgb_config(msi_config)
-
-            if success:
-                logger.info(f"Applied MSI custom RGB config with {len(keyframes)} keyframes")
-            else:
-                logger.error("Failed to send MSI custom RGB config to device")
-
-            return success
-
-        except Exception as e:
-            logger.error(f"Failed to apply MSI custom RGB: {e}", exc_info=True)
-            return False
-
-    # ===== AyaNeo Custom RGB Methods (Device-Specific Implementation) =====
-    # AyaNeo 自定义 RGB 方法（设备特定实现）
-
-    _ayaneo_animator = None  # KeyframeAnimator instance
-
-    def _validate_ayaneo_custom_config(self, config: dict) -> bool:
-        """
-        Validate AyaNeo custom RGB configuration.
-        验证 AyaNeo 自定义 RGB 配置。
-
-        Args:
-            config: Configuration dict to validate
-
-        Returns:
-            bool: True if valid
-        """
-        try:
-            # Check required fields
-            if "speed" not in config or "brightness" not in config or "keyframes" not in config:
-                logger.error("Missing required fields in AyaNeo config")
-                return False
-
-            # Validate speed (0-20) and brightness (0-100)
-            if not isinstance(config["speed"], int) or not 0 <= config["speed"] <= 20:
-                logger.error(f"Invalid speed: {config['speed']}")
-                return False
-            if not isinstance(config["brightness"], int) or not 0 <= config["brightness"] <= 100:
-                logger.error(f"Invalid brightness: {config['brightness']}")
-                return False
-
-            # Validate keyframes (1-8 frames)
-            keyframes = config["keyframes"]
-            if not isinstance(keyframes, list) or not 1 <= len(keyframes) <= 8:
-                logger.error(f"Invalid keyframes count: {len(keyframes) if isinstance(keyframes, list) else 'not a list'}")
-                return False
-
-            # Determine expected zones based on device
-            # Note: Need to check device model to determine if it's KUN (9 zones) or standard (8 zones)
-            expected_zones = 8  # Default to 8 zones
-            if hasattr(self.ledControl.device, 'model'):
-                from led.ayaneo_led_device_ec import AyaNeoModel
-                if self.ledControl.device.model == AyaNeoModel.KUN:
-                    expected_zones = 9
-
-            # Validate each keyframe
-            for frame_idx, frame in enumerate(keyframes):
-                if not isinstance(frame, list) or len(frame) != expected_zones:
-                    logger.error(f"Frame {frame_idx}: must have {expected_zones} zones, got {len(frame) if isinstance(frame, list) else 'not a list'}")
-                    return False
-                # Validate each zone color
-                for zone_idx, zone in enumerate(frame):
-                    if not isinstance(zone, list) or len(zone) != 3:
-                        logger.error(f"Frame {frame_idx}, Zone {zone_idx}: must be [R,G,B], got {zone}")
-                        return False
-                    # Check RGB values (0-255)
-                    if not all(isinstance(c, int) and 0 <= c <= 255 for c in zone):
-                        logger.error(f"Frame {frame_idx}, Zone {zone_idx}: RGB values must be 0-255, got {zone}")
-                        return False
-
-            return True
-
-        except Exception as e:
-            logger.error(f"AyaNeo config validation error: {e}", exc_info=True)
-            return False
-
-    async def _apply_ayaneo_custom_rgb(self, custom_config: dict):
-        """
-        Apply AyaNeo custom RGB configuration with KeyframeAnimator (device-specific implementation).
-        使用 KeyframeAnimator 应用 AyaNeo 自定义 RGB 配置（设备特定实现）。
-
-        Args:
-            custom_config: Configuration dict with speed, brightness, and keyframes
-
-        Returns:
-            bool: True if successful
-        """
-        try:
-            # Validate config
-            if not self._validate_ayaneo_custom_config(custom_config):
-                logger.error("Invalid AyaNeo custom RGB configuration")
-                return False
-
-            # Stop all LED effects before starting custom RGB
-            # 启动自定义 RGB 前停止所有 LED 效果
-            self._stop_all_led_effects()
-
-            # Import animator
-            from custom_zone_animator import KeyframeAnimator
-
-            # Get device reference
-            device = self.ledControl.device
-            if not hasattr(device, 'set_custom_zone_colors'):
-                logger.error("Device does not support custom zone colors")
-                return False
-
-            # Create animator
-            self._ayaneo_animator = KeyframeAnimator(
-                keyframes=custom_config["keyframes"],
-                set_zones_callback=device.set_custom_zone_colors,
-                speed=custom_config["speed"],
-                brightness=custom_config["brightness"],
-                update_rate=30.0,  # 30 FPS
-                num_left_zones=4,
-                num_right_zones=4
-            )
-
-            # Start animation
-            self._ayaneo_animator.start()
-
-            logger.info(
-                f"Started AyaNeo custom RGB animation: "
-                f"{len(custom_config['keyframes'])} frames, "
-                f"speed={custom_config['speed']}, "
-                f"brightness={custom_config['brightness']}"
-            )
-            return True
-
-        except Exception as e:
-            logger.error(f"Failed to apply AyaNeo custom RGB: {e}", exc_info=True)
-            return False
+        return self.custom_rgb_manager.apply_custom_rgb(device_type, custom_config)
 
     # Function called first during the unload process, utilize this to handle your plugin being removed
     async def _unload(self):

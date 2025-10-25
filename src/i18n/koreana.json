@@ -89,6 +89,7 @@
     "MSI_CUSTOM_KEYFRAMES_INFO": "키프레임",
     "MSI_CUSTOM_ADD_FRAME": "프레임 추가",
     "MSI_CUSTOM_COPY_FRAME": "프레임 복사",
+    "MSI_CUSTOM_FILL_ALL_ZONES": "모든 영역 채우기",
     "MSI_CUSTOM_COPY_ROTATE_CW": "복사 후 시계방향 회전",
     "MSI_CUSTOM_COPY_ROTATE_CCW": "복사 후 반시계방향 회전",
     "MSI_CUSTOM_DELETE_FRAME": "프레임 삭제",
@@ -119,5 +120,9 @@
     "AYANEO_LED_ZONE_R2": "Right Grip - Zone 2",
     "AYANEO_LED_ZONE_R3": "Right Grip - Zone 3",
     "AYANEO_LED_ZONE_R4": "Right Grip - Zone 4",
-    "AYANEO_LED_ZONE_GUIDE": "Guide Button"
+    "AYANEO_LED_ZONE_GUIDE": "Guide Button",
+    "ALLY_LED_ZONE_L1": "왼쪽 스틱 왼쪽",
+    "ALLY_LED_ZONE_L2": "왼쪽 스틱 오른쪽",
+    "ALLY_LED_ZONE_R1": "오른쪽 스틱 왼쪽",
+    "ALLY_LED_ZONE_R2": "오른쪽 스틱 오른쪽"
 }

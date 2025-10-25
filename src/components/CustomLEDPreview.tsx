@@ -434,6 +434,16 @@ export const MsiLEDPreview: FC<MsiLEDPreviewProps> = ({
     leds: Array<{ x: number; y: number; idx: number }>,
     colors: RGBTuple[]
   ) => {
+    // Safety check: ensure we have colors and LEDs
+    // 安全检查：确保有颜色和 LED 数据
+    if (!leds || leds.length === 0 || !colors || colors.length === 0) {
+      console.warn('drawGradientRing: insufficient data', { 
+        ledsCount: leds?.length, 
+        colorsCount: colors?.length 
+      });
+      return;
+    }
+
     // Calculate angles for each LED relative to this ring's center
     const ledsWithAngles = leds.map(led => {
       // Calculate angle from ring center to LED position
@@ -521,9 +531,16 @@ export const MsiLEDPreview: FC<MsiLEDPreviewProps> = ({
 
     const t = (angle - angle1) / (angle2 - angle1);
 
-    // RGB interpolation
-    const color1 = colors[led1.idx];
-    const color2 = colors[led2.idx];
+    // RGB interpolation with safety checks
+    // RGB 插值，带安全检查
+    const color1 = colors[led1.idx] || [0, 0, 0];
+    const color2 = colors[led2.idx] || [0, 0, 0];
+
+    // Additional safety: if colors are undefined, return black
+    // 额外安全检查：如果颜色未定义，返回黑色
+    if (!color1 || !color2) {
+      return [0, 0, 0];
+    }
 
     return [
       Math.round(color1[0] + (color2[0] - color1[0]) * t),

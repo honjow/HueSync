@@ -12,8 +12,8 @@ export interface DeviceCapabilities {
   zones: ZoneInfo[];
   power_led: boolean;
   suspend_mode: boolean;
-  custom_rgb?: boolean;  // Multi-zone custom RGB support (MSI, AyaNeo, etc.)
-  device_type?: "msi" | "ayaneo" | "generic";  // Device type for custom RGB implementation selection
+  custom_rgb?: boolean;  // Multi-zone custom RGB support (MSI, AyaNeo, ROG Ally, etc.)
+  device_type?: "msi" | "ayaneo" | "rog_ally" | "generic";  // Device type for custom RGB implementation selection
 }
 
 interface ApplySettingsOptions {

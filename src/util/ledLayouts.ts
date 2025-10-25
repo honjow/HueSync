@@ -230,6 +230,99 @@ export const AYANEO_KUN_LAYOUT: LEDLayoutConfig = {
 };
 
 /**
+ * ROG Ally LED Layout (4 zones)
+ * ROG Ally LED 布局（4个区域）
+ * 
+ * Physical layout: Each joystick has 2 LEDs
+ * 物理布局：每个摇杆有2个LED
+ * 
+ */
+export const ROG_ALLY_LAYOUT: LEDLayoutConfig = {
+  deviceType: "rog_ally",
+  numZones: 4,
+  
+  // Circle centers for LED groups
+  circles: {
+    leftStick: { x: 80, y: 40 },
+    rightStick: { x: 220, y: 40 }
+  },
+
+  visual: {
+    ring: { 
+      innerRadius: 18,
+      outerRadius: 26
+    },
+    led: { 
+      radius: 8,
+      radiusSelected: 10
+    }
+  },
+  
+  zoneMappings: [
+    // Left stick
+    { 
+      arrayIndex: 0, 
+      circle: "leftStick", 
+      angle: 300,
+      radius: 38,
+      label: { 
+        text: "L1", 
+        i18nKey: "ALLY_LED_ZONE_L1", 
+        position: "left"
+      }
+    },
+    { 
+      arrayIndex: 1, 
+      circle: "leftStick", 
+      angle: 120,
+      radius: 38,
+      label: { 
+        text: "L2", 
+        i18nKey: "ALLY_LED_ZONE_L2", 
+        position: "right"
+      }
+    },
+    
+    // Right stick
+    { 
+      arrayIndex: 2, 
+      circle: "rightStick", 
+      angle: 300,
+      radius: 38,
+      label: { 
+        text: "R3", 
+        i18nKey: "ALLY_LED_ZONE_R1", 
+        position: "left"
+      }
+    },
+    { 
+      arrayIndex: 3, 
+      circle: "rightStick", 
+      angle: 120,
+      radius: 38,
+      label: { 
+        text: "R4", 
+        i18nKey: "ALLY_LED_ZONE_R2", 
+        position: "right"
+      }
+    },
+  ],
+  
+  rotationMappings: {
+    leftStick: {
+      // L1 ↔ L2 swap
+      clockwise: [1, 0],
+      counterClockwise: [1, 0],
+    },
+    rightStick: {
+      // R1 ↔ R2 swap
+      clockwise: [3, 2],
+      counterClockwise: [3, 2],
+    },
+  },
+};
+
+/**
  * Get LED layout configuration by device type
  * 根据设备类型获取 LED 布局配置
  * 
@@ -244,6 +337,8 @@ export function getLEDLayout(deviceType: DeviceType | string): LEDLayoutConfig {
       return AYANEO_STANDARD_LAYOUT;
     case "ayaneo_kun":
       return AYANEO_KUN_LAYOUT;
+    case "rog_ally":
+      return ROG_ALLY_LAYOUT;
     default:
       // Default to MSI Claw layout
       return MSI_CLAW_LAYOUT;

@@ -131,13 +131,11 @@ export function createCustomRgbHook<TConfig extends CustomRgbConfig, TPresetsDic
     };
 
     /**
-     * Update speed
-     * 更新速度
+     * Update editing configuration (unified method)
+     * 更新编辑配置（统一方法）
      */
-    const updateSpeed = (speed: number) => {
+    const updateConfig = (newConfig: TConfig) => {
       if (!editing) return;
-
-      const newConfig = { ...editing, speed } as TConfig;
       
       if (Setting.updateEditingConfig) {
         Setting.updateEditingConfig(newConfig);
@@ -147,19 +145,21 @@ export function createCustomRgbHook<TConfig extends CustomRgbConfig, TPresetsDic
     };
 
     /**
+     * Update speed
+     * 更新速度
+     */
+    const updateSpeed = (speed: number) => {
+      if (!editing) return;
+      updateConfig({ ...editing, speed } as TConfig);
+    };
+
+    /**
      * Update brightness
      * 更新亮度
      */
     const updateBrightness = (brightness: number) => {
       if (!editing) return;
-
-      const newConfig = { ...editing, brightness } as TConfig;
-      
-      if (Setting.updateEditingConfig) {
-        Setting.updateEditingConfig(newConfig);
-      } else if (Setting.updateEditing) {
-        Setting.updateEditing(newConfig);
-      }
+      updateConfig({ ...editing, brightness } as TConfig);
     };
 
     /**
@@ -230,6 +230,7 @@ export function createCustomRgbHook<TConfig extends CustomRgbConfig, TPresetsDic
       deleteKeyframe,
       updateSpeed,
       updateBrightness,
+      updateConfig,
 
       // Actions
       preview,

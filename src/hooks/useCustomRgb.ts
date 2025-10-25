@@ -14,72 +14,62 @@ import { Backend, RGBMode } from '../util';
 import { Setting } from './settings';
 import { CustomRgbConfig, CustomPresetsDict, CustomRgbDeviceType } from '../types/customRgb';
 
-const MSI_MAX_KEYFRAMES = 8;
-const MSI_ZONE_COUNT = 9; // MSI Claw has 9 zones
-
-const AYANEO_MAX_KEYFRAMES = 8;
-const AYANEO_DEFAULT_ZONE_COUNT = 8; // Most AyaNeo devices have 8 zones (KUN has 9)
+// Device-specific constants
+// 设备特定常量
+const DEVICE_CONFIGS = {
+  msi: { maxKeyframes: 8, defaultZoneCount: 9 },      // MSI Claw has 9 zones
+  ayaneo: { maxKeyframes: 8, defaultZoneCount: 8 },   // Most AyaNeo devices have 8 zones (KUN has 9)
+  rog_ally: { maxKeyframes: 8, defaultZoneCount: 4 }, // ROG Ally has 4 zones (2 per joystick)
+} as const;
 
 /**
- * MSI Custom RGB Setting instance
- * MSI 自定义 RGB 设置实例
+ * Factory function to create a Custom RGB Setting instance
+ * 创建自定义 RGB 设置实例的工厂函数
+ */
+function createDeviceCustomRgbSetting(deviceType: CustomRgbDeviceType) {
+  const config = DEVICE_CONFIGS[deviceType];
+  return createCustomRgbSetting<CustomRgbConfig>({
+    deviceName: deviceType,
+    rgbMode: RGBMode.custom,
+    backendApi: {
+      getPresets: () => Backend.getCustomRgbPresets(deviceType),
+      savePreset: (name, cfg) => Backend.saveCustomRgbPreset(deviceType, name, cfg),
+      deletePreset: (name) => Backend.deleteCustomRgbPreset(deviceType, name),
+      applyPreset: (name) => Backend.applyCustomRgbPreset(deviceType, name),
+      setCustomRgb: (cfg) => Backend.setCustomRgb(deviceType, cfg),
+    },
+    defaultZoneCount: config.defaultZoneCount,
+    currentPresetGetter: () => Setting.currentCustomPreset,
+    currentPresetSetter: (value) => { Setting.currentCustomPreset = value; },
+  });
+}
+
+/**
+ * Device-specific Custom RGB Setting instances
+ * 设备特定的自定义 RGB 设置实例
  * 
  * Exported for direct access in components that need to call Setting methods
  * 导出供需要直接调用 Setting 方法的组件使用
  */
-export const MsiCustomRgbSetting = createCustomRgbSetting<CustomRgbConfig>({
-  deviceName: "msi",
-  rgbMode: RGBMode.custom,
-  backendApi: {
-    getPresets: () => Backend.getCustomRgbPresets("msi"),
-    savePreset: (name, config) => Backend.saveCustomRgbPreset("msi", name, config),
-    deletePreset: (name) => Backend.deleteCustomRgbPreset("msi", name),
-    applyPreset: (name) => Backend.applyCustomRgbPreset("msi", name),
-    setCustomRgb: (config) => Backend.setCustomRgb("msi", config),
-  },
-  defaultZoneCount: MSI_ZONE_COUNT,
-  currentPresetGetter: () => Setting.currentCustomPreset,
-  currentPresetSetter: (value) => { Setting.currentCustomPreset = value; },
-});
-
-/**
- * AyaNeo Custom RGB Setting instance
- * AyaNeo 自定义 RGB 设置实例
- * 
- * Exported for direct access in components that need to call Setting methods
- * 导出供需要直接调用 Setting 方法的组件使用
- */
-export const AyaNeoCustomRgbSetting = createCustomRgbSetting<CustomRgbConfig>({
-  deviceName: "ayaneo",
-  rgbMode: RGBMode.custom,
-  backendApi: {
-    getPresets: () => Backend.getCustomRgbPresets("ayaneo"),
-    savePreset: (name, config) => Backend.saveCustomRgbPreset("ayaneo", name, config),
-    deletePreset: (name) => Backend.deleteCustomRgbPreset("ayaneo", name),
-    applyPreset: (name) => Backend.applyCustomRgbPreset("ayaneo", name),
-    setCustomRgb: (config) => Backend.setCustomRgb("ayaneo", config),
-  },
-  defaultZoneCount: AYANEO_DEFAULT_ZONE_COUNT,
-  currentPresetGetter: () => Setting.currentCustomPreset,
-  currentPresetSetter: (value) => { Setting.currentCustomPreset = value; },
-});
+export const MsiCustomRgbSetting = createDeviceCustomRgbSetting("msi");
+export const AyaNeoCustomRgbSetting = createDeviceCustomRgbSetting("ayaneo");
+export const AllyCustomRgbSetting = createDeviceCustomRgbSetting("rog_ally");
 
 // Create device-specific hook implementations
 // 创建设备特定的 hook 实现
 const useMsiCustomRgbImpl = createCustomRgbHook<CustomRgbConfig, CustomPresetsDict>(
   MsiCustomRgbSetting,
-  {
-    maxKeyframes: MSI_MAX_KEYFRAMES,
-    defaultZoneCount: MSI_ZONE_COUNT,
-  }
+  DEVICE_CONFIGS.msi
 );
 
 const useAyaNeoCustomRgbImpl = createCustomRgbHook<CustomRgbConfig, CustomPresetsDict>(
   AyaNeoCustomRgbSetting,
-  {
-    maxKeyframes: AYANEO_MAX_KEYFRAMES,
-    defaultZoneCount: AYANEO_DEFAULT_ZONE_COUNT,
-  }
+  DEVICE_CONFIGS.ayaneo
+);
+
+const useAllyCustomRgbImpl = createCustomRgbHook<CustomRgbConfig, CustomPresetsDict>(
+  AllyCustomRgbSetting,
+  DEVICE_CONFIGS.rog_ally
 );
 
 /**
@@ -87,25 +77,37 @@ const useAyaNeoCustomRgbImpl = createCustomRgbHook<CustomRgbConfig, CustomPreset
  * 适用于任何支持设备类型的统一自定义 RGB hook
  * 
  * This hook automatically returns the correct implementation based on device type.
- * Both MSI and AyaNeo share the same backend storage.
+ * All devices (MSI, AyaNeo, ROG Ally) share the same backend storage.
  * 
  * 此 hook 根据设备类型自动返回正确的实现。
- * MSI 和 AyaNeo 共享同一个后端存储。
+ * 所有设备（MSI、AyaNeo、ROG Ally）共享同一个后端存储。
  * 
  * @returns Hook interface for managing custom RGB
  */
 export function useCustomRgb() {
-  // Both hooks read from the same backend storage (custom_rgb_presets)
-  // 两个 hook 从同一个后端存储读取
+  // All hooks read from the same backend storage (custom_rgb_presets)
+  // 所有 hook 从同一个后端存储读取
   const msiHook = useMsiCustomRgbImpl();
   const ayaNeoHook = useAyaNeoCustomRgbImpl();
+  const allyHook = useAllyCustomRgbImpl();
+  
+  // Device hook mapping table
+  // 设备 hook 映射表
+  const HOOK_MAP = {
+    "rog_ally": allyHook,
+    "ayaneo": ayaNeoHook,
+    "msi": msiHook,
+  } as const;
   
   // Determine by device type from capabilities
   // 根据设备能力中的设备类型判断
-  // Since both hooks share the same storage, we must select based on device type
-  // 由于两个 hook 共享同一存储，必须根据设备类型选择
+  // Since all hooks share the same storage, we must select based on device type
+  // 由于所有 hook 共享同一存储，必须根据设备类型选择
   const deviceType = Setting.deviceCapabilities?.device_type;
-  return deviceType === "ayaneo" ? ayaNeoHook : msiHook;
+  
+  // Return hook from map, default to MSI if unknown
+  // 从映射表返回 hook，未知设备默认使用 MSI
+  return HOOK_MAP[deviceType as keyof typeof HOOK_MAP] || msiHook;
 }
 
 /**
@@ -113,20 +115,21 @@ export function useCustomRgb() {
  * 获取设备类型的区域数量
  */
 export function getZoneCountForDevice(deviceType: CustomRgbDeviceType, isKUN?: boolean): number {
-  if (deviceType === "msi") {
-    return 9; // MSI always has 9 zones
-  } else if (deviceType === "ayaneo") {
-    return isKUN ? 9 : 8; // AyaNeo: 8 (standard) or 9 (KUN)
+  // Special case: AyaNeo KUN has 9 zones instead of 8
+  // 特殊情况：AyaNeo KUN 有 9 个 zone 而不是 8 个
+  if (deviceType === "ayaneo" && isKUN) {
+    return 9;
   }
-  return 8; // Default
+  
+  return DEVICE_CONFIGS[deviceType]?.defaultZoneCount ?? 8; // Default to 8
 }
 
 /**
  * Get the max keyframes for all device types
  * 获取所有设备类型的最大关键帧数
  * 
- * Currently all devices (MSI, AyaNeo) support 1-8 keyframes
- * 目前所有设备（MSI、AyaNeo）都支持 1-8 个关键帧
+ * Currently all devices (MSI, AyaNeo, ROG Ally) support 1-8 keyframes
+ * 目前所有设备（MSI、AyaNeo、ROG Ally）都支持 1-8 个关键帧
  */
 export function getMaxKeyframes(): number {
   return 8;

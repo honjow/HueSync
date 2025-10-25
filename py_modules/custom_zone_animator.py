@@ -274,12 +274,33 @@ class KeyframeAnimator:
         """
         Start animation
         启动动画
+        
+        For single frame: Set colors once without starting loop (static preview)
+        对于单帧：只设置一次颜色，不启动循环（静态预览）
+        For multiple frames: Start continuous animation loop
+        对于多帧：启动连续动画循环
         """
         with self._lock:
             if self._running:
                 logger.warning("Animation already running")
                 return
             
+            # Special handling for single frame (static preview)
+            # 单帧特殊处理（静态预览）
+            if len(self.keyframes) == 1:
+                logger.info("Single frame detected, setting static colors without animation loop")
+                # Get the single frame with brightness applied
+                # 获取应用亮度后的单帧
+                frame = self._apply_brightness(self.keyframes[0])
+                # Split and send to device
+                # 分割并发送到设备
+                left_colors, right_colors = self._split_frame(frame)
+                self.set_zones_callback(left_colors, right_colors)
+                logger.debug(f"Set single frame static colors: brightness={self.brightness}")
+                return
+            
+            # For multiple frames, start animation loop
+            # 多帧情况，启动动画循环
             self._running = True
             self._thread = threading.Thread(target=self._animation_loop, daemon=True)
             self._thread.start()

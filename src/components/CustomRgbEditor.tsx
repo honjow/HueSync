@@ -21,16 +21,22 @@ import {
   FiCopy,
   FiRotateCw,
   FiRotateCcw,
+  FiDroplet,
 } from "react-icons/fi";
-import { useCustomRgb, MsiCustomRgbSetting, AyaNeoCustomRgbSetting } from "../hooks";
-import { MsiLEDPreview } from "./MsiLEDPreview";
-import { MSI_LED_ZONE_KEYS, MSI_MAX_KEYFRAMES, AYANEO_LED_ZONE_KEYS_8, AYANEO_LED_ZONE_KEYS_9_KUN, AYANEO_MAX_KEYFRAMES, RGBMode } from "../util/const";
+import { useCustomRgb } from "../hooks";
+import { MsiLEDPreview } from "./CustomLEDPreview";
+import { 
+  MSI_LED_ZONE_KEYS, MSI_MAX_KEYFRAMES, 
+  AYANEO_LED_ZONE_KEYS_8, AYANEO_LED_ZONE_KEYS_9_KUN, AYANEO_MAX_KEYFRAMES,
+  ALLY_LED_ZONE_KEYS, ALLY_MAX_KEYFRAMES,
+  RGBMode 
+} from "../util/const";
 import { RGBTuple } from "../types/customRgb";
 import { hsvToRgb, rgbToHsv } from "../util";
 import { SlowSliderField } from "./SlowSliderField";
 import { localizationManager, localizeStrEnum } from "../i18n";
 import { Backend } from "../util/backend";
-import { MSI_CLAW_LAYOUT, AYANEO_STANDARD_LAYOUT, AYANEO_KUN_LAYOUT } from "../util/ledLayouts";
+import { MSI_CLAW_LAYOUT, AYANEO_STANDARD_LAYOUT, AYANEO_KUN_LAYOUT, ROG_ALLY_LAYOUT } from "../util/ledLayouts";
 import { Setting } from "../hooks/settings";
 import { CustomRgbDeviceType } from "../types/customRgb";
 
@@ -57,6 +63,7 @@ export const CustomRgbEditor: FC<CustomRgbEditorProps> = ({
     deleteKeyframe,
     updateSpeed,
     updateBrightness,
+    updateConfig,
     preview,
     previewSingleFrame,
     save,
@@ -65,13 +72,39 @@ export const CustomRgbEditor: FC<CustomRgbEditorProps> = ({
   } = hook;
 
   // Device-specific configuration
-  const config = {
-    zoneKeys: deviceType === "msi" ? MSI_LED_ZONE_KEYS : 
-              (editing?.keyframes[0]?.length === 9 ? AYANEO_LED_ZONE_KEYS_9_KUN : AYANEO_LED_ZONE_KEYS_8),
-    maxKeyframes: deviceType === "msi" ? MSI_MAX_KEYFRAMES : AYANEO_MAX_KEYFRAMES,
-    layout: deviceType === "msi" ? MSI_CLAW_LAYOUT : 
-            (editing?.keyframes[0]?.length === 9 ? AYANEO_KUN_LAYOUT : AYANEO_STANDARD_LAYOUT),
+  // 设备特定配置
+  const DEVICE_CONFIGS = {
+    msi: {
+      zoneKeys: MSI_LED_ZONE_KEYS,
+      maxKeyframes: MSI_MAX_KEYFRAMES,
+      layout: MSI_CLAW_LAYOUT,
+    },
+    rog_ally: {
+      zoneKeys: ALLY_LED_ZONE_KEYS,
+      maxKeyframes: ALLY_MAX_KEYFRAMES,
+      layout: ROG_ALLY_LAYOUT,
+    },
+    ayaneo_8: {
+      zoneKeys: AYANEO_LED_ZONE_KEYS_8,
+      maxKeyframes: AYANEO_MAX_KEYFRAMES,
+      layout: AYANEO_STANDARD_LAYOUT,
+    },
+    ayaneo_9: {
+      zoneKeys: AYANEO_LED_ZONE_KEYS_9_KUN,
+      maxKeyframes: AYANEO_MAX_KEYFRAMES,
+      layout: AYANEO_KUN_LAYOUT,
+    },
   };
+
+  // Select appropriate configuration based on device type
+  // 根据设备类型选择适当的配置
+  const config = (() => {
+    if (deviceType === "ayaneo") {
+      const zoneCount = editing?.keyframes[0]?.length || 8;
+      return zoneCount === 9 ? DEVICE_CONFIGS.ayaneo_9 : DEVICE_CONFIGS.ayaneo_8;
+    }
+    return DEVICE_CONFIGS[deviceType];
+  })();
 
   const [currentFrame, setCurrentFrame] = useState(0);
   const [selectedZone, setSelectedZone] = useState(0);
@@ -116,7 +149,7 @@ export const CustomRgbEditor: FC<CustomRgbEditorProps> = ({
     }, 300); // 300ms debounce to avoid frequent updates
     
     return () => clearTimeout(timer);
-  }, [currentFrame, editing.keyframes[currentFrame], editing.brightness, editing.speed, isPlaying]);
+  }, [currentFrame, editing, isPlaying]);
 
   // Re-send all frames when playing and config changes (speed, brightness, or any frame color)
   useEffect(() => {
@@ -127,7 +160,7 @@ export const CustomRgbEditor: FC<CustomRgbEditorProps> = ({
     }, 300); // 300ms debounce to avoid frequent updates
     
     return () => clearTimeout(timer);
-  }, [editing.speed, editing.brightness, editing.keyframes, isPlaying]);
+  }, [editing, isPlaying]);
 
   const [hue, saturation, value] = hsvState;
 
@@ -211,8 +244,8 @@ export const CustomRgbEditor: FC<CustomRgbEditorProps> = ({
       .sort((a, b) => a.arrayIndex - b.arrayIndex)
       .map(z => z.arrayIndex);
     
-    // Apply rotation to right stick if it has 4 zones
-    if (rightZones.length === 4) {
+    // Apply rotation to right stick (支持 2 或 4 个 zones)
+    if (rightZones.length >= 2 && rotationMappings?.rightStick) {
       const mapping = clockwise ? rotationMappings.rightStick.clockwise : rotationMappings.rightStick.counterClockwise;
       const rightColors = rightZones.map(idx => frame[idx]);
       // mapping[sourceIdx] = targetArrayIndex
@@ -221,8 +254,8 @@ export const CustomRgbEditor: FC<CustomRgbEditorProps> = ({
       });
     }
     
-    // Apply rotation to left stick if it has 4 zones
-    if (leftZones.length === 4) {
+    // Apply rotation to left stick (支持 2 或 4 个 zones)
+    if (leftZones.length >= 2 && rotationMappings?.leftStick) {
       const mapping = clockwise ? rotationMappings.leftStick.clockwise : rotationMappings.leftStick.counterClockwise;
       const leftColors = leftZones.map(idx => frame[idx]);
       // mapping[sourceIdx] = targetArrayIndex
@@ -249,11 +282,7 @@ export const CustomRgbEditor: FC<CustomRgbEditorProps> = ({
     const rotated = rotateFrame(editing.keyframes[currentFrame], true);
     const newConfig = { ...editing };
     newConfig.keyframes = [...newConfig.keyframes, rotated];
-    if (deviceType === "msi") {
-      MsiCustomRgbSetting.updateEditingConfig(newConfig);
-    } else {
-      AyaNeoCustomRgbSetting.updateEditing(newConfig);
-    }
+    updateConfig(newConfig);
     setCurrentFrame(newConfig.keyframes.length - 1);
   };
 
@@ -263,12 +292,30 @@ export const CustomRgbEditor: FC<CustomRgbEditorProps> = ({
     const rotated = rotateFrame(editing.keyframes[currentFrame], false);
     const newConfig = { ...editing };
     newConfig.keyframes = [...newConfig.keyframes, rotated];
-    if (deviceType === "msi") {
-      MsiCustomRgbSetting.updateEditingConfig(newConfig);
-    } else {
-      AyaNeoCustomRgbSetting.updateEditing(newConfig);
-    }
+    updateConfig(newConfig);
     setCurrentFrame(newConfig.keyframes.length - 1);
+  };
+
+  const handleFillAllZones = () => {
+    if (!editing) return;
+    
+    // Get the current color of the selected zone
+    const currentColor = editing.keyframes[currentFrame][selectedZone];
+    
+    // Create a new frame with all zones set to the current color
+    const newFrame = Array(config.zoneKeys.length).fill(null).map(() => [...currentColor] as RGBTuple);
+    
+    // Update the current frame
+    const newConfig = { ...editing };
+    newConfig.keyframes = [...newConfig.keyframes];
+    newConfig.keyframes[currentFrame] = newFrame;
+    
+    updateConfig(newConfig);
+    
+    // Preview the updated frame if not playing
+    if (!isPlaying) {
+      previewSingleFrame(currentFrame);
+    }
   };
 
   const togglePlayback = async () => {
@@ -482,19 +529,36 @@ export const CustomRgbEditor: FC<CustomRgbEditorProps> = ({
                 <FiCopy />
               </FrameControlButton>
               <FrameControlButton
+                onOKActionDescription={localizationManager.getString(localizeStrEnum.MSI_CUSTOM_FILL_ALL_ZONES)}
+                onClick={handleFillAllZones}
+                disabled={!editing}
+              >
+                <FiDroplet />
+              </FrameControlButton>
+              <FrameControlButton
                 onOKActionDescription={localizationManager.getString(localizeStrEnum.MSI_CUSTOM_COPY_ROTATE_CW)}
                 onClick={handleCopyRotateCW}
                 disabled={editing!.keyframes.length >= config.maxKeyframes}
               >
                 <FiRotateCw />
               </FrameControlButton>
-              <FrameControlButton
-                onOKActionDescription={localizationManager.getString(localizeStrEnum.MSI_CUSTOM_COPY_ROTATE_CCW)}
-                onClick={handleCopyRotateCCW}
-                disabled={editing!.keyframes.length >= config.maxKeyframes}
-              >
-                <FiRotateCcw />
-              </FrameControlButton>
+              {/* 只在有 4 个 LED 时显示逆时针按钮 (2 个 LED 时顺逆时针相同) */}
+              {(() => {
+                const hasMoreThanTwoLeds = config.layout.zoneMappings
+                  .filter(z => z.circle === "leftStick").length > 2 ||
+                  config.layout.zoneMappings
+                  .filter(z => z.circle === "rightStick").length > 2;
+                
+                return hasMoreThanTwoLeds && (
+                  <FrameControlButton
+                    onOKActionDescription={localizationManager.getString(localizeStrEnum.MSI_CUSTOM_COPY_ROTATE_CCW)}
+                    onClick={handleCopyRotateCCW}
+                    disabled={editing!.keyframes.length >= config.maxKeyframes}
+                  >
+                    <FiRotateCcw />
+                  </FrameControlButton>
+                );
+              })()}
               <FrameControlButton
                 onOKActionDescription={localizationManager.getString(localizeStrEnum.MSI_CUSTOM_DELETE_FRAME)}
                 onClick={handleDeleteFrame}

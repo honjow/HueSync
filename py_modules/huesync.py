@@ -78,29 +78,31 @@ class LedControl:
         logger.info(f"IS_LED_SUPPORTED: {IS_LED_SUPPORTED}")
         logger.info(f"IS_ALLY_LED_SUPPORTED: {IS_ALLY_LED_SUPPORTED}")
 
-        # Priority 1: ASUS Ally with special LED support
-        # 优先级 1: 具有特殊 LED 支持的 ASUS Ally
+        # Priority 1: ASUS devices (including Ally via factory pattern)
+        # 优先级 1: ASUS 设备（通过工厂模式包括 Ally）
+        if SYS_VENDOR == "ASUSTeK COMPUTER INC.":
+            logger.info("Using Asus LED device (SYS_VENDOR)")
+            # Factory pattern in AsusLEDDevice will auto-return AllyLEDDevice if needed
+            # AsusLEDDevice 中的工厂模式会在需要时自动返回 AllyLEDDevice
+            return AsusLEDDevice()
+        
+        # Priority 2: ASUS Ally with sysfs support (backward compatibility fallback)
+        # 优先级 2: 具有 sysfs 支持的 ASUS Ally（向后兼容的备用方案）
         if IS_ALLY_LED_SUPPORTED:
-            logger.info("Using Ally LED device (IS_ALLY_LED_SUPPORTED)")
+            logger.info("Using Ally LED device (IS_ALLY_LED_SUPPORTED - sysfs fallback)")
             return AllyLEDDevice()
         
-        # Priority 2: AyaNeo devices (vendor-specific EC control with sysfs fallback)
-        # 优先级 2: AyaNeo 设备（厂商特定的 EC 控制，带 sysfs 回退）
+        # Priority 3: AyaNeo devices (vendor-specific EC control with sysfs fallback)
+        # 优先级 3: AyaNeo 设备（厂商特定的 EC 控制，带 sysfs 回退）
         if SYS_VENDOR == "AYANEO":
             logger.info("Using AyaNeo LED device (SYS_VENDOR)")
             return AyaNeoLEDDevice()
         
-        # Priority 3: MSI devices
-        # 优先级 3: MSI 设备
+        # Priority 4: MSI devices
+        # 优先级 4: MSI 设备
         if SYS_VENDOR == "Micro-Star International Co., Ltd.":
             logger.info("Using MSI LED device (SYS_VENDOR)")
             return MSILEDDevice()
-        
-        # Priority 4: ASUS devices (non-Ally)
-        # 优先级 4: ASUS 设备（非 Ally）
-        if SYS_VENDOR == "ASUSTeK COMPUTER INC.":
-            logger.info("Using Asus LED device (SYS_VENDOR)")
-            return AsusLEDDevice()
         
         # Priority 5: GPD devices
         # 优先级 5: GPD 设备
@@ -280,12 +282,22 @@ class LedControl:
         # Add device type for frontend to determine which custom RGB implementation to use
         # 添加设备类型供前端判断使用哪个自定义 RGB 实现
         device_class_name = self.device.__class__.__name__
-        if "MsiLEDDevice" in device_class_name:
-            base_caps["device_type"] = "msi"
-        elif "AyaNeoLEDDevice" in device_class_name:
-            base_caps["device_type"] = "ayaneo"
-        else:
-            base_caps["device_type"] = "generic"
+        logger.debug(f"Device class name: {device_class_name}")
+        logger.debug(f"Device capabilities from device: {base_caps}")
+        
+        # Override device_type if not already set by device
+        # 如果设备未设置 device_type，则根据类名设置
+        if "device_type" not in base_caps:
+            if "MsiLEDDevice" in device_class_name:
+                base_caps["device_type"] = "msi"
+            elif "AyaNeoLEDDevice" in device_class_name:
+                base_caps["device_type"] = "ayaneo"
+            elif "AllyLEDDevice" in device_class_name:
+                base_caps["device_type"] = "rog_ally"
+            else:
+                base_caps["device_type"] = "generic"
+        
+        logger.info(f"Final device capabilities: device_type='{base_caps.get('device_type')}', custom_rgb={base_caps.get('custom_rgb', False)}")
         
         # Add legacy power_led check for backward compatibility
         # 为向后兼容性添加传统的power_led检查
