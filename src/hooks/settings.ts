@@ -120,12 +120,17 @@ export class SettingsData {
   // Unified Custom RGB - currently applied preset name
   // 统一的自定义 RGB - 当前应用的预设名称
   public currentCustomPreset: string | null = null;
+  
+  // Experimental LED effects for legacy EC devices
+  // 慢速 EC 设备的实验性动态灯效
+  public experimentalLedEffects = false;
 
   public deepCopy(source: SettingsData) {
     this.suspendMode = source.suspendMode;
     this.powerLedEnabled = source.powerLedEnabled;
     this.powerLedSuspendOff = source.powerLedSuspendOff;
     this.currentCustomPreset = source.currentCustomPreset;
+    this.experimentalLedEffects = source.experimentalLedEffects;
     
     this.perApp = {};
     Object.entries(source.perApp).forEach(([key, value]) => {
@@ -157,6 +162,10 @@ export class SettingsData {
     } else if (dict.currentAyaNeoCustomPreset !== undefined) {
       // Migrate from old AyaNeo field
       this.currentCustomPreset = dict.currentAyaNeoCustomPreset;
+    }
+    // Experimental LED effects
+    if (dict.experimentalLedEffects !== undefined) {
+      this.experimentalLedEffects = dict.experimentalLedEffects;
     }
     
     // Handle per-app settings
@@ -545,6 +554,18 @@ export class Setting {
     if (this._settingsData.powerLedSuspendOff !== value) {
       this._settingsData.powerLedSuspendOff = value;
       this.saveSettingsData();
+    }
+  }
+
+  static get experimentalLedEffects(): boolean {
+    return this._settingsData.experimentalLedEffects;
+  }
+
+  static set experimentalLedEffects(value: boolean) {
+    if (this._settingsData.experimentalLedEffects !== value) {
+      this._settingsData.experimentalLedEffects = value;
+      this.saveSettingsData();
+      this.notifyChange(); // Notify UI to update
     }
   }
 }

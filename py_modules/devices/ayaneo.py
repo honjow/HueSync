@@ -1,4 +1,5 @@
-from config import USE_SYSFS_LED_CONTROL, USE_SYSFS_LED_CONTROL, logger
+import os
+from config import USE_SYSFS_LED_CONTROL, USE_SYSFS_LED_CONTROL, logger, PRODUCT_NAME
 from led.ayaneo_led_device_ec import AyaNeoLEDDeviceEC
 from utils import Color, RGBMode, RGBModeCapabilities
 
@@ -42,6 +43,11 @@ class AyaNeoLEDDevice(SysfsLEDMixin, BaseLEDDevice):
                 logger.info("AyaNeo device: sysfs available (single zone only, multi-zone via EC)")
         else:
             logger.info("AyaNeo device: no sysfs support, using EC control only")
+        
+        # Detect LED control capabilities
+        # 检测 LED 控制能力
+        self._led_capabilities = self._detect_led_capabilities()
+        logger.info(f"AyaNeo LED capabilities: {self._led_capabilities}")
 
     def _set_solid_color(self, color: Color) -> None:
         """
@@ -213,3 +219,54 @@ class AyaNeoLEDDevice(SysfsLEDMixin, BaseLEDDevice):
         # 支持通过软件动画实现自定义 RGB 配置
         base_caps["custom_rgb"] = True
         return base_caps
+    
+    def _detect_led_capabilities(self) -> dict:
+        """
+        Detect what LED control methods are available
+        检测可用的 LED 控制方法
+        
+        Returns:
+            {
+                'sysfs_single_color': bool,  # 是否支持 sysfs 纯色
+                'sysfs_multi_zone': bool,    # 是否支持 sysfs 多区域
+                'ec_access': bool,            # 是否可以使用 EC 访问
+                'is_legacy_ec': bool          # 是否是慢速 EC 设备
+            }
+        """
+        caps = {
+            'sysfs_single_color': False,
+            'sysfs_multi_zone': False,
+            'ec_access': False,
+            'is_legacy_ec': False
+        }
+        
+        # Check sysfs support (respect USE_SYSFS_LED_CONTROL for debugging/testing)
+        # 检测 sysfs 支持（遵守 USE_SYSFS_LED_CONTROL 以便调试/测试）
+        if USE_SYSFS_LED_CONTROL and self._sysfs_led_path:
+            # Check single color (multi_intensity)
+            multi_intensity_path = os.path.join(self._sysfs_led_path, "multi_intensity")
+            if os.path.exists(multi_intensity_path) and os.access(multi_intensity_path, os.W_OK):
+                caps['sysfs_single_color'] = True
+            
+            # Check multi-zone (multi_intensity_zones)
+            caps['sysfs_multi_zone'] = self._sysfs_multi_zone_available
+        
+        # Check EC access capability
+        if hasattr(self, 'aya_led_device_ec') and self.aya_led_device_ec:
+            caps['ec_access'] = True
+            
+            # Detect if it's a legacy (slow) EC device
+            # Legacy EC devices: AyaNeo 2, Geek, Air (not Air Plus), etc.
+            # 慢速 EC 设备：AyaNeo 2, Geek, Air（非 Air Plus）等
+            product_upper = PRODUCT_NAME.upper()
+            if not ("AIR PLUS" in product_upper or "SLIDE" in product_upper):
+                caps['is_legacy_ec'] = True
+        
+        return caps
+    
+    def get_led_capabilities(self) -> dict:
+        """
+        Public method to get LED capabilities
+        公开方法获取 LED 能力
+        """
+        return self._led_capabilities.copy()

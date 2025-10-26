@@ -124,5 +124,8 @@
     "ALLY_LED_ZONE_L1": "左搖桿 左",
     "ALLY_LED_ZONE_L2": "左搖桿 右",
     "ALLY_LED_ZONE_R1": "右搖桿 左",
-    "ALLY_LED_ZONE_R2": "右搖桿 右"
+    "ALLY_LED_ZONE_R2": "右搖桿 右",
+    "EXPERIMENTAL_LED_EFFECTS": "實驗性動態燈效",
+    "EXPERIMENTAL_LED_EFFECTS_DESC": "啟用軟體燈效和自訂動畫（警告：可能導致控制器輸入延遲、電量檢測異常、燈效不流暢。如有問題請立即關閉）",
+    "CUSTOM_ANIMATION_DISABLED_HINT": "啟用「實驗性動態燈效」後可使用多幀動畫"
 }

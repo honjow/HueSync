@@ -124,5 +124,8 @@
     "ALLY_LED_ZONE_L1": "Left Stick Left",
     "ALLY_LED_ZONE_L2": "Left Stick Right",
     "ALLY_LED_ZONE_R1": "Right Stick Left",
-    "ALLY_LED_ZONE_R2": "Right Stick Right"
+    "ALLY_LED_ZONE_R2": "Right Stick Right",
+    "EXPERIMENTAL_LED_EFFECTS": "Experimentelle dynamische LED-Effekte",
+    "EXPERIMENTAL_LED_EFFECTS_DESC": "Software-Effekte und benutzerdefinierte Animationen aktivieren (Warnung: Kann zu Controller-Eingabeverzögerungen, Batterieerkennungsfehlern oder ruckelnden LED-Effekten führen. Bei Problemen sofort ausschalten)",
+    "CUSTOM_ANIMATION_DISABLED_HINT": "\"Experimentelle dynamische LED-Effekte\" aktivieren, um Multi-Frame-Animationen zu verwenden"
 }

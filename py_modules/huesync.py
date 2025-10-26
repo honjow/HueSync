@@ -308,6 +308,13 @@ class LedControl:
                 getattr(self.device, '_power_led_available', False)
             )
         
+        # Add LED control capabilities if available (for feature restriction)
+        # 添加 LED 控制能力（用于功能限制）
+        if hasattr(self.device, 'get_led_capabilities'):
+            led_caps = self.device.get_led_capabilities()
+            base_caps["led_capabilities"] = led_caps
+            logger.debug(f"LED control capabilities: {led_caps}")
+        
         return base_caps
 
     def set_power_light(self, enabled: bool) -> bool:

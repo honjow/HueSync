@@ -7,7 +7,7 @@ import {
   DropdownOption,
   showModal,
 } from "@decky/ui";
-import { FC, useMemo } from "react";
+import { FC, useMemo, useState } from "react";
 import { FiPlusCircle } from "react-icons/fi";
 import { localizationManager, localizeStrEnum } from "../i18n";
 import { useRgb } from "../hooks";
@@ -203,11 +203,63 @@ export const RGBComponent: FC = () => {
   // 根据设备数据自动使用正确的实现（MSI 或 AyaNeo）
   const customRgb = useCustomRgb();
 
+  // LED capabilities detection
+  // LED 能力检测
+  // Get LED capabilities from device capabilities (loaded during initialization)
+  // 从设备能力中获取 LED 能力（在初始化时已加载）
+  const ledCapabilities = Setting.deviceCapabilities?.led_capabilities || null;
+  
+  // Local state to track experimental mode (for React reactivity)
+  // 本地状态跟踪实验性模式（用于 React 响应）
+  const [experimentalEnabled, setExperimentalEnabled] = useState(Setting.experimentalLedEffects);
+
+  // Determine if experimental mode toggle should be shown
+  // 判断是否应显示实验性模式开关
+  // Show toggle only if device has legacy EC but lacks full sysfs support
+  // 仅当设备有慢速 EC 但缺少完整 sysfs 支持时显示开关
+  const needsExperimentalMode = ledCapabilities?.is_legacy_ec && ledCapabilities?.ec_access 
+    && !(ledCapabilities?.sysfs_single_color && ledCapabilities?.sysfs_multi_zone);
+
+  // Feature availability based on capabilities and experimental setting
+  // 基于能力和实验性设置的功能可用性
+  const featureAvailability = useMemo(() => {
+    if (!ledCapabilities) {
+      return {
+        softwareEffects: true, // Default: allow all features until capabilities are loaded
+        multiFrameCustom: true,
+      };
+    }
+
+    return {
+      // Software effects (Pulse, Rainbow, etc.): available if sysfs single color OR (legacy EC + experimental)
+      // 软件灯效：如果支持 sysfs 单色，或（慢速 EC + 实验性模式）
+      softwareEffects: ledCapabilities.sysfs_single_color || (needsExperimentalMode && experimentalEnabled),
+      // Multi-frame custom animations: available if sysfs multi-zone OR (legacy EC + experimental)
+      // 多帧自定义动画：如果支持 sysfs 多区，或（慢速 EC + 实验性模式）
+      multiFrameCustom: ledCapabilities.sysfs_multi_zone || (needsExperimentalMode && experimentalEnabled),
+    };
+  }, [ledCapabilities, experimentalEnabled, needsExperimentalMode]);
+
   // LED Mode Options (single layer)
   const modeOptions = useMemo(() => {
+    // Software effect modes that require feature availability check
+    // 需要进行功能可用性检查的软件效果模式
+    const softwareEffectModes = [RGBMode.pulse, RGBMode.rainbow, RGBMode.duality, RGBMode.gradient, RGBMode.battery];
+    
     // Filter out custom RGB mode from base modes (it will be added as presets)
+    // Also filter out software effects if not available
+    // 从基础模式中过滤掉自定义 RGB 模式（它将作为预设添加）
+    // 如果不可用，也过滤掉软件效果
     const baseModes = Object.entries(Setting.modeCapabilities)
-      .filter(([mode]) => mode !== RGBMode.custom)
+      .filter(([mode]) => {
+        if (mode === RGBMode.custom) return false;
+        // Filter out software effects if not available
+        // 如果软件效果不可用，则过滤掉
+        if (softwareEffectModes.includes(mode as RGBMode) && !featureAvailability.softwareEffects) {
+          return false;
+        }
+        return true;
+      })
       .map(([mode]) => ({
         label: localizationManager.getString(
           localizeStrEnum[
@@ -220,17 +272,27 @@ export const RGBComponent: FC = () => {
     // Add custom presets if device supports custom RGB
     // 如果设备支持自定义 RGB，添加自定义预设
     const customPresetModes = Setting.deviceCapabilities?.custom_rgb
-      ? Object.keys(customRgb.presets).map((name) => ({
-          label: name,
-          data: `custom:${name}`,
-        }))
+      ? Object.entries(customRgb.presets)
+          .filter(([_name, preset]) => {
+            // Filter out multi-frame presets if not available
+            // 如果不支持多帧，过滤掉多帧预设
+            const isMultiFrame = preset.keyframes && preset.keyframes.length > 1;
+            if (isMultiFrame && !featureAvailability.multiFrameCustom) {
+              return false;
+            }
+            return true;
+          })
+          .map(([name]) => ({
+            label: name,
+            data: `custom:${name}`,
+          }))
       : [];
 
     return [
       ...baseModes,
       ...customPresetModes,
     ];
-  }, [customRgb.presets]);
+  }, [customRgb.presets, featureAvailability.softwareEffects, featureAvailability.multiFrameCustom]);
 
   // Unified Manage Custom Effects Options (two-level)
   // 统一的管理自定义效果选项（两级）
@@ -369,7 +431,13 @@ export const RGBComponent: FC = () => {
     // Create new effect
     if (selectedData === "create_new") {
       customRgb.startEditing();
-      const modal = showModal(<CustomRgbEditor closeModal={() => modal.Close()} deviceType={deviceType} />);
+      const modal = showModal(
+        <CustomRgbEditor 
+          closeModal={() => modal.Close()} 
+          deviceType={deviceType} 
+          allowAnimation={featureAvailability.multiFrameCustom}
+        />
+      );
       return;
     }
 
@@ -378,7 +446,13 @@ export const RGBComponent: FC = () => {
       const { name, action } = selectedData as { name: string; action: string };
       if (action === "edit") {
         customRgb.startEditing(name);
-        const modal = showModal(<CustomRgbEditor closeModal={() => modal.Close()} deviceType={deviceType} />);
+        const modal = showModal(
+          <CustomRgbEditor 
+            closeModal={() => modal.Close()} 
+            deviceType={deviceType} 
+            allowAnimation={featureAvailability.multiFrameCustom}
+          />
+        );
       } else if (action === "delete") {
         const success = await customRgb.deletePreset(name);
         if (!success) {
@@ -401,6 +475,25 @@ export const RGBComponent: FC = () => {
     );
   }, [rgbMode]);
 
+  // Handle experimental LED effects toggle
+  // 处理实验性 LED 效果开关
+  const handleExperimentalToggle = async (value: boolean) => {
+    Setting.experimentalLedEffects = value;
+    setExperimentalEnabled(value); // Update local state to trigger re-render
+    
+    // If disabling experimental mode, check if current preset is multi-frame
+    // 如果禁用实验性模式，检查当前预设是否为多帧
+    if (!value && Setting.currentCustomPreset) {
+      const currentPreset = customRgb.presets[Setting.currentCustomPreset];
+      if (currentPreset && currentPreset.keyframes && currentPreset.keyframes.length > 1) {
+        // Current preset is multi-frame and no longer allowed, switch to solid mode
+        // 当前预设为多帧且不再允许，切换到纯色模式
+        console.log('[RgbSetting] Switching from multi-frame custom to solid mode');
+        updateRgbMode(RGBMode.solid);
+      }
+    }
+  };
+
   return (
     <>
       <PanelSection
@@ -417,6 +510,18 @@ export const RGBComponent: FC = () => {
             }}
           />
         </PanelSectionRow>
+        {/* Experimental LED Effects Toggle - only show for legacy EC devices */}
+        {/* 实验性 LED 效果开关 - 仅在慢速 EC 设备上显示 */}
+        {needsExperimentalMode && (
+          <PanelSectionRow>
+            <ToggleField
+              label={localizationManager.getString(localizeStrEnum.EXPERIMENTAL_LED_EFFECTS)}
+              description={localizationManager.getString(localizeStrEnum.EXPERIMENTAL_LED_EFFECTS_DESC)}
+              checked={experimentalEnabled}
+              onChange={handleExperimentalToggle}
+            />
+          </PanelSectionRow>
+        )}
         {enableControl && (
           <PanelSectionRow>
             <DropdownItem

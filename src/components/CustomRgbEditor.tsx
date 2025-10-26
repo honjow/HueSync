@@ -45,11 +45,13 @@ type DeviceType = CustomRgbDeviceType; // Unified type from customRgb.d.ts
 interface CustomRgbEditorProps {
   closeModal: () => void;
   deviceType?: DeviceType; // Device type: "msi" or "ayaneo"
+  allowAnimation?: boolean; // Whether multi-frame animations are allowed
 }
 
 export const CustomRgbEditor: FC<CustomRgbEditorProps> = ({ 
   closeModal,
-  deviceType = "msi" // Default to MSI for backward compatibility
+  deviceType = "msi", // Default to MSI for backward compatibility
+  allowAnimation = true // Default to true for backward compatibility
 }) => {
   // Use unified custom RGB hook (automatically selects correct implementation)
   // 使用统一的自定义 RGB hook（自动选择正确的实现）
@@ -350,6 +352,17 @@ export const CustomRgbEditor: FC<CustomRgbEditorProps> = ({
 
     setIsSaving(true);
     try {
+      // If multi-frame animation is disabled, truncate to first frame only
+      // 如果多帧动画被禁用，只保留第一帧
+      if (!allowAnimation && editing && editing.keyframes.length > 1) {
+        // Update config to only keep first keyframe
+        // 更新配置，只保留第一个关键帧
+        updateConfig({
+          ...editing,
+          keyframes: [editing.keyframes[0]]
+        });
+      }
+      
       const success = await save(presetName.trim());
       if (success) {
         closeModal();
@@ -451,26 +464,30 @@ export const CustomRgbEditor: FC<CustomRgbEditorProps> = ({
             marginBottom: "4px"
             }}
           >
-            <div style={{ 
-              fontSize: "10px", 
-              color: "#B8BCBF", 
-              marginBottom: "4px",
-              textAlign: "center"
-            }}>
-              {localizationManager.getString(localizeStrEnum.MSI_CUSTOM_KEYFRAME_LABEL)} {currentFrame + 1} / {editing!.keyframes.length}
-            </div>
-            {/* @ts-ignore */}
-            <Focusable
-              style={{ 
-                display: "flex", 
-                gap: editing!.keyframes.length > 4 ? "6px" : "12px",
-                alignItems: "center",
-                justifyContent: "center",
-                padding: "4px 8px",
-                minHeight: "26px"
-              }}
-            >
-              {editing!.keyframes.map((frame: RGBTuple[], index: number) => {
+            {/* Hide timeline if multi-frame animation is disabled */}
+            {/* 如果多帧动画被禁用，隐藏时间轴 */}
+            {allowAnimation && (
+              <>
+                <div style={{ 
+                  fontSize: "10px", 
+                  color: "#B8BCBF", 
+                  marginBottom: "4px",
+                  textAlign: "center"
+                }}>
+                  {localizationManager.getString(localizeStrEnum.MSI_CUSTOM_KEYFRAME_LABEL)} {currentFrame + 1} / {editing!.keyframes.length}
+                </div>
+                {/* @ts-ignore */}
+                <Focusable
+                  style={{ 
+                    display: "flex", 
+                    gap: editing!.keyframes.length > 4 ? "6px" : "12px",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    padding: "4px 8px",
+                    minHeight: "26px"
+                  }}
+                >
+                  {editing!.keyframes.map((frame: RGBTuple[], index: number) => {
                 // Find the brightest/most saturated color to represent this frame
                 const nonBlackColors = frame.filter((rgb: RGBTuple) => rgb[0] + rgb[1] + rgb[2] > 30);
                 let representativeColor = [40, 40, 40]; // Default dark gray
@@ -518,9 +535,26 @@ export const CustomRgbEditor: FC<CustomRgbEditorProps> = ({
                 );
               })}
             </Focusable>
+              </>
+            )}
           </div>
 
           {/* Frame navigation with icons */}
+          {/* Show warning message if multi-frame animation is disabled */}
+          {/* 如果多帧动画被禁用，显示警告信息 */}
+          {!allowAnimation && (
+            <div style={{
+              padding: "8px 12px",
+              marginBottom: "8px",
+              backgroundColor: "rgba(255, 165, 0, 0.1)",
+              border: "1px solid rgba(255, 165, 0, 0.3)",
+              borderRadius: "4px",
+              fontSize: "0.85em",
+              color: "#ffa500"
+            }}>
+              ⚠️ {localizationManager.getString(localizeStrEnum.CUSTOM_ANIMATION_DISABLED_HINT)}
+            </div>
+          )}
           <Field
             label=""
             childrenLayout="below"
@@ -540,14 +574,14 @@ export const CustomRgbEditor: FC<CustomRgbEditorProps> = ({
               <FrameControlButton
                 onOKActionDescription={localizationManager.getString(localizeStrEnum.MSI_CUSTOM_ADD_FRAME)}
                 onClick={handleAddFrame}
-                disabled={editing!.keyframes.length >= config.maxKeyframes}
+                disabled={!allowAnimation || editing!.keyframes.length >= config.maxKeyframes}
               >
                 <FiPlus />
               </FrameControlButton>
               <FrameControlButton
                 onOKActionDescription={localizationManager.getString(localizeStrEnum.MSI_CUSTOM_COPY_FRAME)}
                 onClick={handleCopyFrame}
-                disabled={editing!.keyframes.length >= config.maxKeyframes}
+                disabled={!allowAnimation || editing!.keyframes.length >= config.maxKeyframes}
               >
                 <FiCopy />
               </FrameControlButton>
@@ -561,7 +595,7 @@ export const CustomRgbEditor: FC<CustomRgbEditorProps> = ({
               <FrameControlButton
                 onOKActionDescription={localizationManager.getString(localizeStrEnum.MSI_CUSTOM_COPY_ROTATE_CW)}
                 onClick={handleCopyRotateCW}
-                disabled={editing!.keyframes.length >= config.maxKeyframes}
+                disabled={!allowAnimation || editing!.keyframes.length >= config.maxKeyframes}
               >
                 <FiRotateCw />
               </FrameControlButton>
@@ -576,7 +610,7 @@ export const CustomRgbEditor: FC<CustomRgbEditorProps> = ({
                   <FrameControlButton
                     onOKActionDescription={localizationManager.getString(localizeStrEnum.MSI_CUSTOM_COPY_ROTATE_CCW)}
                     onClick={handleCopyRotateCCW}
-                    disabled={editing!.keyframes.length >= config.maxKeyframes}
+                    disabled={!allowAnimation || editing!.keyframes.length >= config.maxKeyframes}
                   >
                     <FiRotateCcw />
                   </FrameControlButton>
@@ -585,13 +619,14 @@ export const CustomRgbEditor: FC<CustomRgbEditorProps> = ({
               <FrameControlButton
                 onOKActionDescription={localizationManager.getString(localizeStrEnum.MSI_CUSTOM_DELETE_FRAME)}
                 onClick={handleDeleteFrame}
-                disabled={editing!.keyframes.length <= 1}
+                disabled={!allowAnimation || editing!.keyframes.length <= 1}
               >
                 <FiTrash2 />
               </FrameControlButton>
               <FrameControlButton
                 onOKActionDescription={isPlaying ? localizationManager.getString(localizeStrEnum.MSI_CUSTOM_PAUSE) : localizationManager.getString(localizeStrEnum.MSI_CUSTOM_PLAY)}
                 onClick={togglePlayback}
+                disabled={!allowAnimation}
               >
                 {isPlaying ? <FiPause /> : <FiPlay />}
               </FrameControlButton>

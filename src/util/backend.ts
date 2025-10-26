@@ -15,6 +15,12 @@ export interface DeviceCapabilities {
   suspend_mode: boolean;
   custom_rgb?: boolean;  // Multi-zone custom RGB support (MSI, AyaNeo, ROG Ally, etc.)
   device_type?: "msi" | "ayaneo" | "rog_ally" | "generic";  // Device type for custom RGB implementation selection
+  led_capabilities?: {
+    sysfs_single_color: boolean;
+    sysfs_multi_zone: boolean;
+    ec_access: boolean;
+    is_legacy_ec: boolean;
+  };
 }
 
 interface ApplySettingsOptions {
@@ -427,5 +433,23 @@ export class Backend {
   // set_ayaneo_custom_rgb
   public static async setAyaNeoCustomRgb(config: any): Promise<boolean> {
     return await this.setCustomRgb("ayaneo", config);
+  }
+
+  // get_led_capabilities
+  // DEPRECATED: Use getDeviceCapabilities().led_capabilities instead
+  // 已废弃：请使用 getDeviceCapabilities().led_capabilities
+  public static async getLedCapabilities(): Promise<{
+    sysfs_single_color: boolean;
+    sysfs_multi_zone: boolean;
+    ec_access: boolean;
+    is_legacy_ec: boolean;
+  }> {
+    const result = await call("get_led_capabilities");
+    return result as any || {
+      sysfs_single_color: false,
+      sysfs_multi_zone: false,
+      ec_access: false,
+      is_legacy_ec: false
+    };
   }
 }

@@ -370,6 +370,25 @@ class Plugin:
         """
         return self.custom_rgb_manager.apply_custom_rgb(device_type, custom_config)
 
+    async def get_led_capabilities(self) -> dict:
+        """
+        Get LED control capabilities for current device
+        获取当前设备的 LED 控制能力
+        
+        DEPRECATED: Use get_device_capabilities() instead, which includes led_capabilities.
+        已废弃：请使用 get_device_capabilities()，它包含 led_capabilities。
+        
+        Returns:
+            dict: LED capabilities including sysfs/EC support and legacy EC detection
+        """
+        try:
+            if hasattr(self.ledControl, 'device') and hasattr(self.ledControl.device, 'get_led_capabilities'):
+                return self.ledControl.device.get_led_capabilities()
+            return {}
+        except Exception as e:
+            logger.error(f"Error getting LED capabilities: {e}")
+            return {}
+
     # Function called first during the unload process, utilize this to handle your plugin being removed
     async def _unload(self):
         decky.logger.info("Goodbye World!")
