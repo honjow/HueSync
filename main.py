@@ -347,7 +347,7 @@ class Plugin:
         try:
             presets = await self.get_custom_rgb_presets(device_type)
             if name not in presets:
-                logger.error(f"{device_type.upper()} preset '{name}' not found")
+                logger.error(f"{device_type.upper()} preset '{name}' not found in {list(presets.keys())}")
                 return False
 
             config = presets[name]

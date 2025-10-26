@@ -253,8 +253,27 @@ class SysfsLEDMixin:
             
             color_string = " ".join(color_values)
             
-            with open(multi_intensity_zones_path, "w") as f:
-                f.write(color_string)
+            # IMPORTANT: Must set brightness BEFORE writing colors
+            # The kernel driver scales color values by current brightness,
+            # so brightness=0 will make all colors appear as 0
+            # 重要：必须在写入颜色前设置亮度
+            # 内核驱动会用当前亮度缩放颜色值，如果亮度为0会导致所有颜色变成0
+            brightness_path = os.path.join(self._sysfs_led_path, "brightness")
+            try:
+                with open(brightness_path, "w") as f:
+                    f.write("255\n")
+                    f.flush()
+            except Exception as brightness_error:
+                logger.warning(f"Failed to set brightness before color write: {brightness_error}")
+            
+            # Write color values
+            try:
+                with open(multi_intensity_zones_path, "w") as f:
+                    f.write(color_string + "\n")
+                    f.flush()
+            except Exception as write_error:
+                logger.error(f"Failed to write to multi_intensity_zones: {write_error}")
+                return False
             
             logger.debug(f"Successfully set {len(zone_colors)} zone colors via multi_intensity_zones")
             return True
