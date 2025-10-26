@@ -130,6 +130,12 @@ def _detect_software_effect_update_rate():
 
 SOFTWARE_EFFECT_UPDATE_RATE = _detect_software_effect_update_rate()
 
+# Enable async writer thread for AyaNeo EC (mimics kernel driver behavior)
+# Set to False to use synchronous EC writes (for debugging or compatibility)
+# 启用 AyaNeo EC 异步写入线程（模仿内核驱动行为）
+# 设置为 False 以使用同步 EC 写入（用于调试或兼容性）
+USE_AYANEO_ASYNC_WRITER = True
+
 # AYANEO_EC_SUPPORT_LIST = [
 #     "AIR",
 #     "AIR Pro",

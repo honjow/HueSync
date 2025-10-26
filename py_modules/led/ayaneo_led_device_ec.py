@@ -22,11 +22,12 @@ by communicating directly with the Embedded Controller (EC).
 
 import os
 import time
+import threading
 from enum import Enum
 from typing import List, Optional
 from pathlib import Path
 
-from config import logger
+from config import logger, USE_AYANEO_ASYNC_WRITER
 from ec import EC
 from utils import Color
 
@@ -147,8 +148,35 @@ class AyaNeoLEDDeviceEC:
 
         # Control status tracking - avoid frequent reinitialization during software effects
         self._has_control = False
+        
+        # Batch write mode - for async-like EC writes (mimics kernel driver's writer thread)
+        self._batch_mode = False
+        self._batch_commands = []
+        
+        # Async writer thread (mimics kernel driver's ayaneo_led_mc_writer)
+        self._use_async_writer = USE_AYANEO_ASYNC_WRITER
+        
+        if self._use_async_writer:
+            self._writer_lock = threading.Lock()
+            self._update_required = 0
+            self._update_color = [0, 0, 0]
+            self._update_zones = None  # None = single color, or list of colors for zones
+            self._writer_stop = threading.Event()
+            self._writer_thread = threading.Thread(target=self._writer_loop, daemon=True)
+            self._writer_thread.start()
+            logger.debug("AyaNeo async writer thread enabled")
 
         logger.info(f"AyaNeo LED Device initialized, model: {self.model}, suspend_mode: {self.suspend_mode.value}")
+    
+    def __del__(self):
+        """Cleanup - stop writer thread gracefully"""
+        try:
+            if hasattr(self, '_writer_stop'):
+                self._writer_stop.set()
+            if hasattr(self, '_writer_thread') and self._writer_thread.is_alive():
+                self._writer_thread.join(timeout=1.0)
+        except:
+            pass  # Ignore errors during cleanup
 
     def _load_suspend_mode(self) -> AyaNeoSuspendMode:
         """
@@ -384,17 +412,99 @@ class AyaNeoLEDDeviceEC:
         )
         self._led_mc_set(AyaNeoECConstants.LED_GROUP_LEFT_RIGHT, 0x00, 0x00)
 
+    # =================== Batch write mode (mimics kernel driver async behavior) ===================
+    
+    def _writer_loop(self):
+        """
+        Async writer thread - mimics kernel driver's ayaneo_led_mc_writer
+        Continuously checks for update requests and applies them in background
+        """
+        try:
+            while not self._writer_stop.is_set():
+                count = 0
+                color = None
+                zones = None
+                
+                try:
+                    with self._writer_lock:
+                        count = self._update_required
+                        if count:
+                            # Copy data while holding lock
+                            color = self._update_color.copy() if self._update_color else None
+                            zones = self._update_zones.copy() if self._update_zones else None
+                except Exception as e:
+                    logger.error(f"Writer thread lock error: {e}")
+                    time.sleep(0.1)
+                    continue
+                
+                if count:
+                    try:
+                        # Apply the update (mimics ayaneo_led_mc_brightness_apply)
+                        if zones is None and color is not None:
+                            # Single color for all zones
+                            self._apply_brightness_direct(color)
+                        elif zones is not None:
+                            # Custom zone colors
+                            self._apply_custom_zones_direct(zones)
+                        
+                        with self._writer_lock:
+                            self._update_required -= count
+                    except Exception as e:
+                        logger.error(f"Writer thread error: {e}")
+                        with self._writer_lock:
+                            self._update_required = 0
+                else:
+                    # Sleep when no updates (mimics usleep_range in kernel)
+                    time.sleep(0.01)
+        except Exception as e:
+            logger.error(f"Writer thread fatal error: {e}")
+    
+    def _begin_batch_write(self):
+        """Start batch write mode - queue EC commands instead of executing immediately"""
+        self._batch_mode = True
+        self._batch_commands = []
+    
+    def _end_batch_write(self):
+        """End batch write mode - flush all queued commands rapidly"""
+        if not self._batch_mode:
+            return
+        
+        self._batch_mode = False
+        
+        # Execute all queued commands with WriteFast (mimics kernel driver speed)
+        # WriteFast uses busy wait instead of sleep for EC status checks
+        for cmd_type, args in self._batch_commands:
+            if cmd_type == 'write':
+                reg, val = args
+                self.ec.WriteFast(reg, val)  # Fast write without sleep delays
+            elif cmd_type == 'sleep':
+                # Critical hardware delay - EC requires this between WRITE and HOLD
+                time.sleep(args)
+        
+        self._batch_commands.clear()
+
     # =================== Legacy device LED control methods ===================
 
     def _led_mc_legacy_set(self, group: int, pos: int, brightness: int):
         """Corresponding to C: ayaneo_led_mc_legacy_set"""
         # Note: C code has ACPI lock, Python temporarily omits it | 注意：C代码有ACPI锁，Python暂时省略
-        self.ec.Write(AyaNeoECConstants.LED_PWM_CONTROL, group)
-        self.ec.Write(AyaNeoECConstants.LED_POS, pos)
-        self.ec.Write(AyaNeoECConstants.LED_BRIGHTNESS, brightness)
-        self.ec.Write(AyaNeoECConstants.LED_MODE_REG, AyaNeoECConstants.LED_MODE_WRITE)
-        time.sleep(AyaNeoECConstants.LED_WRITE_DELAY_LEGACY_MS)
-        self.ec.Write(AyaNeoECConstants.LED_MODE_REG, AyaNeoECConstants.LED_MODE_HOLD)
+        if self._batch_mode:
+            # Batch mode - queue commands for later execution with WriteFast
+            self._batch_commands.append(('write', (AyaNeoECConstants.LED_PWM_CONTROL, group)))
+            self._batch_commands.append(('write', (AyaNeoECConstants.LED_POS, pos)))
+            self._batch_commands.append(('write', (AyaNeoECConstants.LED_BRIGHTNESS, brightness)))
+            self._batch_commands.append(('write', (AyaNeoECConstants.LED_MODE_REG, AyaNeoECConstants.LED_MODE_WRITE)))
+            # CRITICAL: Sleep between WRITE and HOLD is EC hardware requirement
+            self._batch_commands.append(('sleep', AyaNeoECConstants.LED_WRITE_DELAY_LEGACY_MS))
+            self._batch_commands.append(('write', (AyaNeoECConstants.LED_MODE_REG, AyaNeoECConstants.LED_MODE_HOLD)))
+        else:
+            # Normal mode - immediate execution
+            self.ec.Write(AyaNeoECConstants.LED_PWM_CONTROL, group)
+            self.ec.Write(AyaNeoECConstants.LED_POS, pos)
+            self.ec.Write(AyaNeoECConstants.LED_BRIGHTNESS, brightness)
+            self.ec.Write(AyaNeoECConstants.LED_MODE_REG, AyaNeoECConstants.LED_MODE_WRITE)
+            time.sleep(AyaNeoECConstants.LED_WRITE_DELAY_LEGACY_MS)
+            self.ec.Write(AyaNeoECConstants.LED_MODE_REG, AyaNeoECConstants.LED_MODE_HOLD)
         time.sleep(0.001)
 
     def _led_mc_legacy_hold(self):
@@ -413,10 +523,32 @@ class AyaNeoLEDDeviceEC:
         self._led_mc_legacy_set(group, zone + 1, color[1])
         self._led_mc_legacy_set(group, zone + 2, color[2])
 
-    def _led_mc_legacy_intensity(self, group: int, color: List[int], zones: List[int]):
-        """Corresponding to C: ayaneo_led_mc_legacy_intensity"""
-        for zone in zones:
-            self._led_mc_legacy_intensity_single(group, color, zone)
+    def _led_mc_legacy_intensity(self, group: int, color: List[int] | List[List[int]], zones: List[int]):
+        """
+        Corresponding to C: ayaneo_led_mc_legacy_intensity
+        
+        Args:
+            group: LED group (LEFT/RIGHT)
+            color: Either a single RGB color [R,G,B] for all zones, or a list of colors [[R,G,B], ...] for each zone
+            zones: Zone list [3,6,9,12]
+        """
+        # Enable batch mode - use WriteFast for all writes (except critical sleeps)
+        self._begin_batch_write()
+        
+        # Check if it's a single color or multiple colors
+        if len(color) > 0 and isinstance(color[0], list):
+            # Multiple colors - one per zone
+            for i, zone in enumerate(zones):
+                self._led_mc_legacy_intensity_single(group, color[i], zone)
+        else:
+            # Single color - apply to all zones
+            for zone in zones:
+                self._led_mc_legacy_intensity_single(group, color, zone)
+        
+        # Flush batch - execute all queued commands with WriteFast
+        self._end_batch_write()
+        
+        # Final commit - outside batch mode
         self._led_mc_legacy_set(AyaNeoECConstants.LED_GROUP_LEFT_RIGHT, 0x00, 0x00)
 
     def _led_mc_legacy_intensity_kun(self, group: int, color: List[int]):
@@ -498,8 +630,12 @@ class AyaNeoLEDDeviceEC:
             scaled.append(min(c_scaled, 255))
         return scaled
 
-    def _apply_brightness(self, color: Color):
-        """Corresponding to C: ayaneo_led_mc_brightness_apply"""
+    def _apply_brightness_direct(self, color_list: List[int]):
+        """Direct execution version - called by writer thread"""
+        # Ensure we have control before writing
+        self._take_control()
+        
+        color = Color(color_list[0], color_list[1], color_list[2])
         color_l = [color.R, color.G, color.B]
         color_r = [color.R, color.G, color.B]
         color_b = [color.R, color.G, color.B]
@@ -615,6 +751,20 @@ class AyaNeoLEDDeviceEC:
                     )
                 else:
                     logger.warning(f"Unknown modern device model: {self.model}")
+    
+    def _apply_brightness(self, color: Color):
+        """
+        Apply brightness - async if writer thread enabled, sync otherwise
+        """
+        if self._use_async_writer:
+            # Async version - queues update for writer thread
+            with self._writer_lock:
+                self._update_color = [color.R, color.G, color.B]
+                self._update_zones = None  # None indicates single color mode
+                self._update_required += 1
+        else:
+            # Sync version - direct execution
+            self._apply_brightness_direct([color.R, color.G, color.B])
 
     # =================== Control management ===================
 
@@ -651,7 +801,7 @@ class AyaNeoLEDDeviceEC:
     # =================== Public interface ===================
 
     def set_led_color(self, color: Color):
-        """Set LED color - main public interface"""
+        """Set LED color - main public interface (async version)"""
         # Update software cache (corresponding to C: ayaneo_led_mc_update_color[])
         self.current_color = [color.R, color.G, color.B]
 
@@ -665,8 +815,7 @@ class AyaNeoLEDDeviceEC:
         else:
             adjusted_color = color
 
-        # Acquire control and apply color
-        self._take_control()
+        # Queue update for writer thread (control management handled by writer)
         self._apply_brightness(adjusted_color)
 
         logger.debug(
@@ -679,36 +828,19 @@ class AyaNeoLEDDeviceEC:
             self.current_color[0], self.current_color[1], self.current_color[2]
         )
 
-    def set_custom_zone_colors(self, left_colors: List[List[int]], right_colors: List[List[int]], button_color: Optional[List[int]] = None):
+    def _apply_custom_zones_direct(self, zone_data):
         """
-        Set custom colors for individual LED zones (static effect)
-        为每个 LED 区域设置自定义颜色（静态灯效）
+        Direct execution version - called by writer thread
+        zone_data: dict with 'left_colors', 'right_colors', 'button_color'
+        """
+        left_colors = zone_data['left_colors']
+        right_colors = zone_data['right_colors']
+        button_color = zone_data.get('button_color')
         
-        Args:
-            left_colors: List of 4 RGB colors for left grip zones, e.g. [[255,0,0], [0,255,0], [0,0,255], [255,255,0]]
-                         左手柄 4 个区域的 RGB 颜色列表
-            right_colors: List of 4 RGB colors for right grip zones
-                          右手柄 4 个区域的 RGB 颜色列表  
-            button_color: Optional RGB color for button zone (KUN only)
-                          按钮区域的 RGB 颜色（仅 KUN 设备）
-                          
-        Example:
-            # Rainbow effect on left grip, solid blue on right
-            device.set_custom_zone_colors(
-                left_colors=[[255,0,0], [255,127,0], [255,255,0], [0,255,0]],  # Red→Orange→Yellow→Green
-                right_colors=[[0,0,255], [0,0,255], [0,0,255], [0,0,255]]      # All blue
-            )
-        """
+        # Already validated before queuing, but safety check
         if len(left_colors) != 4 or len(right_colors) != 4:
             logger.error("left_colors and right_colors must each contain exactly 4 RGB values")
             return
-            
-        # Validate RGB values
-        for colors in [left_colors, right_colors]:
-            for color in colors:
-                if len(color) != 3 or any(c < 0 or c > 255 for c in color):
-                    logger.error(f"Invalid RGB color: {color}. Each value must be 0-255")
-                    return
         
         zones = [3, 6, 9, 12]  # Standard 4 zones
         
@@ -774,17 +906,21 @@ class AyaNeoLEDDeviceEC:
                     [2, 1, 0],  # Zone 12: BGR
                 ]
                 
-                for i, zone in enumerate(zones):
-                    # Left grip with mapping
+                # Prepare all colors with scaling and remapping
+                left_colors_remapped = []
+                right_colors_remapped = []
+                for i in range(len(zones)):
                     left_scaled = self._scale_color(left_adjusted[i], left_scaling)
                     mapping = zone_channel_mappings[i]
-                    left_remapped = [left_scaled[mapping[0]], left_scaled[mapping[1]], left_scaled[mapping[2]]]
-                    self._led_mc_legacy_intensity_single(AyaNeoECConstants.LED_GROUP_LEFT, left_remapped, zone)
+                    left_colors_remapped.append([left_scaled[mapping[0]], left_scaled[mapping[1]], left_scaled[mapping[2]]])
                     
-                    # Right grip with mapping
                     right_scaled = self._scale_color(right_adjusted[i], right_scaling)
-                    right_remapped = [right_scaled[mapping[0]], right_scaled[mapping[1]], right_scaled[mapping[2]]]
-                    self._led_mc_legacy_intensity_single(AyaNeoECConstants.LED_GROUP_RIGHT, right_remapped, zone)
+                    right_colors_remapped.append([right_scaled[mapping[0]], right_scaled[mapping[1]], right_scaled[mapping[2]]])
+                
+                # Use exactly the same pattern as single-color (in _apply_brightness)
+                self._led_mc_legacy_on()
+                self._led_mc_legacy_intensity(AyaNeoECConstants.LED_GROUP_LEFT, left_colors_remapped, zones)
+                self._led_mc_legacy_intensity(AyaNeoECConstants.LED_GROUP_RIGHT, right_colors_remapped, zones)
                 
                 # Handle button zone if provided
                 if button_color:
@@ -794,14 +930,14 @@ class AyaNeoLEDDeviceEC:
                     self._led_mc_legacy_intensity_single(AyaNeoECConstants.LED_GROUP_BUTTON, button_remapped, 12)
             else:
                 # Standard legacy devices
-                for i, zone in enumerate(zones):
-                    left_scaled = self._scale_color(left_adjusted[i], left_scaling)
-                    self._led_mc_legacy_intensity_single(AyaNeoECConstants.LED_GROUP_LEFT, left_scaled, zone)
-                    
-                    right_scaled = self._scale_color(right_adjusted[i], right_scaling)
-                    self._led_mc_legacy_intensity_single(AyaNeoECConstants.LED_GROUP_RIGHT, right_scaled, zone)
-            
-            self._led_mc_legacy_set(AyaNeoECConstants.LED_GROUP_LEFT_RIGHT, 0x00, 0x00)
+                # Prepare all colors with scaling
+                left_colors_scaled = [self._scale_color(left_adjusted[i], left_scaling) for i in range(len(zones))]
+                right_colors_scaled = [self._scale_color(right_adjusted[i], right_scaling) for i in range(len(zones))]
+                
+                # Use exactly the same pattern as single-color (in _apply_brightness)
+                self._led_mc_legacy_on()
+                self._led_mc_legacy_intensity(AyaNeoECConstants.LED_GROUP_LEFT, left_colors_scaled, zones)
+                self._led_mc_legacy_intensity(AyaNeoECConstants.LED_GROUP_RIGHT, right_colors_scaled, zones)
         
         # Update software cache with average color (for compatibility with get_led_color)
         avg_r = sum(c[0] for c in left_colors + right_colors) // 8
@@ -810,6 +946,44 @@ class AyaNeoLEDDeviceEC:
         self.current_color = [avg_r, avg_g, avg_b]
         
         logger.debug(f"Custom zone colors set - Left: {left_colors}, Right: {right_colors}")
+    
+    def set_custom_zone_colors(self, left_colors: List[List[int]], right_colors: List[List[int]], button_color: Optional[List[int]] = None):
+        """
+        Set custom colors for individual LED zones - async if writer enabled, sync otherwise
+        
+        Args:
+            left_colors: List of 4 RGB colors for left grip zones
+            right_colors: List of 4 RGB colors for right grip zones
+            button_color: Optional RGB color for button zone (KUN only)
+        """
+        # Validate inputs
+        if len(left_colors) != 4 or len(right_colors) != 4:
+            logger.error("left_colors and right_colors must each contain exactly 4 RGB values")
+            return
+        
+        for colors in [left_colors, right_colors]:
+            for color in colors:
+                if len(color) != 3 or any(c < 0 or c > 255 for c in color):
+                    logger.error(f"Invalid RGB color: {color}. Each value must be 0-255")
+                    return
+        
+        if self._use_async_writer:
+            # Async version - queue update for writer thread
+            with self._writer_lock:
+                self._update_zones = {
+                    'left_colors': left_colors,
+                    'right_colors': right_colors,
+                    'button_color': button_color
+                }
+                self._update_color = None  # Not used for zone mode
+                self._update_required += 1
+        else:
+            # Sync version - direct execution
+            self._apply_custom_zones_direct({
+                'left_colors': left_colors,
+                'right_colors': right_colors,
+                'button_color': button_color
+            })
 
     def set_brightness(self, brightness: int):
         """

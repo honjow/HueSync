@@ -1,9 +1,6 @@
-import time
-
-from config import DEFAULT_BRIGHTNESS, USE_SYSFS_LED_CONTROL, logger
-from ec import EC
+from config import USE_SYSFS_LED_CONTROL, USE_SYSFS_LED_CONTROL, logger
 from led.ayaneo_led_device_ec import AyaNeoLEDDeviceEC
-from utils import AyaJoystickGroup, AyaLedZone, Color, RGBMode, RGBModeCapabilities
+from utils import Color, RGBMode, RGBModeCapabilities
 
 from .led_device import BaseLEDDevice
 from .sysfs_led_mixin import SysfsLEDMixin
@@ -58,7 +55,7 @@ class AyaNeoLEDDevice(SysfsLEDMixin, BaseLEDDevice):
         """
         # Try sysfs first if available (works with both old and new kernel drivers)
         # 如可用，首先尝试 sysfs（兼容新旧内核驱动）
-        if USE_SYSFS_LED_CONTROL and self._has_sysfs_support():
+        if USE_SYSFS_LED_CONTROL and USE_SYSFS_LED_CONTROL and self._has_sysfs_support():
             if self._set_color_by_sysfs(color):
                 logger.debug("Set solid color via sysfs")
                 return
