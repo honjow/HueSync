@@ -96,8 +96,39 @@ USE_SYSFS_SUSPEND_MODE = True
 # 启用/禁用 sysfs 处理 LED 控制
 # Set to False to always use device EC method (for debugging or compatibility)
 # 设置为 False 以始终使用设备 EC 方法（用于调试或兼容性）
-USE_SYSFS_LED_CONTROL = False
+USE_SYSFS_LED_CONTROL = True
 
+# Software effect update rate (auto-detected based on device)
+# 软件灯效更新频率（根据设备自动检测）
+def _detect_software_effect_update_rate():
+    """
+    Detect appropriate software effect update rate based on device EC access method.
+    根据设备的 EC 访问方式检测合适的软件灯效更新频率。
+    
+    Legacy EC register access devices (AyaNeo 2, Geek, Air, etc.): 5Hz
+    - Slow EC register access affects other EC functions (controller, battery, buttons)
+    - 慢速 EC 寄存器访问会影响其他 EC 功能（控制器、电池、按键）
+    
+    RAM access devices (Air Plus, Slide): 30Hz
+    - Fast RAM access doesn't interfere with other EC functions
+    - 快速 RAM 访问不会干扰其他 EC 功能
+    
+    HID devices (ROG Ally, etc.): 30Hz
+    - Independent HID interface, no EC contention
+    - 独立的 HID 接口，无 EC 竞争
+    """
+    if SYS_VENDOR != "AYANEO":
+        return 30.0
+    
+    product_upper = PRODUCT_NAME.upper()
+    if "AIR PLUS" in product_upper or "SLIDE" in product_upper:
+        logger.info(f"Device uses RAM EC access, software effect rate: 30Hz")
+        return 30.0
+    
+    logger.info(f"Device uses legacy EC access, software effect rate: 5Hz (for system stability)")
+    return 5.0
+
+SOFTWARE_EFFECT_UPDATE_RATE = _detect_software_effect_update_rate()
 
 # AYANEO_EC_SUPPORT_LIST = [
 #     "AIR",

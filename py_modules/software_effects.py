@@ -3,7 +3,7 @@ import threading
 import time
 from typing import Callable, Optional
 
-from config import logger
+from config import logger, SOFTWARE_EFFECT_UPDATE_RATE
 from utils import Color, get_battery_info
 
 
@@ -72,7 +72,7 @@ class PulseEffect(SoftwareEffect):
         set_color_callback: Callable[[Color], None],
         speed: float = 0.6,
         hold_time: float = 1.0,
-        update_rate: float = 30.0,  # Update rate | 更新频率
+        update_rate: float = SOFTWARE_EFFECT_UPDATE_RATE,  # Update rate | 更新频率
     ):
         """
         初始化呼吸灯效果
@@ -161,7 +161,7 @@ class RainbowEffect(SoftwareEffect):
         self,
         set_color_callback: Callable[[Color], None],
         speed: float = 1.0,
-        update_rate: float = 30.0,  # Update rate | 更新频率
+        update_rate: float = SOFTWARE_EFFECT_UPDATE_RATE,  # Update rate | 更新频率
     ):
         """
         初始化彩虹灯效果
@@ -215,7 +215,7 @@ class GradientEffect(SoftwareEffect):
         set_color_callback: Callable[[Color], None],
         speed: float = 0.2,
         transition: str = "sine",
-        update_rate: float = 30.0,  # Update rate | 更新频率
+        update_rate: float = SOFTWARE_EFFECT_UPDATE_RATE,  # Update rate | 更新频率
     ):
         """
         初始化双色渐变过渡效果
@@ -319,7 +319,7 @@ class DualityEffect(SoftwareEffect):
         speed: float = 0.6,
         hold_time: float = 0.5,
         switch_delay: float = 0.2,
-        update_rate: float = 30.0,
+        update_rate: float = SOFTWARE_EFFECT_UPDATE_RATE,
     ):
         """
         初始化双色交替呼吸效果
@@ -486,7 +486,7 @@ class BatteryEffect(SoftwareEffect):
             0.25  # Breathing effect frequency (Hz) | 呼吸效果频率 (Hz)
         )
         self._breathing_update_rate = (
-            30.0  # Breathing effect update rate (Hz) | 呼吸效果更新频率 (Hz)
+            SOFTWARE_EFFECT_UPDATE_RATE  # Breathing effect update rate (Hz) | 呼吸效果更新频率 (Hz)
         )
 
     def _get_battery_color(self, percentage: int, is_charging: bool) -> Color:

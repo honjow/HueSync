@@ -16,7 +16,7 @@ import threading
 import time
 from typing import Callable, List, Optional
 
-from config import logger
+from config import logger, SOFTWARE_EFFECT_UPDATE_RATE
 
 
 class KeyframeAnimator:
@@ -37,7 +37,7 @@ class KeyframeAnimator:
         set_zones_callback: Callable[[List[List[int]], List[List[int]]], None],
         speed: int = 10,
         brightness: int = 100,
-        update_rate: float = 30.0,
+        update_rate: float = SOFTWARE_EFFECT_UPDATE_RATE,
         num_left_zones: int = 4,
         num_right_zones: int = 4,
     ):
