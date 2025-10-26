@@ -395,6 +395,7 @@ class AyaNeoLEDDeviceEC:
         self.ec.Write(AyaNeoECConstants.LED_MODE_REG, AyaNeoECConstants.LED_MODE_WRITE)
         time.sleep(AyaNeoECConstants.LED_WRITE_DELAY_LEGACY_MS)
         self.ec.Write(AyaNeoECConstants.LED_MODE_REG, AyaNeoECConstants.LED_MODE_HOLD)
+        time.sleep(0.001)
 
     def _led_mc_legacy_hold(self):
         """Corresponding to C: ayaneo_led_mc_legacy_hold"""

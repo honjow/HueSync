@@ -72,7 +72,7 @@ class PulseEffect(SoftwareEffect):
         set_color_callback: Callable[[Color], None],
         speed: float = 0.6,
         hold_time: float = 1.0,
-        update_rate: float = 50.0,  # Update rate | 更新频率
+        update_rate: float = 30.0,  # Update rate | 更新频率
     ):
         """
         初始化呼吸灯效果
@@ -161,7 +161,7 @@ class RainbowEffect(SoftwareEffect):
         self,
         set_color_callback: Callable[[Color], None],
         speed: float = 1.0,
-        update_rate: float = 50.0,  # Update rate | 更新频率
+        update_rate: float = 30.0,  # Update rate | 更新频率
     ):
         """
         初始化彩虹灯效果
@@ -215,7 +215,7 @@ class GradientEffect(SoftwareEffect):
         set_color_callback: Callable[[Color], None],
         speed: float = 0.2,
         transition: str = "sine",
-        update_rate: float = 50.0,  # Update rate | 更新频率
+        update_rate: float = 30.0,  # Update rate | 更新频率
     ):
         """
         初始化双色渐变过渡效果
@@ -319,7 +319,7 @@ class DualityEffect(SoftwareEffect):
         speed: float = 0.6,
         hold_time: float = 0.5,
         switch_delay: float = 0.2,
-        update_rate: float = 50.0,
+        update_rate: float = 30.0,
     ):
         """
         初始化双色交替呼吸效果
