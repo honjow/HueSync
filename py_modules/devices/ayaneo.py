@@ -1,6 +1,6 @@
 import time
 
-from config import DEFAULT_BRIGHTNESS, logger
+from config import DEFAULT_BRIGHTNESS, USE_SYSFS_LED_CONTROL, logger
 from ec import EC
 from led.ayaneo_led_device_ec import AyaNeoLEDDeviceEC
 from utils import AyaJoystickGroup, AyaLedZone, Color, RGBMode, RGBModeCapabilities
@@ -41,7 +41,7 @@ class AyaNeoLEDDevice(SysfsLEDMixin, BaseLEDDevice):
         """
         # Try sysfs first if available (preferred for solid colors)
         # 如可用，首先尝试 sysfs（纯色首选）
-        if self._has_sysfs_support():
+        if USE_SYSFS_LED_CONTROL and self._has_sysfs_support():
             if self._set_color_by_sysfs(color):
                 logger.debug("Set solid color via sysfs")
                 return
