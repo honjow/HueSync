@@ -136,19 +136,6 @@ SOFTWARE_EFFECT_UPDATE_RATE = _detect_software_effect_update_rate()
 # 设置为 False 以使用同步 EC 写入（用于调试或兼容性）
 USE_AYANEO_ASYNC_WRITER = True
 
-# AYANEO_EC_SUPPORT_LIST = [
-#     "AIR",
-#     "AIR Pro",
-#     "AIR 1S",
-#     "AIR 1S Limited",
-#     "AYANEO 2",
-#     "AYANEO 2S",
-#     "GEEK",
-#     "GEEK 1S",
-# ]
-
-# IS_AYANEO_EC_SUPPORTED = PRODUCT_NAME in AYANEO_EC_SUPPORT_LIST
-
 API_URL = "https://api.github.com/repos/honjow/HueSync/releases/latest"
 
 

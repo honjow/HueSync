@@ -88,15 +88,15 @@ class EC:
         """Fast write without sleep delays - for batch operations only"""
         # Inline fast wait without sleep
         while inb(EC_CMD_STATUS_REGISTER_PORT) & EC_IBF_BIT != 0:
-            pass  # Busy wait
+            time.sleep(0.0001)
         outb(EC_CMD_STATUS_REGISTER_PORT, WR_EC)
         
         while inb(EC_CMD_STATUS_REGISTER_PORT) & EC_IBF_BIT != 0:
-            pass
+            time.sleep(0.0001)
         outb(EC_DATA_REGISTER_PORT, address)
         
         while inb(EC_CMD_STATUS_REGISTER_PORT) & EC_IBF_BIT != 0:
-            pass
+            time.sleep(0.0001)
         outb(EC_DATA_REGISTER_PORT, data)
 
     @staticmethod
