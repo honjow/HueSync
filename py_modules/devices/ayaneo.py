@@ -55,7 +55,7 @@ class AyaNeoLEDDevice(SysfsLEDMixin, BaseLEDDevice):
         """
         # Try sysfs first if available (works with both old and new kernel drivers)
         # 如可用，首先尝试 sysfs（兼容新旧内核驱动）
-        if USE_SYSFS_LED_CONTROL and USE_SYSFS_LED_CONTROL and self._has_sysfs_support():
+        if USE_SYSFS_LED_CONTROL and self._has_sysfs_support():
             if self._set_color_by_sysfs(color):
                 logger.debug("Set solid color via sysfs")
                 return
