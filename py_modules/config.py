@@ -92,6 +92,17 @@ IS_ALLY_LED_SUPPORTED = False  # Kept for backward compatibility in huesync.py |
 # 设置为 False 以始终使用设备 EC 方法（用于调试或兼容性）
 USE_SYSFS_SUSPEND_MODE = True
 
+# Enable/disable sysfs for LED control
+# 启用/禁用 sysfs 处理 LED 控制
+# Set to False to always use device EC method (for debugging or compatibility)
+# 设置为 False 以始终使用设备 EC 方法（用于调试或兼容性）
+USE_SYSFS_LED_CONTROL = True
+
+# Enable async writer thread for AyaNeo EC (mimics kernel driver behavior)
+# Set to False to use synchronous EC writes (for debugging or compatibility)
+# 启用 AyaNeo EC 异步写入线程（模仿内核驱动行为）
+# 设置为 False 以使用同步 EC 写入（用于调试或兼容性）
+USE_AYANEO_ASYNC_WRITER = True
 
 # AYANEO_EC_SUPPORT_LIST = [
 #     "AIR",
