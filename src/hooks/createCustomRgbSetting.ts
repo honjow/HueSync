@@ -163,12 +163,22 @@ export function createCustomRgbSetting<TConfig extends CustomRgbConfig>(
       }
 
       try {
+        const oldPreset = config.currentPresetGetter();
+        const wasAlreadyCustom = Setting.mode === config.rgbMode;
+        
         // Set preset name and mode, which will trigger applySettings() to handle backend call
         // 设置预设名称和模式，这会触发 applySettings() 来处理后端调用
         config.currentPresetSetter(name);
         Setting.mode = config.rgbMode;  // This setter will trigger applySettings()
         await Setting.saveSettingsData();
         Setting.notifyChange();
+        
+        // Manually trigger if switching between custom presets
+        // 在自定义预设之间切换时手动触发
+        if (wasAlreadyCustom && oldPreset !== name) {
+          await Backend.applySettings();
+        }
+        
         return true;
       } catch (error) {
         console.error(`Failed to apply ${config.deviceName} preset '${name}':`, error);
