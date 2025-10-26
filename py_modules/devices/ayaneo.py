@@ -25,9 +25,26 @@ class AyaNeoLEDDevice(SysfsLEDMixin, BaseLEDDevice):
     def __init__(self):
         super().__init__()
         self.aya_led_device_ec = AyaNeoLEDDeviceEC()
+        
         # Detect sysfs LED path (may or may not exist depending on kernel patches)
         # 检测 sysfs LED 路径（取决于内核补丁可能存在或不存在）
         self._detect_sysfs_led_path()
+        
+        # Cache multi-zone support status
+        # 缓存多区域支持状态
+        self._num_zones = None
+        self._sysfs_multi_zone_available = False
+        
+        if self._has_sysfs_support():
+            self._num_zones = self._detect_sysfs_multi_zones()
+            self._sysfs_multi_zone_available = self._has_sysfs_multi_zone_support()
+            
+            if self._sysfs_multi_zone_available:
+                logger.info(f"AyaNeo device: sysfs multi-zone support available ({self._num_zones} zones)")
+            else:
+                logger.info("AyaNeo device: sysfs available (single zone only, multi-zone via EC)")
+        else:
+            logger.info("AyaNeo device: no sysfs support, using EC control only")
 
     def _set_solid_color(self, color: Color) -> None:
         """
@@ -35,12 +52,12 @@ class AyaNeoLEDDevice(SysfsLEDMixin, BaseLEDDevice):
         设置纯色，优先使用 sysfs（如可用），回退到 EC 控制。
         
         For solid color mode, prefer sysfs kernel driver (more stable and standard).
-        EC control is reserved for advanced features like custom RGB.
+        Works with both old and new kernel drivers.
         对于纯色模式，优先使用 sysfs 内核驱动（更稳定和标准）。
-        EC 控制保留给高级功能，如自定义 RGB。
+        兼容新旧内核驱动。
         """
-        # Try sysfs first if available (preferred for solid colors)
-        # 如可用，首先尝试 sysfs（纯色首选）
+        # Try sysfs first if available (works with both old and new kernel drivers)
+        # 如可用，首先尝试 sysfs（兼容新旧内核驱动）
         if USE_SYSFS_LED_CONTROL and self._has_sysfs_support():
             if self._set_color_by_sysfs(color):
                 logger.debug("Set solid color via sysfs")
@@ -62,8 +79,18 @@ class AyaNeoLEDDevice(SysfsLEDMixin, BaseLEDDevice):
         Set custom colors for individual LED zones (for custom RGB animations)
         为每个 LED 区域设置自定义颜色（用于自定义 RGB 动画）
         
-        Delegates to AyaNeoLEDDeviceEC for zone-level control via EC.
-        委托给 AyaNeoLEDDeviceEC 通过 EC 进行区域级控制。
+        Prioritizes sysfs (if multi_intensity_zones available), falls back to EC control.
+        优先使用 sysfs（如果 multi_intensity_zones 可用），回退到 EC 控制。
+        
+        Behavior:
+        - With new kernel driver (multi_intensity_zones): Uses fast sysfs interface
+        - With old kernel driver: Automatically falls back to EC control
+        - No kernel driver: Uses EC control
+        
+        行为：
+        - 新内核驱动（multi_intensity_zones）：使用快速的 sysfs 接口
+        - 旧内核驱动：自动回退到 EC 控制
+        - 无内核驱动：使用 EC 控制
         
         Args:
             left_colors: List of 4 RGB colors for left grip zones
@@ -73,6 +100,50 @@ class AyaNeoLEDDevice(SysfsLEDMixin, BaseLEDDevice):
             button_color: Optional RGB color for button zone (KUN only)
                           按钮区域的 RGB 颜色（仅 KUN 设备）
         """
+        # Only try sysfs if we confirmed multi-zone support during init
+        # 仅在初始化时确认了多区域支持时才尝试 sysfs
+        if USE_SYSFS_LED_CONTROL and self._sysfs_multi_zone_available:
+            try:
+                # Build complete zone list (9 zones for AyaNeo kernel driver)
+                # 构建完整的区域列表（对于 AyaNeo 内核驱动必须是 9 个区域）
+                zone_colors = []
+                
+                # Zones 0-3: Left joystick
+                for color in left_colors:
+                    if isinstance(color, (list, tuple)):
+                        zone_colors.append((color[0], color[1], color[2]))
+                    else:
+                        zone_colors.append((color.R, color.G, color.B))
+                
+                # Zones 4-7: Right joystick
+                for color in right_colors:
+                    if isinstance(color, (list, tuple)):
+                        zone_colors.append((color[0], color[1], color[2]))
+                    else:
+                        zone_colors.append((color.R, color.G, color.B))
+                
+                # Zone 8: AyaSpace button (KUN) or dummy zone (other devices)
+                if button_color:
+                    if isinstance(button_color, (list, tuple)):
+                        zone_colors.append((button_color[0], button_color[1], button_color[2]))
+                    else:
+                        zone_colors.append((button_color.R, button_color.G, button_color.B))
+                else:
+                    zone_colors.append((0, 0, 0))  # Fill with black for non-KUN devices
+                
+                # Attempt sysfs write
+                if len(zone_colors) == 9 and self._set_zones_color_by_sysfs(zone_colors):
+                    logger.debug("Set custom zone colors via sysfs (9 zones)")
+                    return True
+                else:
+                    logger.debug("sysfs multi-zone write failed, falling back to EC")
+                    
+            except Exception as e:
+                logger.warning(f"sysfs zone control exception: {e}, falling back to EC")
+        
+        # Fallback to EC control (always available)
+        # 回退到 EC 控制（始终可用）
+        logger.debug("Using EC control for custom zone colors")
         return self.aya_led_device_ec.set_custom_zone_colors(left_colors, right_colors, button_color)
 
     def get_suspend_mode(self) -> str:

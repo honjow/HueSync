@@ -151,16 +151,120 @@ class SysfsLEDMixin:
         Detect number of LED zones available via sysfs.
         检测通过 sysfs 可用的 LED 区域数量。
         
-        Reserved for future implementation when kernel drivers support per-zone control.
-        为未来内核驱动支持按区域控制时的实现保留。
+        Returns:
+            int: Number of zones detected (1 for single zone/fallback, or actual count for multi-zone)
+        """
+        if not self._sysfs_led_path:
+            return 1
+        
+        # First try multi_intensity_zones (extended multi-zone support)
+        try:
+            multi_intensity_zones_path = os.path.join(self._sysfs_led_path, "multi_intensity_zones")
+            if os.path.exists(multi_intensity_zones_path):
+                with open(multi_intensity_zones_path, "r") as f:
+                    values = f.read().strip().split()
+                    if values:  # Make sure we got something
+                        num_zones = len(values) // 3
+                        if num_zones > 0:
+                            logger.info(f"Detected {num_zones} LED zones via multi_intensity_zones")
+                            return num_zones
+        except Exception as e:
+            logger.debug(f"Failed to detect multi_intensity_zones: {e}")
+        
+        # Fallback: check standard multi_intensity (single zone)
+        try:
+            multi_intensity_path = os.path.join(self._sysfs_led_path, "multi_intensity")
+            if os.path.exists(multi_intensity_path):
+                logger.debug("Standard multi_intensity detected (single zone)")
+                return 1
+        except Exception as e:
+            logger.debug(f"Failed to detect multi_intensity: {e}")
+        
+        logger.debug("No sysfs LED zone detection available")
+        return 1
+    
+    def _has_sysfs_multi_zone_support(self) -> bool:
+        """
+        Check if sysfs multi-zone LED control is available.
+        检查 sysfs 多区域 LED 控制是否可用。
         
         Returns:
-            int: Number of zones detected (currently always returns 1)
+            bool: True if multi_intensity_zones attribute exists and is writable
         """
-        # Reserved for future implementation
-        # 为未来实现保留
-        logger.debug("Multi-zone sysfs detection not yet implemented")
-        return 1
+        if not self._sysfs_led_path:
+            return False
+        
+        try:
+            multi_intensity_zones_path = os.path.join(self._sysfs_led_path, "multi_intensity_zones")
+            if not os.path.exists(multi_intensity_zones_path):
+                logger.debug("multi_intensity_zones not found")
+                return False
+            
+            # Check if writable (some sysfs files may be read-only)
+            if not os.access(multi_intensity_zones_path, os.W_OK):
+                logger.debug("multi_intensity_zones exists but is not writable")
+                return False
+            
+            logger.debug("multi_intensity_zones is available")
+            return True
+            
+        except Exception as e:
+            logger.debug(f"Error checking multi_intensity_zones: {e}")
+            return False
+    
+    def _set_zones_color_by_sysfs(self, zone_colors: list[tuple[int, int, int]]) -> bool:
+        """
+        Set colors for multiple LED zones via sysfs multi_intensity_zones.
+        通过 sysfs multi_intensity_zones 为多个 LED 区域设置颜色。
+        
+        This is a generic method that works with any device supporting multi_intensity_zones.
+        这是一个通用方法，适用于任何支持 multi_intensity_zones 的设备。
+        
+        Note: Only works if multi_intensity_zones attribute exists.
+        注意：仅在 multi_intensity_zones 属性存在时有效。
+        
+        Args:
+            zone_colors: List of RGB tuples, one per zone [(R,G,B), (R,G,B), ...]
+                         RGB 元组列表，每个区域一个 [(R,G,B), (R,G,B), ...]
+        
+        Returns:
+            bool: True if successful, False otherwise
+        """
+        if not self._sysfs_led_path:
+            logger.debug("No sysfs LED path available")
+            return False
+        
+        # Verify multi_intensity_zones exists before attempting write
+        if not self._has_sysfs_multi_zone_support():
+            logger.debug("multi_intensity_zones not available, cannot set zone colors")
+            return False
+        
+        try:
+            multi_intensity_zones_path = os.path.join(self._sysfs_led_path, "multi_intensity_zones")
+            
+            # Build the color string: "R G B R G B ..." for all zones
+            color_values = []
+            for r, g, b in zone_colors:
+                # Clamp values to 0-255
+                r = max(0, min(255, int(r)))
+                g = max(0, min(255, int(g)))
+                b = max(0, min(255, int(b)))
+                color_values.extend([str(r), str(g), str(b)])
+            
+            color_string = " ".join(color_values)
+            
+            with open(multi_intensity_zones_path, "w") as f:
+                f.write(color_string)
+            
+            logger.debug(f"Successfully set {len(zone_colors)} zone colors via multi_intensity_zones")
+            return True
+            
+        except OSError as e:
+            logger.warning(f"Failed to write to multi_intensity_zones (OSError): {e}")
+            return False
+        except Exception as e:
+            logger.warning(f"Failed to set zone colors via sysfs: {e}")
+            return False
     
     def _set_zone_color_by_sysfs(self, zone_idx: int, color: Color) -> bool:
         """
