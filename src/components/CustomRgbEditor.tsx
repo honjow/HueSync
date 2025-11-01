@@ -36,21 +36,24 @@ import { hsvToRgb, rgbToHsv } from "../util";
 import { SlowSliderField } from "./SlowSliderField";
 import { localizationManager, localizeStrEnum } from "../i18n";
 import { Backend } from "../util/backend";
-import { MSI_CLAW_LAYOUT, AYANEO_STANDARD_LAYOUT, AYANEO_KUN_LAYOUT, ROG_ALLY_LAYOUT } from "../util/ledLayouts";
+import { MSI_CLAW_LAYOUT, AYANEO_STANDARD_LAYOUT, AYANEO_KUN_LAYOUT, getLEDLayout } from "../util/ledLayouts";
 import { Setting } from "../hooks/settings";
 import { CustomRgbDeviceType } from "../types/customRgb";
+import { DeviceVariant } from "../types/ledLayout";
 
 type DeviceType = CustomRgbDeviceType; // Unified type from customRgb.d.ts
 
 interface CustomRgbEditorProps {
   closeModal: () => void;
   deviceType?: DeviceType; // Device type: "msi" or "ayaneo"
+  variant?: DeviceVariant; // Device variant (e.g., "xbox" for Xbox Ally)
   allowAnimation?: boolean; // Whether multi-frame animations are allowed
 }
 
 export const CustomRgbEditor: FC<CustomRgbEditorProps> = ({ 
   closeModal,
   deviceType = "msi", // Default to MSI for backward compatibility
+  variant = "standard", // Default to standard variant
   allowAnimation = true // Default to true for backward compatibility
 }) => {
   // Use unified custom RGB hook (automatically selects correct implementation)
@@ -84,7 +87,8 @@ export const CustomRgbEditor: FC<CustomRgbEditorProps> = ({
     rog_ally: {
       zoneKeys: ALLY_LED_ZONE_KEYS,
       maxKeyframes: ALLY_MAX_KEYFRAMES,
-      layout: ROG_ALLY_LAYOUT,
+      // Use getLEDLayout to select correct layout based on variant
+      layout: getLEDLayout("rog_ally", variant),
     },
     ayaneo_8: {
       zoneKeys: AYANEO_LED_ZONE_KEYS_8,

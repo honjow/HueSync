@@ -52,6 +52,9 @@ export interface LEDZoneMapping {
 /** Device type identifier */
 export type DeviceType = "msi_claw" | "ayaneo_standard" | "ayaneo_kun" | "rog_ally";
 
+/** Device variant identifier for layout variations */
+export type DeviceVariant = "standard" | "xbox";
+
 /** Rotation mapping for a stick (4 zones) */
 export interface StickRotationMapping {
   /** Clockwise rotation: [from_index] → to_index */
@@ -97,6 +100,8 @@ export interface VisualParams {
 export interface LEDLayoutConfig {
   /** Device identifier */
   deviceType: DeviceType;
+  /** Device variant (e.g., "xbox" for Xbox Ally) */
+  variant?: DeviceVariant;
   /** Total number of zones */
   numZones: number;
   

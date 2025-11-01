@@ -420,6 +420,14 @@ export const RGBComponent: FC = () => {
     return "msi";
   };
 
+  // Get device variant from backend capabilities
+  // 从后端能力获取设备变体
+  const getDeviceVariant = (): "standard" | "xbox" => {
+    const variant = Setting.deviceCapabilities?.variant;
+    console.log('[RgbSetting] getDeviceVariant:', variant);
+    return variant === "xbox" ? "xbox" : "standard";
+  };
+
   // Unified handle manage actions
   // 统一的管理操作处理函数
   const handleManageAction = async (option: DropdownOption) => {
@@ -427,6 +435,7 @@ export const RGBComponent: FC = () => {
     if (selectedData === "separator") return;
 
     const deviceType = getDeviceType();
+    const deviceVariant = getDeviceVariant();
 
     // Create new effect
     if (selectedData === "create_new") {
@@ -434,7 +443,8 @@ export const RGBComponent: FC = () => {
       const modal = showModal(
         <CustomRgbEditor 
           closeModal={() => modal.Close()} 
-          deviceType={deviceType} 
+          deviceType={deviceType}
+          variant={deviceVariant}
           allowAnimation={featureAvailability.multiFrameCustom}
         />
       );
@@ -449,7 +459,8 @@ export const RGBComponent: FC = () => {
         const modal = showModal(
           <CustomRgbEditor 
             closeModal={() => modal.Close()} 
-            deviceType={deviceType} 
+            deviceType={deviceType}
+            variant={deviceVariant}
             allowAnimation={featureAvailability.multiFrameCustom}
           />
         );

@@ -1,6 +1,7 @@
 from typing import Sequence
 
 import lib_hid as hid
+from lib_hid import HIDException
 from config import logger
 from utils import Color, RGBMode
 
@@ -378,9 +379,18 @@ class AsusLEDDeviceHID:
             for m in msg:
                 self.hid_device.write(m)
             return True
+        except HIDException as e:
+            # Device is no longer available, clear cache for reconnection
+            # 设备不再可用，清除缓存以便重新连接
+            logger.error(f"HID device error, clearing device cache: {e}", exc_info=True)
+            self.hid_device = None
+            self._last_rgb_config = None
+            self._last_mode = None
+            self._dynamic_lighting_disabled = False
+            return False
         except Exception as e:
             logger.error(f"Failed to write to device: {e}", exc_info=True)
-            return False  # Return failure on write error | 写入错误时返回失败
+            return False
 
     # ===== Custom RGB Methods (Software Animation) =====
     # 自定义 RGB 方法（软件动画）
@@ -433,6 +443,15 @@ class AsusLEDDeviceHID:
             logger.debug(f"Set custom zone colors: {colors} (init={init})")
             return True
         
+        except HIDException as e:
+            # Device is no longer available, clear cache for reconnection
+            # 设备不再可用，清除缓存以便重新连接
+            logger.error(f"HID device error in set_custom_zone_colors, clearing device cache: {e}", exc_info=True)
+            self.hid_device = None
+            self._last_rgb_config = None
+            self._last_mode = None
+            self._dynamic_lighting_disabled = False
+            return False
         except Exception as e:
             logger.error(f"Failed to set custom zone colors: {e}", exc_info=True)
             return False

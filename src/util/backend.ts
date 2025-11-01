@@ -15,6 +15,7 @@ export interface DeviceCapabilities {
   suspend_mode: boolean;
   custom_rgb?: boolean;  // Multi-zone custom RGB support (MSI, AyaNeo, ROG Ally, etc.)
   device_type?: "msi" | "ayaneo" | "rog_ally" | "generic";  // Device type for custom RGB implementation selection
+  variant?: "standard" | "xbox";  // Device variant (e.g., "xbox" for Xbox Ally)
   led_capabilities?: {
     sysfs_single_color: boolean;
     sysfs_multi_zone: boolean;

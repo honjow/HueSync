@@ -83,6 +83,18 @@ class AllyLEDDevice(SysfsLEDMixin, AsusLEDDevice):
         base_caps["custom_rgb"] = True
         base_caps["device_type"] = "rog_ally"
         
+        # Detect Xbox Ally variant
+        # 检测 Xbox Ally 变体
+        from config import PRODUCT_NAME
+        product_upper = PRODUCT_NAME.upper()
+        
+        if "XBOX ALLY" in product_upper:
+            base_caps["variant"] = "xbox"
+            logger.info("Detected Xbox Ally variant")
+        else:
+            base_caps["variant"] = "standard"
+            logger.info("Detected standard Ally variant")
+        
         return base_caps
 
     def supports_custom_rgb(self) -> bool:
@@ -135,6 +147,12 @@ class AllyLEDDevice(SysfsLEDMixin, AsusLEDDevice):
         result = device.set_custom_zone_colors(all_colors, init=init)
         if result:
             self._custom_zone_initialized = True
+        else:
+            # If write failed, device may be invalid - clear cached device
+            # 如果写入失败，设备可能已失效 - 清除缓存的设备
+            logger.warning("Failed to set zone colors via HID, clearing device cache")
+            self._ally_hid_device = None
+            self._custom_zone_initialized = False
         return result
 
 

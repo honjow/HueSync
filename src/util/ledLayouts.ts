@@ -22,7 +22,7 @@
  *   LED圆圈半径（默认：8）
  */
 
-import { LEDLayoutConfig, DeviceType } from "../types/ledLayout";
+import { LEDLayoutConfig, DeviceType, DeviceVariant } from "../types/ledLayout";
 
 /**
  * MSI Claw LED Layout
@@ -239,6 +239,7 @@ export const AYANEO_KUN_LAYOUT: LEDLayoutConfig = {
  */
 export const ROG_ALLY_LAYOUT: LEDLayoutConfig = {
   deviceType: "rog_ally",
+  variant: "standard",
   numZones: 4,
   
   // Circle centers for LED groups
@@ -323,13 +324,116 @@ export const ROG_ALLY_LAYOUT: LEDLayoutConfig = {
 };
 
 /**
- * Get LED layout configuration by device type
- * 根据设备类型获取 LED 布局配置
+ * ROG Xbox Ally LED Layout (4 zones)
+ * ROG Xbox Ally LED 布局（4个区域）
+ * 
+ * Physical layout differences from standard Ally:
+ * 与标准 Ally 的物理布局差异：
+ * - Different LED angles/positions
+ * - 不同的 LED 角度/位置
+ * 
+ * Note: Adjust angles based on actual Xbox Ally hardware testing
+ * 注意：根据实际 Xbox Ally 硬件测试调整角度
+ */
+export const ROG_ALLY_XBOX_LAYOUT: LEDLayoutConfig = {
+  deviceType: "rog_ally",
+  variant: "xbox",
+  numZones: 4,
+  
+  // Circle centers for LED groups (same as standard)
+  circles: {
+    leftStick: { x: 80, y: 40 },
+    rightStick: { x: 220, y: 40 }
+  },
+
+  visual: {
+    ring: { 
+      innerRadius: 18,
+      outerRadius: 26
+    },
+    led: { 
+      radius: 8,
+      radiusSelected: 10
+    }
+  },
+  
+  zoneMappings: [
+    // Left stick - adjusted angles for Xbox Ally
+    { 
+      arrayIndex: 0, 
+      circle: "leftStick", 
+      angle: 225,
+      radius: 38,
+      label: { 
+        text: "L1", 
+        i18nKey: "ALLY_LED_ZONE_L1", 
+        position: "left"
+      }
+    },
+    { 
+      arrayIndex: 1, 
+      circle: "leftStick", 
+      angle: 45,
+      radius: 38,
+      label: { 
+        text: "L2", 
+        i18nKey: "ALLY_LED_ZONE_L2", 
+        position: "right"
+      }
+    },
+    
+    // Right stick - adjusted angles for Xbox Ally
+    // TODO: Adjust these angles based on actual hardware testing
+    { 
+      arrayIndex: 2, 
+      circle: "rightStick", 
+      angle: 45, 
+      radius: 38,
+      label: { 
+        text: "R3", 
+        i18nKey: "ALLY_LED_ZONE_R2", 
+        position: "right"
+      }
+    },
+    { 
+      arrayIndex: 3, 
+      circle: "rightStick", 
+      angle: 225,
+      radius: 38,
+      label: { 
+        text: "R4", 
+        i18nKey: "ALLY_LED_ZONE_R1", 
+        position: "left"
+      }
+    },
+  ],
+  
+  rotationMappings: {
+    leftStick: {
+      // L1 ↔ L2 swap
+      clockwise: [1, 0],
+      counterClockwise: [1, 0],
+    },
+    rightStick: {
+      // R1 ↔ R2 swap
+      clockwise: [3, 2],
+      counterClockwise: [3, 2],
+    },
+  },
+};
+
+/**
+ * Get LED layout configuration by device type and variant
+ * 根据设备类型和变体获取 LED 布局配置
  * 
  * @param deviceType Device type identifier
+ * @param variant Device variant (optional)
  * @returns LED layout configuration
  */
-export function getLEDLayout(deviceType: DeviceType | string): LEDLayoutConfig {
+export function getLEDLayout(
+  deviceType: DeviceType | string, 
+  variant?: DeviceVariant | string
+): LEDLayoutConfig {
   switch (deviceType) {
     case "msi_claw":
       return MSI_CLAW_LAYOUT;
@@ -338,7 +442,8 @@ export function getLEDLayout(deviceType: DeviceType | string): LEDLayoutConfig {
     case "ayaneo_kun":
       return AYANEO_KUN_LAYOUT;
     case "rog_ally":
-      return ROG_ALLY_LAYOUT;
+      // Return Xbox variant if specified, otherwise standard
+      return variant === "xbox" ? ROG_ALLY_XBOX_LAYOUT : ROG_ALLY_LAYOUT;
     default:
       // Default to MSI Claw layout
       return MSI_CLAW_LAYOUT;
