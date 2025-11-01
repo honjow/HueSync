@@ -141,14 +141,21 @@ class AsusLEDDeviceHID:
                 if device["product_id"] != ALLY_X_PID:
                     continue
                 
-                # Look for the dynamic lighting application ID
-                # Note: lib_hid might not expose application ID, so we try the main interface
+                # Calculate application ID from usage_page and usage
+                # Application ID format: (usage_page << 16) | usage
+                # Dynamic lighting interface uses application 0x00590001
+                application = (device.get("usage_page", 0) << 16) | device.get("usage", 0)
+                if application != 0x00590001:
+                    logger.debug(f"Skipping non-dynamic-lighting interface: application=0x{application:08X}")
+                    continue
+                
+                # Found the correct interface, disable it
                 try:
                     dynled_device = hid.Device(path=device["path"])
                     # Send disable command: [0x06, 0x01]
                     dynled_device.write(bytes([0x06, 0x01]))
                     dynled_device.close()
-                    logger.info("Disabled Ally X dynamic lighting interface")
+                    logger.info("Disabled Ally X dynamic lighting interface (application 0x00590001)")
                     self._dynamic_lighting_disabled = True
                     break
                 except Exception as e:
@@ -157,6 +164,26 @@ class AsusLEDDeviceHID:
                     continue
         except Exception as e:
             logger.warning(f"Failed to disable Ally X dynamic lighting: {e}")
+
+    def re_disable_dynamic_lighting(self) -> bool:
+        """
+        Re-disable dynamic lighting (for Xbox Ally after wakeup).
+        重新禁用动态灯光（用于 Xbox Ally 唤醒后）。
+        
+        This method can be called externally (e.g., after system wakeup)
+        to re-disable the dynamic lighting interface.
+        此方法可外部调用（例如系统唤醒后）以重新禁用动态灯光接口。
+        
+        Returns:
+            bool: True if successful or not needed
+        """
+        if not self.disable_dynamic_lighting:
+            return True
+        
+        # Reset flag to force re-disable
+        self._dynamic_lighting_disabled = False
+        self._disable_ally_x_dynamic_lighting()
+        return self._dynamic_lighting_disabled
 
     def is_ready(self) -> bool:
         if self.hid_device:

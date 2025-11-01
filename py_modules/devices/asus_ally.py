@@ -47,6 +47,21 @@ class AllyLEDDevice(SysfsLEDMixin, AsusLEDDevice):
                 logger.info("Created Ally HID device for custom RGB control")
                 self._ally_hid_device = device
                 self._custom_rgb_capable = True
+                
+                # Send initial config_rgb to ensure RGB hardware is enabled
+                # 发送初始 config_rgb 命令以确保 RGB 硬件已启用
+                # This is critical after Windows has disabled RGB (e.g., dual-boot scenario)
+                # 这在 Windows 禁用 RGB 后至关重要（例如双启动场景）
+                try:
+                    from led.asus_led_device_hid import config_rgb
+                    device.hid_device.write(config_rgb(
+                        boot=device.rgb_boot,
+                        charging=device.rgb_charging
+                    ))
+                    logger.info("Sent initial config_rgb to enable RGB hardware")
+                except Exception as e:
+                    logger.warning(f"Failed to send initial config_rgb: {e}")
+                
                 return device
         except Exception as e:
             logger.error(f"Failed to create Ally HID device: {e}", exc_info=True)
@@ -265,3 +280,36 @@ class AllyLEDDevice(SysfsLEDMixin, AsusLEDDevice):
                 speed=speed,
                 **kwargs
             )
+
+    def suspend(self) -> None:
+        """
+        Handle suspend event (before sleep).
+        处理挂起事件（睡眠前）。
+        """
+        # Currently no special handling needed for suspend
+        # 当前挂起时无需特殊处理
+        pass
+
+    def resume(self) -> None:
+        """
+        Handle resume event (after wakeup).
+        处理恢复事件（唤醒后）。
+        
+        Re-disables dynamic lighting on Xbox Ally X after system wakeup,
+        as Windows driver may have re-enabled it.
+        在系统唤醒后重新禁用 Xbox Ally X 的动态灯光，
+        因为 Windows 驱动可能已重新启用它。
+        """
+        logger.info("Resume event: Re-disabling dynamic lighting for Xbox Ally")
+        
+        # Re-disable dynamic lighting if HID device exists
+        # 如果 HID 设备存在，重新禁用动态灯光
+        if self._ally_hid_device:
+            try:
+                result = self._ally_hid_device.re_disable_dynamic_lighting()
+                if result:
+                    logger.info("Successfully re-disabled dynamic lighting after wakeup")
+                else:
+                    logger.warning("Failed to re-disable dynamic lighting after wakeup")
+            except Exception as e:
+                logger.error(f"Error re-disabling dynamic lighting on resume: {e}", exc_info=True)

@@ -27,22 +27,44 @@ class AsusLEDDevice(BaseLEDDevice):
             logger.debug(f"Creating subclass directly: {cls.__name__}")
             return super().__new__(cls)
         
-        # Check if this is an Ally device | 检查是否是 Ally 设备
         from config import PRODUCT_NAME, logger as config_logger
         from id_info import ID_MAP
         
         logger.debug(f"Factory pattern: checking PRODUCT_NAME='{PRODUCT_NAME}'")
+        
+        # Strategy 1: Exact substring match (current behavior)
+        # 策略 1：精确子串匹配（当前行为）
         for product_name, id_info in ID_MAP.items():
             if product_name in PRODUCT_NAME:
-                logger.debug(f"Matched product: {product_name}")
+                logger.debug(f"Matched product (exact): {product_name}")
                 # Check if it's ROG Ally series | 判断是否是 ROG Ally 系列
                 if "Ally" in product_name:
                     logger.info(f"Factory pattern: Detected ROG Ally, returning AllyLEDDevice")
                     from .asus_ally import AllyLEDDevice
                     return super().__new__(AllyLEDDevice)
         
-        # Default to base class | 默认返回基类实例
-        logger.debug("Factory pattern: Returning base AsusLEDDevice")
+        # Strategy 2: Keyword-based flexible matching for Ally variants
+        # 策略 2：基于关键词的灵活匹配（Ally 变体）
+        product_upper = PRODUCT_NAME.upper()
+        
+        # Check for ROG Ally variants with keyword matching (order matters: most specific first)
+        # 使用关键词匹配检查 ROG Ally 变体（顺序重要：最具体的优先）
+        ally_keywords = [
+            ("ROG XBOX ALLY X", "Xbox Ally X"),  # Xbox Ally X (highest priority)
+            ("ROG XBOX ALLY", "Xbox Ally"),      # Xbox Ally
+            ("ROG ALLY X", "Ally X"),            # Ally X
+            ("ROG ALLY", "Ally"),                # Original Ally
+        ]
+        
+        for keyword, description in ally_keywords:
+            if keyword in product_upper:
+                logger.info(f"Factory pattern: Detected {description} via keyword matching, returning AllyLEDDevice")
+                from .asus_ally import AllyLEDDevice
+                return super().__new__(AllyLEDDevice)
+        
+        # Strategy 3: Fallback to base class
+        # 策略 3：降级到基类
+        logger.debug("Factory pattern: No Ally variant detected, returning base AsusLEDDevice")
         return super().__new__(cls)
 
     def __init__(self):
@@ -55,9 +77,40 @@ class AsusLEDDevice(BaseLEDDevice):
         self._current_real_mode: RGBMode = RGBMode.Disabled
         self._hid_device_cache = None  # Cache HID device instance | 缓存HID设备实例
         self._device_lock = threading.Lock()  # Thread safety | 线程安全
+        
+        # Strategy 1: Try exact match first
+        # 策略 1：首先尝试精确匹配
+        matched = False
         for product_name, id_info in ID_MAP.items():
             if product_name in PRODUCT_NAME:
                 self.id_info = id_info
+                matched = True
+                logger.info(f"Matched device via ID_MAP: {product_name} (VID: 0x{id_info.vid:04X}, PID: 0x{id_info.pid:04X})")
+                break
+        
+        # Strategy 2: Fallback to keyword matching for compatible ID
+        # 策略 2：降级到关键词匹配以查找兼容的 ID
+        if not matched:
+            product_upper = PRODUCT_NAME.upper()
+            
+            # Map keywords to ID_MAP keys for lookup (order matters: most specific first)
+            # 将关键词映射到 ID_MAP 的 key 进行查找（顺序重要：最具体的优先）
+            keyword_to_idmap = [
+                ("ROG XBOX ALLY X", "ROG Xbox Ally X RC73X"),  # Use Xbox Ally X config
+                ("ROG XBOX ALLY", "ROG Xbox Ally RC73Y"),      # Use Xbox Ally config
+                ("ROG ALLY X", "ROG Ally X RC72L"),            # Use Ally X config
+                ("ROG ALLY", "ROG Ally RC71L"),                # Use original Ally config
+            ]
+            
+            for keyword, idmap_key in keyword_to_idmap:
+                if keyword in product_upper and idmap_key in ID_MAP:
+                    self.id_info = ID_MAP[idmap_key]
+                    matched = True
+                    logger.info(f"Matched device via keyword '{keyword}' -> {idmap_key} (VID: 0x{self.id_info.vid:04X}, PID: 0x{self.id_info.pid:04X})")
+                    break
+        
+        if not matched:
+            logger.warning(f"No matching device found for PRODUCT_NAME: {PRODUCT_NAME}")
 
     def _set_solid_color(self, color: Color) -> None:
         self._set_hardware_color(RGBMode.Solid, color)
