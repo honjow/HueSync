@@ -193,10 +193,14 @@ class OneXLEDDevice(BaseLEDDevice):
         if self._config.protocol == OXPProtocol.HID_V1_G1:
             return {'id': 'secondary', 'name_key': 'ZONE_SECONDARY_CENTER_NAME'}
         
-        # F1 Mixed: front panel (Serial-controlled)
-        # F1混合：前面板（串口控制）
+        # NOTE: MIXED protocol (F1) does not support secondary zone
+        # Serial is only for buttons, not for RGB control
+        # 注意：MIXED协议（F1）不支持副区域
+        # 串口仅用于按钮，不用于RGB控制
+        # This branch should never be reached for F1 since _has_secondary_zone() returns False
+        # F1不应该到达这个分支，因为 _has_secondary_zone() 返回 False
         elif self._config.protocol == OXPProtocol.MIXED:
-            return {'id': 'secondary', 'name_key': 'ZONE_SECONDARY_FRONT_PANEL_NAME'}
+            return {'id': 'secondary', 'name_key': 'ZONE_SECONDARY_GENERIC_NAME'}
         
         # X1 Air or other devices with rgb_secondary: generic secondary zone
         # X1 Air或其他有rgb_secondary的设备：通用副区域
@@ -282,11 +286,11 @@ class OneXLEDDevice(BaseLEDDevice):
             if self._config.protocol == OXPProtocol.SERIAL:
                 self.set_onex_color_serial(color, mode, brightness_level)
             elif self._config.protocol == OXPProtocol.MIXED:
-                # F1 series: HID for sticks, Serial for secondary zone
-                # F1系列：HID控制摇杆，串口控制副区域
+                # F1 series: HID V2 for RGB control only (Serial is for buttons only)
+                # F1系列：仅使用HID V2控制RGB（串口仅用于按钮）
+                # Note: F1 does not support secondary zone
+                # 注意：F1不支持副区域
                 self.set_onex_color_hid(color, mode, brightness_level, secondary_enabled=secondary_enabled)
-                if secondary_color:
-                    self.set_onex_color_serial(secondary_color, mode, brightness_level)
             else:
                 # HID_V1, HID_V2, HID_V1_G1
                 self.set_onex_color_hid(color, mode, brightness_level, secondary_color=secondary_color, secondary_enabled=secondary_enabled)
@@ -317,6 +321,20 @@ class OneXLEDDevice(BaseLEDDevice):
         """
         if mode is None:
             mode = RGBMode.Solid
+        
+        # Determine which VID/PID to use based on device configuration
+        # This avoids the need for complex dynamic protocol detection
+        # 根据设备配置确定使用哪组VID/PID，避免复杂的动态协议检测
+        if self._config and self._config.protocol in [OXPProtocol.HID_V2, OXPProtocol.MIXED]:
+            # F1 (MIXED), Mini Pro (HID_V2) use XFLY protocol
+            # F1（MIXED）、Mini Pro（HID_V2）使用XFLY协议
+            vid, pid = [XFLY_VID], [XFLY_PID]
+            page, usage = [XFLY_PAGE], [XFLY_USAGE]
+        else:
+            # X1 Mini, X1 Air, etc. use X1_MINI protocol
+            # X1 Mini、X1 Air等使用X1_MINI协议
+            vid, pid = [X1_MINI_VID], [X1_MINI_PID]
+            page, usage = [X1_MINI_PAGE], [X1_MINI_USAGE]
         
         # Convert brightness_level to brightness value (0-100)
         # For Solid/Disabled modes: always use "medium" since they use HSV brightness
@@ -370,12 +388,7 @@ class OneXLEDDevice(BaseLEDDevice):
                 time.sleep(retry_delay)
                 retry_delay *= 2  # Exponential backoff | 指数退避
 
-            ledDevice = OneXLEDDeviceHID(
-                [XFLY_VID, X1_MINI_VID],
-                [XFLY_PID, X1_MINI_PID],
-                [XFLY_PAGE, X1_MINI_PAGE],
-                [XFLY_USAGE, X1_MINI_USAGE],
-            )
+            ledDevice = OneXLEDDeviceHID(vid, pid, page, usage)
             if ledDevice.is_ready():
                 logger.info(f"set_onex_color_hid: created new device, color={color}, mode={mode.value}, brightness_level={brightness_level}, secondary_color={secondary_color}")
                 # Cache the device instance for future calls

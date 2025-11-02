@@ -121,6 +121,7 @@ class OneXLEDDeviceHID:
                 and device["usage"] in self._usage
             ):
                 self.hid_device = hid.Device(path=device["path"])
+                
                 logger.info(
                     f"Found OneXPlayer device: VID={device['vendor_id']:#06x}, "
                     f"PID={device['product_id']:#06x}, path={device['path']}"
@@ -129,6 +130,7 @@ class OneXLEDDeviceHID:
                 # Detect protocol and initialize device
                 # 检测协议并初始化设备
                 self._protocol = self._check_protocol()
+                logger.info(f"Detected protocol: {self._protocol.name}")
                 self._initialize_device()
                 
                 return True
@@ -139,13 +141,21 @@ class OneXLEDDeviceHID:
         Detect HID protocol version based on VID/PID.
         根据VID/PID检测HID协议版本。
         
+        Since onexplayer.py now passes only one VID/PID pair based on device config,
+        we can simply check which protocol is being used.
+        
+        由于 onexplayer.py 现在根据设备配置只传入一组VID/PID，
+        我们可以简单地检查使用的是哪个协议。
+        
         Returns:
             Protocol: Detected protocol (X1_MINI=v1, XFLY=v2, UNKNOWN)
         """
-        # Check if any VID/PID matches X1 Mini (v1 protocol)
+        # Check if VID/PID matches X1 Mini (v1 protocol)
+        # 检查VID/PID是否匹配X1 Mini（v1协议）
         if X1_MINI_VID in self._vid and X1_MINI_PID in self._pid:
             return Protocol.X1_MINI
-        # Check if any VID/PID matches XFly (v2 protocol)
+        # Check if VID/PID matches XFly (v2 protocol)
+        # 检查VID/PID是否匹配XFly（v2协议）
         if XFLY_VID in self._vid and XFLY_PID in self._pid:
             return Protocol.XFLY
         return Protocol.UNKNOWN
