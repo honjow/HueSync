@@ -428,6 +428,11 @@ class OneXLEDDeviceHID:
         Returns:
             bool: True if successful
         """
+        # Declare global state variables at function start (must be before any usage)
+        # 在函数开始时声明全局状态变量（必须在任何使用之前）
+        global _global_prev_enabled, _global_prev_brightness, _global_prev_mode, _global_prev_color
+        global _global_prev_secondary_enabled, _global_prev_secondary_color
+        
         if not self.is_ready():
             return False
 
@@ -464,9 +469,6 @@ class OneXLEDDeviceHID:
         # 如果 init=True 则清除状态缓存（例如睡眠唤醒后）
         # 这强制更新硬件即使设置看起来未改变
         if init:
-            global _global_prev_enabled, _global_prev_brightness, _global_prev_mode, _global_prev_color
-            global _global_prev_secondary_enabled, _global_prev_secondary_color
-            
             logger.info("[INIT] Clearing state cache to force hardware update")
             _global_prev_enabled = None
             _global_prev_brightness = None
@@ -479,7 +481,6 @@ class OneXLEDDeviceHID:
         # This is CRITICAL - HHD's state persists because it's a long-running process
         # 使用全局状态跟踪（跨设备实例持久化）
         # 这是关键 - HHD的状态持久化因为它是长时间运行的进程
-        global _global_prev_enabled, _global_prev_brightness, _global_prev_mode, _global_prev_color
         
         # Debug logging for state tracking
         # 状态跟踪调试日志
@@ -667,8 +668,6 @@ class OneXLEDDeviceHID:
         # 仅在设备支持时处理次要灯区域（仅V1协议）
         # 同时检查 secondary_enabled 不为 None（表示设备有 rgb_secondary 支持）
         if self._protocol == Protocol.X1_MINI and secondary_enabled is not None:
-            global _global_prev_secondary_enabled, _global_prev_secondary_color
-            
             # Track secondary zone state changes
             # 跟踪副区域状态变化
             secondary_enabled_changed = _global_prev_secondary_enabled != secondary_enabled
