@@ -29,15 +29,15 @@
   - A1
   - A2
 - ROG
-  - Ally
-  - Ally X
+  - Ally/X
+  - Xbox Ally/X
 - MSI
   - Claw
   - Claw 8
   - Claw 7
 - Lenovo
   - Legion Go S
-  - Legion Go (实验)
+  - Legion Go/2
 
 ### 额外支持
 
