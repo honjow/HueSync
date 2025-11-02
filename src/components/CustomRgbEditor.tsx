@@ -380,21 +380,13 @@ export const CustomRgbEditor: FC<CustomRgbEditorProps> = ({
 
   const handleCancel = async () => {
     cancelEditing();
-    
-    // Close modal immediately to avoid state updates during unmounting
-    // 立即关闭弹窗，避免在卸载过程中更新状态
     closeModal();
     
-    // Restore the device to the state before editing in the background
-    // 在后台恢复设备到编辑前的状态
-    // For custom mode, need to reapply the active preset; for standard modes, use applySettings
-    // 对于自定义模式，需要重新应用激活的 preset；对于标准模式，使用 applySettings
+    // Restore the device to the state before editing
     if (Setting.mode === RGBMode.custom && Setting.currentCustomPreset) {
-      // Reapply the previously active preset
       await applyPreset(Setting.currentCustomPreset);
     } else {
-      // Standard mode (or no active custom preset)
-      await Backend.applySettings();
+      Backend.applySettings();
     }
   };
 
