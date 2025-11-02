@@ -304,9 +304,16 @@ export function createCustomRgbSetting<TConfig extends CustomRgbConfig>(
         Setting.notifyChange();
       }
 
-      // If the preset was active, reapply it to the device with new configuration
+      // Restore device to correct state after save
+      // 保存后恢复设备到正确状态
       if (wasActive || config.currentPresetGetter() === name) {
+        // Case 1: Edited the currently active preset -> apply updated version
+        // 情况1: 编辑的是当前激活的 preset -> 应用更新后的版本
         await this.applyPreset(name);
+      } else if (config.currentPresetGetter()) {
+        // Case 2: Edited a different preset -> restore the previously active one
+        // 情况2: 编辑的是其他 preset -> 恢复到之前激活的
+        await this.applyPreset(config.currentPresetGetter()!);
       }
 
       return true;
