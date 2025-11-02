@@ -242,11 +242,19 @@ class LedControl:
         except Exception as e:
             logger.error(f"Failed to set suspend mode via device method: {e}", exc_info=True)
 
-    def suspend(self) -> None:
-        self.device.suspend()
+    def suspend(self, settings: dict = None) -> None:
+        """
+        Delegate suspend to device with optional settings.
+        将睡眠事件委托给设备，可选设置。
+        """
+        self.device.suspend(settings)
 
-    def resume(self) -> None:
-        self.device.resume()
+    def resume(self, settings: dict = None) -> None:
+        """
+        Delegate resume to device with optional settings.
+        将唤醒事件委托给设备，可选设置。
+        """
+        self.device.resume(settings)
 
     def get_mode_capabilities(self) -> dict[RGBMode, RGBModeCapabilities]:
         """

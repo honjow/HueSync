@@ -401,10 +401,15 @@ class OneXLEDDeviceHID:
         brightness: int = 100,
         secondary_color: Color | None = None,
         secondary_enabled: bool = True,  # New parameter: independent secondary zone switch
+        init: bool = False,  # New parameter: force state cache clearing
     ) -> bool:
         """
         Set LED color and mode with improved protocol handling.
         使用改进的协议处理设置LED颜色和模式。
+        
+        Args:
+            init: If True, clear state cache to force hardware update (e.g., after resume from suspend)
+                  如果为True，清除状态缓存以强制更新硬件（例如睡眠唤醒后）
         
         IMPORTANT: This method now sends brightness/enable command first
         to ensure LEDs are enabled before setting colors. This fixes the
@@ -453,6 +458,22 @@ class OneXLEDDeviceHID:
             brightness_level = "low"
         elif brightness_val <= 3:
             brightness_level = "medium"
+        
+        # Clear state cache if init=True (e.g., after resume from suspend)
+        # This forces hardware update even if settings appear unchanged
+        # 如果 init=True 则清除状态缓存（例如睡眠唤醒后）
+        # 这强制更新硬件即使设置看起来未改变
+        if init:
+            global _global_prev_enabled, _global_prev_brightness, _global_prev_mode, _global_prev_color
+            global _global_prev_secondary_enabled, _global_prev_secondary_color
+            
+            logger.info("[INIT] Clearing state cache to force hardware update")
+            _global_prev_enabled = None
+            _global_prev_brightness = None
+            _global_prev_mode = None
+            _global_prev_color = None
+            _global_prev_secondary_enabled = None
+            _global_prev_secondary_color = None
         
         # Use global state tracking (persistent across device instances)
         # This is CRITICAL - HHD's state persists because it's a long-running process

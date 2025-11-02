@@ -86,11 +86,25 @@ class LEDDevice(ABC):
         pass
 
     @abstractmethod
-    def suspend(self) -> None:
+    def suspend(self, settings: dict = None) -> None:
+        """
+        Handle device suspend with optional settings.
+        处理设备睡眠，可选设置。
+        
+        Args:
+            settings: Dict containing user settings (e.g., power_led_suspend_off)
+        """
         pass
 
     @abstractmethod
-    def resume(self) -> None:
+    def resume(self, settings: dict = None) -> None:
+        """
+        Handle device resume with optional settings.
+        处理设备唤醒，可选设置。
+        
+        Args:
+            settings: Dict containing user settings (e.g., power_led_suspend_off)
+        """
         pass
     
     def get_device_capabilities(self) -> dict:
@@ -309,8 +323,8 @@ class BaseLEDDevice(LEDDevice):
     def set_suspend_mode(self, mode: str) -> None:
         return
 
-    def suspend(self) -> None:
+    def suspend(self, settings: dict = None) -> None:
         return
 
-    def resume(self) -> None:
+    def resume(self, settings: dict = None) -> None:
         return

@@ -129,10 +129,48 @@ class Plugin:
         return self.ledControl.get_suspend_mode() != ""
 
     async def suspend(self):
-        self.ledControl.suspend()
+        """
+        Handle system suspend event.
+        处理系统睡眠事件。
+        
+        Reads user settings and passes them to device for suspend handling.
+        读取用户设置并传递给设备进行睡眠处理。
+        """
+        try:
+            # Read user settings
+            # 读取用户设置
+            settings_data = await self.get_settings()
+            suspend_settings = {
+                'power_led_suspend_off': settings_data.get('powerLedSuspendOff', False)
+            }
+            
+            # Pass settings to device
+            # 将设置传递给设备
+            self.ledControl.suspend(suspend_settings)
+        except Exception as e:
+            logger.error(f"Failed to handle suspend: {e}", exc_info=True)
 
     async def resume(self):
-        self.ledControl.resume()
+        """
+        Handle system resume event.
+        处理系统唤醒事件。
+        
+        Reads user settings and passes them to device for resume handling.
+        读取用户设置并传递给设备进行唤醒处理。
+        """
+        try:
+            # Read user settings
+            # 读取用户设置
+            settings_data = await self.get_settings()
+            resume_settings = {
+                'power_led_suspend_off': settings_data.get('powerLedSuspendOff', False)
+            }
+            
+            # Pass settings to device
+            # 将设置传递给设备
+            self.ledControl.resume(resume_settings)
+        except Exception as e:
+            logger.error(f"Failed to handle resume: {e}", exc_info=True)
 
     async def update_latest(self):
         logger.info("Updating latest")

@@ -50,6 +50,10 @@ class LegionPowerLEDMixin:
         # 检查电源灯控制是否可用
         self._power_led_available = self._check_power_led_support()
         
+        # State tracking for suspend/resume
+        # 用于 suspend/resume 的状态跟踪
+        self._power_led_state = None
+        
         if self._power_led_available:
             logger.info(
                 f"Power LED control available: offset=0x{self.POWER_LED_OFFSET:02X}, "
@@ -233,4 +237,61 @@ class LegionPowerLEDMixin:
         base_caps['power_led'] = self._power_led_available
         
         return base_caps
+    
+    def suspend(self, settings: dict = None) -> None:
+        """
+        Handle suspend for Legion devices with power LED control.
+        处理 Legion 设备的睡眠事件及电源灯控制。
+        
+        If user enabled "turn off LED on suspend", saves current state and turns off LED.
+        如果用户启用了"睡眠时关闭LED"，保存当前状态并关闭LED。
+        """
+        # Call parent suspend if exists
+        # 调用父类的 suspend（如果存在）
+        if hasattr(super(), 'suspend'):
+            super().suspend(settings)
+        
+        if not self._power_led_available or not settings:
+            return
+        
+        # Check if user enabled power LED suspend feature
+        # 检查用户是否启用了电源灯睡眠功能
+        if settings.get('power_led_suspend_off'):
+            try:
+                # Save current state before turning off
+                # 关闭前保存当前状态
+                self._power_led_state = self.get_power_light()
+                if self._power_led_state:
+                    self.set_power_light(False)
+                    logger.info("Power LED turned off for suspend (Legion)")
+            except Exception as e:
+                logger.error(f"Failed to handle power LED on suspend: {e}", exc_info=True)
+    
+    def resume(self, settings: dict = None) -> None:
+        """
+        Handle resume for Legion devices with power LED control.
+        处理 Legion 设备的唤醒事件及电源灯恢复。
+        
+        Restores power LED to its previous state if it was on before suspend.
+        如果睡眠前电源灯是开启的，则恢复电源灯状态。
+        """
+        # Call parent resume if exists
+        # 调用父类的 resume（如果存在）
+        if hasattr(super(), 'resume'):
+            super().resume(settings)
+        
+        if not self._power_led_available:
+            return
+        
+        try:
+            # Restore power LED if it was on before suspend
+            # 如果睡眠前电源灯是开启的，则恢复
+            if self._power_led_state:
+                self.set_power_light(True)
+                logger.info("Power LED restored after resume (Legion)")
+                # Clear saved state
+                # 清除保存的状态
+                self._power_led_state = None
+        except Exception as e:
+            logger.error(f"Failed to restore power LED on resume: {e}", exc_info=True)
 

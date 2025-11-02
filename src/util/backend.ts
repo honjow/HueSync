@@ -185,6 +185,22 @@ export class Backend {
     // this.serverAPI!.callPluginMethod("setOff", {});
   }
 
+  // suspend
+  public static async suspend() {
+    if (!Setting.enableControl) {
+      return;
+    }
+    await call("suspend");
+  }
+
+  // resume
+  public static async resume() {
+    if (!Setting.enableControl) {
+      return;
+    }
+    await call("resume");
+  }
+
   // get_suspend_mode
   public static async getSuspendMode(): Promise<string> {
     return (await call("get_suspend_mode")) as string;

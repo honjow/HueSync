@@ -290,19 +290,19 @@ class OneXLEDDevice(BaseLEDDevice):
                 # F1系列：仅使用HID V2控制RGB（串口仅用于按钮）
                 # Note: F1 does not support secondary zone
                 # 注意：F1不支持副区域
-                self.set_onex_color_hid(color, mode, brightness_level, secondary_enabled=secondary_enabled)
+                self.set_onex_color_hid(color, mode, brightness_level, secondary_enabled=secondary_enabled, init=init)
             else:
                 # HID_V1, HID_V2, HID_V1_G1
-                self.set_onex_color_hid(color, mode, brightness_level, secondary_color=secondary_color, secondary_enabled=secondary_enabled)
+                self.set_onex_color_hid(color, mode, brightness_level, secondary_color=secondary_color, secondary_enabled=secondary_enabled, init=init)
         else:
             # Legacy fallback
             # 传统回退
             if "ONEXPLAYER X1" in PRODUCT_NAME:
                 self.set_onex_color_serial(color, mode, brightness_level)
             else:
-                self.set_onex_color_hid(color, mode, brightness_level, secondary_enabled=secondary_enabled)
+                self.set_onex_color_hid(color, mode, brightness_level, secondary_enabled=secondary_enabled, init=init)
 
-    def set_onex_color_hid(self, color: Color, mode: RGBMode | None = None, brightness_level: str | None = None, secondary_color: Color | None = None, secondary_enabled: bool = True) -> None:
+    def set_onex_color_hid(self, color: Color, mode: RGBMode | None = None, brightness_level: str | None = None, secondary_color: Color | None = None, secondary_enabled: bool = True, init: bool = False) -> None:
         """
         Set RGB color via HID protocol with retry logic.
         通过HID协议设置RGB颜色，带重试逻辑。
@@ -318,6 +318,7 @@ class OneXLEDDevice(BaseLEDDevice):
             mode: RGB mode (defaults to Solid if None)
             secondary_color: Secondary zone RGB color (optional)
             secondary_enabled: Secondary zone on/off state (default: True)
+            init: Force state cache clearing (e.g., after resume from suspend)
         """
         if mode is None:
             mode = RGBMode.Solid
@@ -369,7 +370,7 @@ class OneXLEDDevice(BaseLEDDevice):
         # 首先尝试使用缓存的设备
         if self._hid_device_cache and self._hid_device_cache.is_ready():
             logger.debug(f"set_onex_color_hid: using cached device, color={color}, mode={mode.value}, brightness_level={brightness_level}, secondary_color={secondary_color}")
-            success = self._hid_device_cache.set_led_color_new(color, mode, brightness=brightness, secondary_color=secondary_color, secondary_enabled=secondary_enabled)
+            success = self._hid_device_cache.set_led_color_new(color, mode, brightness=brightness, secondary_color=secondary_color, secondary_enabled=secondary_enabled, init=init)
             if success:
                 return
             else:
@@ -394,7 +395,7 @@ class OneXLEDDevice(BaseLEDDevice):
                 # Cache the device instance for future calls
                 # 缓存设备实例供未来调用使用
                 self._hid_device_cache = ledDevice
-                ledDevice.set_led_color_new(color, mode, brightness=brightness, secondary_color=secondary_color, secondary_enabled=secondary_enabled)
+                ledDevice.set_led_color_new(color, mode, brightness=brightness, secondary_color=secondary_color, secondary_enabled=secondary_enabled, init=init)
                 return
             logger.info("set_onex_color_hid: device not ready")
 
@@ -427,3 +428,60 @@ class OneXLEDDevice(BaseLEDDevice):
                 ledDevice.set_led_color(color, mode)
         except Exception as e:
             logger.error(e, exc_info=True)
+    
+    def suspend(self, settings: dict = None) -> None:
+        """
+        Handle suspend for OneXPlayer devices.
+        处理 OneXPlayer 设备的睡眠事件。
+        
+        Clears device cache to ensure clean resume.
+        清除设备缓存以确保干净的恢复。
+        """
+        logger.info("OneXPlayer suspend event")
+        
+        # Clear device cache
+        # 清除设备缓存
+        if self._hid_device_cache:
+            try:
+                self._hid_device_cache = None
+                logger.info("Cleared HID device cache for suspend")
+            except Exception as e:
+                logger.error(f"Error during suspend: {e}", exc_info=True)
+    
+    def resume(self, settings: dict = None) -> None:
+        """
+        Handle resume for OneXPlayer devices.
+        处理 OneXPlayer 设备的唤醒事件。
+        
+        Clears state cache to force hardware update on next set_color call.
+        This ensures LEDs are properly restored after sleep even if settings appear unchanged.
+        清除状态缓存以在下次 set_color 调用时强制更新硬件。
+        这确保睡眠后即使设置看起来未改变也能正确恢复 LED。
+        """
+        logger.info("OneXPlayer resume event: Clearing state cache")
+        
+        # Clear global state variables in HID device module
+        # This forces next set_color to actually write to hardware
+        # 清除 HID 设备模块中的全局状态变量
+        # 这强制下次 set_color 实际写入硬件
+        try:
+            import led.onex_led_device_hid as hid_module
+            hid_module._global_prev_enabled = None
+            hid_module._global_prev_brightness = None
+            hid_module._global_prev_mode = None
+            hid_module._global_prev_color = None
+            hid_module._global_prev_secondary_enabled = None
+            hid_module._global_prev_secondary_color = None
+            
+            logger.info("Successfully cleared HID state cache")
+        except Exception as e:
+            logger.error(f"Failed to clear HID state cache: {e}", exc_info=True)
+        
+        # Clear device cache to force re-initialization
+        # 清除设备缓存以强制重新初始化
+        if self._hid_device_cache:
+            try:
+                self._hid_device_cache = None
+                logger.info("Cleared HID device instance cache")
+            except Exception as e:
+                logger.error(f"Error clearing device cache: {e}", exc_info=True)

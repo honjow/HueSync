@@ -62,35 +62,22 @@ export default definePlugin(() => {
 
   SteamUtils.RegisterForOnResumeFromSuspend(async () => {
     setTimeout(async () => {
+      // Call backend resume first for device-specific handling
+      // 先调用后端 resume 处理设备特定逻辑（如 ROG Ally 动态灯光、Legion 电源灯、OneXPlayer 状态缓存）
+      await Backend.resume();
+      
+      // Reapply settings (with init=true for state cache clearing)
+      // 重新应用设置（init=true 清除状态缓存）
       Backend.applySettings({ isInit: true });
-
-      // Power LED resume handling | 电源灯唤醒恢复
-      if (Setting.powerLedSuspendOff) {
-        const savedState = sessionStorage.getItem('powerLedStateBeforeSuspend');
-        if (savedState === 'true') {
-          await Backend.setPowerLight(true);
-          sessionStorage.removeItem('powerLedStateBeforeSuspend');
-          console.log("Power LED restored after resume");
-        }
-      }
 
       console.log("Resume from suspend");
     }, 5000);
   });
 
   SteamUtils.RegisterForOnSuspendRequest(async () => {
-    Backend.throwSuspendEvt();
-
-    // Power LED suspend handling | 电源灯睡眠处理
-    if (Setting.powerLedSuspendOff) {
-      const currentState = await Backend.getPowerLight();
-      if (currentState !== null && currentState === true) {
-        // Save state to sessionStorage | 保存状态到 sessionStorage
-        sessionStorage.setItem('powerLedStateBeforeSuspend', 'true');
-        await Backend.setPowerLight(false);
-        console.log("Power LED turned off for suspend");
-      }
-    }
+    // Call backend suspend for device-specific handling
+    // 调用后端 suspend 处理设备特定逻辑（如电源灯关闭、设备缓存清理）
+    await Backend.suspend();
 
     console.log("Entering suspend mode");
   });
