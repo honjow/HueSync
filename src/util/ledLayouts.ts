@@ -102,16 +102,12 @@ export const MSI_CLAW_LAYOUT: LEDLayoutConfig = {
   
   rotationMappings: {
     rightStick: {
-      // Clockwise: R1→R2, R2→R3, R3→R4, R4→R1
-      clockwise: [1, 2, 3, 0],
-      // Counter-clockwise: R1→R4, R2→R1, R3→R2, R4→R3
-      counterClockwise: [3, 0, 1, 2],
+      clockwise: [3, 0, 1, 2],
+      counterClockwise: [1, 2, 3, 0],
     },
     leftStick: {
-      // Clockwise: L5→L6, L6→L7, L7→L8, L8→L5
-      clockwise: [5, 6, 7, 4],
-      // Counter-clockwise: L5→L8, L6→L5, L7→L6, L8→L7
-      counterClockwise: [7, 4, 5, 6],
+      clockwise: [7, 4, 5, 6],
+      counterClockwise: [5, 6, 7, 4],
     },
   },
 };
