@@ -43,6 +43,23 @@ import { DeviceVariant } from "../types/ledLayout";
 
 type DeviceType = CustomRgbDeviceType; // Unified type from customRgb.d.ts
 
+/**
+ * Convert polar coordinates to Cartesian coordinates
+ * 将极坐标转换为直角坐标
+ */
+const polarToCartesian = (
+  centerX: number,
+  centerY: number,
+  radius: number,
+  angleInDegrees: number
+): { x: number; y: number } => {
+  const angleInRadians = ((angleInDegrees - 90) * Math.PI) / 180.0;
+  return {
+    x: centerX + radius * Math.cos(angleInRadians),
+    y: centerY + radius * Math.sin(angleInRadians),
+  };
+};
+
 interface CustomRgbEditorProps {
   closeModal: () => void;
   deviceType?: DeviceType; // Device type: "msi" or "ayaneo"
@@ -484,29 +501,60 @@ export const CustomRgbEditor: FC<CustomRgbEditorProps> = ({
                   }}
                 >
                   {editing!.keyframes.map((frame: RGBTuple[], index: number) => {
-                // Find the brightest/most saturated color to represent this frame
-                const nonBlackColors = frame.filter((rgb: RGBTuple) => rgb[0] + rgb[1] + rgb[2] > 30);
-                let representativeColor = [40, 40, 40]; // Default dark gray
-                
-                if (nonBlackColors.length > 0) {
-                  // Sort by brightness (sum of RGB) and saturation (max - min of RGB)
-                  representativeColor = nonBlackColors.reduce((brightest: RGBTuple, current: RGBTuple) => {
-                    const brightnessCurrent = current[0] + current[1] + current[2];
-                    const brightnessBrightest = brightest[0] + brightest[1] + brightest[2];
-                    const saturationCurrent = Math.max(...current) - Math.min(...current);
-                    const saturationBrightest = Math.max(...brightest) - Math.min(...brightest);
-                    
-                    // Prefer high saturation first, then brightness
-                    if (saturationCurrent > saturationBrightest || 
-                       (saturationCurrent === saturationBrightest && brightnessCurrent > brightnessBrightest)) {
-                      return current;
-                    }
-                    return brightest;
-                  });
-                }
-                
-                const [r, g, b] = representativeColor;
                 const isCurrent = currentFrame === index;
+                
+                // Canvas size (easily adjustable)
+                // 画布尺寸（可以轻松调整）
+                const canvasSize = 24;
+                const center = canvasSize / 2;
+                
+                // Dynamic layout parameters based on canvas size
+                // 基于画布大小的动态布局参数
+                const miniLayout = {
+                  leftStick: { 
+                    x: center * 0.45,    // Left of center
+                    y: center             // Vertically centered
+                  },
+                  rightStick: { 
+                    x: center * 1.55,    // Right of center
+                    y: center             // Vertically centered
+                  },
+                  center: { 
+                    x: center,           // Horizontally centered
+                    y: center            // Vertically centered
+                  },
+                  ledRadius: canvasSize * 0.14,   // LED distance from circle center
+                  ledSize: canvasSize * 0.044,    // LED dot radius
+                };
+                
+                // Calculate actual LED positions using zoneMappings angles
+                // 使用 zoneMappings 的角度计算 LED 实际位置
+                const getLEDPositions = () => {
+                  return config.layout.zoneMappings.map(zone => {
+                    const center = miniLayout[zone.circle];
+                    
+                    // For center button (radius=0), use circle center directly
+                    // 对于中央按钮（radius=0），直接使用圆心位置
+                    if (zone.radius === 0) {
+                      return {
+                        x: center.x,
+                        y: center.y,
+                        arrayIndex: zone.arrayIndex,
+                      };
+                    }
+                    
+                    // Other LEDs use angle and mini layout radius
+                    // 其他 LED 使用角度和迷你布局的半径
+                    const pos = polarToCartesian(center.x, center.y, miniLayout.ledRadius, zone.angle);
+                    return {
+                      x: pos.x,
+                      y: pos.y,
+                      arrayIndex: zone.arrayIndex,
+                    };
+                  });
+                };
+                
+                const ledPositions = getLEDPositions();
                 
                 return (
                   // @ts-ignore
@@ -515,19 +563,51 @@ export const CustomRgbEditor: FC<CustomRgbEditorProps> = ({
                     onActivate={() => setCurrentFrame(index)}
                     noFocusRing={true}
                     style={{
-                      width: "18px",
-                      height: "18px",
-                      background: `rgb(${r}, ${g}, ${b})`,
-                      borderRadius: "3px",
-                      border: isCurrent ? "2px solid #1A9FFF" : "2px solid #666",
+                      width: `${canvasSize}px`,
+                      height: `${canvasSize}px`,
+                      position: "relative",
+                      borderRadius: "6px",
+                      border: isCurrent ? "2px solid #1A9FFF" : "2px solid #999",
                       cursor: "pointer",
                       transition: "all 0.15s ease",
                       boxShadow: isCurrent ? "0 0 6px rgba(26, 159, 255, 0.6)" : "none",
                       flexShrink: 0,
-                      opacity: isCurrent ? 1 : 0.7,
+                      // opacity: isCurrent ? 1 : 0.7,
+                      overflow: "hidden",
+                      background: "#999",
                     }}
                     focusClassName="keyframe-focused"
-                  />
+                  >
+                    <svg
+                      width={canvasSize}
+                      height={canvasSize}
+                      viewBox={`0 0 ${canvasSize} ${canvasSize}`}
+                      style={{ 
+                        position: "absolute", 
+                        top: 0, 
+                        left: 0,
+                        width: "100%",
+                        height: "100%",
+                      }}
+                    >
+                      {ledPositions.map((pos) => {
+                        const rgb = frame[pos.arrayIndex];
+                        if (!rgb) return null;
+                        
+                        const [r, g, b] = rgb;
+                        
+                        return (
+                          <circle
+                            key={pos.arrayIndex}
+                            cx={pos.x}
+                            cy={pos.y}
+                            r={miniLayout.ledSize}
+                            fill={`rgb(${r}, ${g}, ${b})`}
+                          />
+                        );
+                      })}
+                    </svg>
+                  </Focusable>
                 );
               })}
             </Focusable>
