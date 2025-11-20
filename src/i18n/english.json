@@ -1,5 +1,11 @@
 {
     "TITEL_SETTINGS": "Settings",
+    "ENABLE_RGB_CONTROL": "Enable RGB Lighting Control",
+    "ENABLE_RGB_CONTROL_DESC": "Enable the RGB lighting control system for your device",
+    "LED_SWITCH": "Turn On Lights",
+    "LED_SWITCH_DESC": "Turn RGB lights on or off",
+    "LIGHTING_EFFECTS": "Lighting Effects",
+    "LIGHTING_EFFECTS_DESC": "Choose your preferred lighting animation",
     "ENABLE_LED_CONTROL": "Enable LED Control",
     "LED_ON": "LED Switch",
     "LED_MODE": "LED Mode",

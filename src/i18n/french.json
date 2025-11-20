@@ -1,5 +1,11 @@
 {
     "TITEL_SETTINGS": "Paramètres",
+    "ENABLE_RGB_CONTROL": "Activer le contrôle d'éclairage RGB",
+    "ENABLE_RGB_CONTROL_DESC": "Activer le système de contrôle d'éclairage RGB pour votre appareil",
+    "LED_SWITCH": "Allumer les lumières",
+    "LED_SWITCH_DESC": "Allumer ou éteindre les lumières RGB",
+    "LIGHTING_EFFECTS": "Effets d'éclairage",
+    "LIGHTING_EFFECTS_DESC": "Choisissez votre animation d'éclairage préférée",
     "ENABLE_LED_CONTROL": "Activer le contrôle LED",
     "LED_ON": "Interrupteur LED",
     "LED_MODE": "Mode LED",

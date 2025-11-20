@@ -1,5 +1,11 @@
 {
     "TITEL_SETTINGS": "설정",
+    "ENABLE_RGB_CONTROL": "RGB 조명 제어 활성화",
+    "ENABLE_RGB_CONTROL_DESC": "기기의 RGB 조명 제어 시스템 활성화",
+    "LED_SWITCH": "조명 켜기",
+    "LED_SWITCH_DESC": "RGB 조명 켜기 또는 끄기",
+    "LIGHTING_EFFECTS": "조명 효과",
+    "LIGHTING_EFFECTS_DESC": "선호하는 조명 애니메이션 선택",
     "ENABLE_LED_CONTROL": "LED 제어 활성화",
     "LED_ON": "LED 스위치",
     "LED_MODE": "LED 모드",

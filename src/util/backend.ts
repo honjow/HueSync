@@ -240,9 +240,13 @@ export class Backend {
       return;
     }
 
+    // Calculate actual mode based on ledEnabled state
+    // 根据 ledEnabled 状态计算实际模式
+    const actualMode = Setting.ledEnabled ? Setting.mode : RGBMode.disabled;
+
     // Handle custom RGB mode separately
     // 自定义 RGB 模式单独处理
-    if (Setting.mode === RGBMode.custom) {
+    if (Setting.mode === RGBMode.custom && Setting.ledEnabled) {
       const deviceType = Setting.deviceCapabilities?.device_type;
       const presetName = Setting.currentCustomPreset;
       
@@ -284,7 +288,7 @@ export class Backend {
       : undefined;
 
     Backend.applyColor({
-      mode: Setting.mode,
+      mode: actualMode,
       red: Setting.red,
       green: Setting.green,
       blue: Setting.blue,

@@ -1,5 +1,11 @@
 {
     "TITEL_SETTINGS": "設置",
+    "ENABLE_RGB_CONTROL": "啟用RGB燈效控制",
+    "ENABLE_RGB_CONTROL_DESC": "為您的設備啟用RGB燈效控制系統",
+    "LED_SWITCH": "開啟燈光",
+    "LED_SWITCH_DESC": "開啟或關閉RGB燈光",
+    "LIGHTING_EFFECTS": "燈光效果",
+    "LIGHTING_EFFECTS_DESC": "選擇您喜歡的燈光動畫效果",
     "ENABLE_LED_CONTROL": "啟用 LED 控制",
     "LED_ON": "LED 燈開關",
     "LED_MODE": "LED 模式",

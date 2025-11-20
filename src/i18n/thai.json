@@ -1,5 +1,11 @@
 {
     "TITEL_SETTINGS": "การตั้งค่า",
+    "ENABLE_RGB_CONTROL": "เปิดใช้งานการควบคุมไฟ RGB",
+    "ENABLE_RGB_CONTROL_DESC": "เปิดใช้งานระบบควบคุมไฟ RGB สำหรับอุปกรณ์ของคุณ",
+    "LED_SWITCH": "เปิดไฟ",
+    "LED_SWITCH_DESC": "เปิดหรือปิดไฟ RGB",
+    "LIGHTING_EFFECTS": "เอฟเฟกต์ไฟ",
+    "LIGHTING_EFFECTS_DESC": "เลือกแอนิเมชันไฟที่คุณต้องการ",
     "ENABLE_LED_CONTROL": "เปิดใช้งานการควบคุม LED",
     "LED_ON": "สวิตช์ LED",
     "LED_MODE": "โหมด LED",

@@ -1,5 +1,11 @@
 {
     "TITEL_SETTINGS": "設定",
+    "ENABLE_RGB_CONTROL": "RGB照明制御を有効にする",
+    "ENABLE_RGB_CONTROL_DESC": "デバイスのRGB照明制御システムを有効にする",
+    "LED_SWITCH": "ライトを点灯",
+    "LED_SWITCH_DESC": "RGBライトを点灯または消灯",
+    "LIGHTING_EFFECTS": "照明効果",
+    "LIGHTING_EFFECTS_DESC": "お好みの照明アニメーションを選択",
     "ENABLE_LED_CONTROL": "LED制御を有効にする",
     "LED_ON": "LEDスイッチ",
     "LED_MODE": "LEDモード",

@@ -19,6 +19,8 @@ export const useRgb = () => {
     Setting.enableControl
   );
 
+  const [ledEnabled, setLedEnabled] = useState<boolean>(Setting.ledEnabled);
+
   const [speed, setSpeed] = useState<string>(Setting.speed);
   const [brightnessLevel, setBrightnessLevel] = useState<string>(Setting.brightnessLevel);
 
@@ -35,6 +37,7 @@ export const useRgb = () => {
       setSecondaryZoneEnabledState(Setting.secondaryZoneEnabled);
       setRgbMode(Setting.mode);
       setEnableControl(Setting.enableControl);
+      setLedEnabled(Setting.ledEnabled);
       setSpeed(Setting.speed);
       setBrightnessLevel(Setting.brightnessLevel);
     });
@@ -87,6 +90,12 @@ export const useRgb = () => {
     setEnableControl(enableControl);
     Setting.enableControl = enableControl;
     await Backend.applySettings({ isInit: true });
+  };
+
+  const updateLedEnabled = async (ledEnabled: boolean) => {
+    setLedEnabled(ledEnabled);
+    Setting.ledEnabled = ledEnabled;
+    await Backend.applySettings();
   };
 
   const updateSpeed = async (newSpeed: string) => {
@@ -142,6 +151,8 @@ export const useRgb = () => {
     updateRgbMode,
     enableControl,
     updateEnableControl,
+    ledEnabled,
+    updateLedEnabled,
     speed,
     updateSpeed,
     brightnessLevel,

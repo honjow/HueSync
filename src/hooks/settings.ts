@@ -2,7 +2,8 @@ import { Backend, hsvToRgb, RGBMode, RGBModeCapabilities, RunningApps, ACStateMa
 
 export class RgbSetting {
   public enableControl = false;
-  public mode = "disabled";
+  public ledEnabled = false;
+  public mode = "solid";
   public hue = 0;
   public saturation = 100;
   public brightness = 100;
@@ -18,6 +19,7 @@ export class RgbSetting {
 
   public deepCopy(source: RgbSetting) {
     this.enableControl = source.enableControl;
+    this.ledEnabled = source.ledEnabled;
     this.mode = source.mode;
     this.hue = source.hue;
     this.saturation = source.saturation;
@@ -183,16 +185,21 @@ export class SettingsData {
         // Load default setting
         if (appData.defaultSetting) {
           Object.assign(this.perApp[appId].defaultSetting, appData.defaultSetting);
+          // Data migration: handle ledEnabled and mode migration
+          // 数据迁移：处理 ledEnabled 和 mode 的迁移
+          this.migrateRgbSetting(this.perApp[appId].defaultSetting);
         }
         // Load AC setting (only if exists in saved data)
         if (appData.acSetting) {
           this.perApp[appId].acSetting = new RgbSetting();
           Object.assign(this.perApp[appId].acSetting, appData.acSetting);
+          this.migrateRgbSetting(this.perApp[appId].acSetting);
         }
         // Load battery setting (only if exists in saved data)
         if (appData.batSetting) {
           this.perApp[appId].batSetting = new RgbSetting();
           Object.assign(this.perApp[appId].batSetting, appData.batSetting);
+          this.migrateRgbSetting(this.perApp[appId].batSetting);
         }
       });
     } else {
@@ -219,6 +226,10 @@ export class SettingsData {
     if (dict.speed !== undefined) oldSettings.speed = dict.speed;
     if (dict.brightnessLevel !== undefined) oldSettings.brightnessLevel = dict.brightnessLevel;
     
+    // Data migration: handle ledEnabled and mode migration
+    // 数据迁移：处理 ledEnabled 和 mode 的迁移
+    this.migrateRgbSetting(oldSettings);
+    
     // For old format migration, keep AC and battery settings as copies of default
     // This preserves the old behavior for existing users
     defaultApp.acSetting = new RgbSetting();
@@ -227,6 +238,28 @@ export class SettingsData {
     defaultApp.batSetting.deepCopy(oldSettings);
     
     this.perApp = { "0": defaultApp };
+  }
+
+  // Migrate RgbSetting from old format to new format
+  // 将 RgbSetting 从旧格式迁移到新格式
+  private migrateRgbSetting(setting: RgbSetting) {
+    // If ledEnabled is not set (undefined), migrate from old data
+    // 如果 ledEnabled 未设置（undefined），从旧数据迁移
+    if (setting.ledEnabled === undefined) {
+      // Migration logic: infer ledEnabled from enableControl and mode
+      // 迁移逻辑：根据 enableControl 和 mode 推断 ledEnabled
+      if (!setting.enableControl || setting.mode === "disabled") {
+        setting.ledEnabled = false;
+      } else {
+        setting.ledEnabled = true;
+      }
+    }
+    
+    // Migration: if mode is "disabled", change to "solid"
+    // 迁移：如果 mode 是 "disabled"，改为 "solid"
+    if (setting.mode === "disabled") {
+      setting.mode = "solid";
+    }
   }
 }
 
@@ -476,6 +509,9 @@ export class Setting {
 
   @Setting.settingProperty<boolean>("enableControl")
   public static enableControl: boolean;
+
+  @Setting.settingProperty<boolean>("ledEnabled")
+  public static ledEnabled: boolean;
 
   @Setting.readonlyProperty<number>("red")
   public static red: number;

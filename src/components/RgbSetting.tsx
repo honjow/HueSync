@@ -191,6 +191,8 @@ export const RGBComponent: FC = () => {
     updateRgbMode,
     enableControl,
     updateEnableControl,
+    ledEnabled,
+    updateLedEnabled,
     speed,
     updateSpeed,
     brightnessLevel,
@@ -253,6 +255,9 @@ export const RGBComponent: FC = () => {
     const baseModes = Object.entries(Setting.modeCapabilities)
       .filter(([mode]) => {
         if (mode === RGBMode.custom) return false;
+        // Filter out disabled mode (now handled by ledEnabled switch)
+        // 过滤掉 disabled 模式（现在由 ledEnabled 开关处理）
+        if (mode === RGBMode.disabled) return false;
         // Filter out software effects if not available
         // 如果软件效果不可用，则过滤掉
         if (softwareEffectModes.includes(mode as RGBMode) && !featureAvailability.softwareEffects) {
@@ -513,7 +518,10 @@ export const RGBComponent: FC = () => {
         <PanelSectionRow>
           <ToggleField
             label={localizationManager.getString(
-              localizeStrEnum.ENABLE_LED_CONTROL
+              localizeStrEnum.ENABLE_RGB_CONTROL
+            )}
+            description={localizationManager.getString(
+              localizeStrEnum.ENABLE_RGB_CONTROL_DESC
             )}
             checked={enableControl}
             onChange={(value) => {
@@ -535,8 +543,24 @@ export const RGBComponent: FC = () => {
         )}
         {enableControl && (
           <PanelSectionRow>
+            <ToggleField
+              label={localizationManager.getString(
+                localizeStrEnum.LED_SWITCH
+              )}
+              description={localizationManager.getString(
+                localizeStrEnum.LED_SWITCH_DESC
+              )}
+              checked={ledEnabled}
+              onChange={(value) => {
+                updateLedEnabled(value);
+              }}
+            />
+          </PanelSectionRow>
+        )}
+        {enableControl && ledEnabled && (
+          <PanelSectionRow>
             <DropdownItem
-              label={localizationManager.getString(localizeStrEnum.LED_MODE)}
+              label={localizationManager.getString(localizeStrEnum.LIGHTING_EFFECTS)}
               strDefaultLabel={displayedModeName}
               selectedOption={modeOptions.find((m) => {
                 if (rgbMode === RGBMode.custom) {
@@ -563,7 +587,7 @@ export const RGBComponent: FC = () => {
           </PanelSectionRow>
         )}
       </PanelSection>
-      {enableControl && (
+      {enableControl && ledEnabled && (
         <>
           {/* Primary Zone Section | 主区域设置 */}
           {(currentModeCapabilities.color ||
