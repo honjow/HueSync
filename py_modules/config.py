@@ -105,7 +105,7 @@ def _detect_software_effect_update_rate():
     Detect appropriate software effect update rate based on device EC access method.
     根据设备的 EC 访问方式检测合适的软件灯效更新频率。
     
-    Legacy EC register access devices (AyaNeo 2, Geek, Air, etc.): 5Hz
+    Legacy EC register access devices (AyaNeo 2, Geek, Air, SuiPlay0X1, etc.): 5Hz
     - Slow EC register access affects other EC functions (controller, battery, buttons)
     - 慢速 EC 寄存器访问会影响其他 EC 功能（控制器、电池、按键）
     
@@ -117,7 +117,9 @@ def _detect_software_effect_update_rate():
     - Independent HID interface, no EC contention
     - 独立的 HID 接口，无 EC 竞争
     """
-    if SYS_VENDOR != "AYANEO":
+    # Check if it's an AyaNeo device or OEM variant (SuiPlay0X1)
+    # 检查是否为 AyaNeo 设备或 OEM 变体（SuiPlay0X1）
+    if SYS_VENDOR != "AYANEO" and SYS_VENDOR != "Mysten Labs, Inc.":
         return 30.0
     
     product_upper = PRODUCT_NAME.upper()

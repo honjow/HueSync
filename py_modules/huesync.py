@@ -45,7 +45,7 @@ class LedControl:
         
         Device detection priority (vendor-specific devices before generic):
         1. ASUS Ally (IS_ALLY_LED_SUPPORTED)
-        2. AyaNeo (SYS_VENDOR == "AYANEO")
+        2. AyaNeo (SYS_VENDOR == "AYANEO" or "Mysten Labs, Inc.")
         3. MSI (SYS_VENDOR == "Micro-Star International Co., Ltd.")
         4. ASUS (SYS_VENDOR == "ASUSTeK COMPUTER INC.")
         5. GPD (SYS_VENDOR == "GPD")
@@ -57,7 +57,7 @@ class LedControl:
         
         设备检测优先级（厂商特定设备优先于通用设备）：
         1. ASUS Ally (IS_ALLY_LED_SUPPORTED)
-        2. AyaNeo (SYS_VENDOR == "AYANEO")
+        2. AyaNeo (SYS_VENDOR == "AYANEO" 或 "Mysten Labs, Inc.")
         3. MSI (SYS_VENDOR == "Micro-Star International Co., Ltd.")
         4. ASUS (SYS_VENDOR == "ASUSTeK COMPUTER INC.")
         5. GPD (SYS_VENDOR == "GPD")
@@ -93,9 +93,11 @@ class LedControl:
             return AllyLEDDevice()
         
         # Priority 3: AyaNeo devices (vendor-specific EC control with sysfs fallback)
+        # Includes OEM variants like SuiPlay0X1 by Mysten Labs
         # 优先级 3: AyaNeo 设备（厂商特定的 EC 控制，带 sysfs 回退）
-        if SYS_VENDOR == "AYANEO":
-            logger.info("Using AyaNeo LED device (SYS_VENDOR)")
+        # 包括 OEM 变体，如 Mysten Labs 的 SuiPlay0X1
+        if SYS_VENDOR == "AYANEO" or SYS_VENDOR == "Mysten Labs, Inc.":
+            logger.info(f"Using AyaNeo LED device (SYS_VENDOR: {SYS_VENDOR})")
             return AyaNeoLEDDevice()
         
         # Priority 4: MSI devices

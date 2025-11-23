@@ -113,6 +113,7 @@ class AyaNeoModel(Enum):
     GEEK_1S = 10
     KUN = 11
     SLIDE = 12
+    SUIPLAY0X1 = 13  # SuiPlay0X1 - AYANEO 2S variant by Mysten Labs
 
 
 class AyaNeoSuspendMode(Enum):
@@ -227,6 +228,12 @@ class AyaNeoLEDDeviceEC:
                 vendor = f.read().strip()
             with open("/sys/class/dmi/id/board_name", "r") as f:
                 board_name = f.read().strip()
+
+            # Special handling for non-AYANEO branded variants
+            # 特殊处理非 AYANEO 品牌的变体设备
+            if vendor == "Mysten Labs, Inc." and board_name == "SuiPlay0X1":
+                logger.info(f"Detected SuiPlay0X1: {vendor} {board_name}")
+                return AyaNeoModel.SUIPLAY0X1
 
             if vendor != "AYANEO":
                 logger.warning(f"Not an AYANEO device: {vendor}")
@@ -672,8 +679,9 @@ class AyaNeoLEDDeviceEC:
                 | AyaNeoModel.GEEK_1S
                 | AyaNeoModel.AYANEO_2
                 | AyaNeoModel.AYANEO_2S
+                | AyaNeoModel.SUIPLAY0X1
             ):
-                # GEEK and AYANEO 2 series
+                # GEEK and AYANEO 2 series (including SuiPlay0X1)
                 color_l = self._scale_color(color_l, 192)
                 color_r = self._scale_color(color_r, 192)
                 self._led_mc_legacy_on()
@@ -894,6 +902,9 @@ class AyaNeoLEDDeviceEC:
                 left_scaling, right_scaling = 64, 32
             elif self.model == AyaNeoModel.AIR_1S_LIMITED:
                 left_scaling, right_scaling = 192, 204
+            elif self.model == AyaNeoModel.SUIPLAY0X1:
+                # SuiPlay0X1 uses same scaling as AYANEO_2S
+                left_scaling, right_scaling = 192, 192
             else:
                 left_scaling, right_scaling = 192, 192
             
