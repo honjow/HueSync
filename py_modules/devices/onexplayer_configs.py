@@ -102,7 +102,8 @@ ONEXPLAYER_CONFIGS = {
         protocol=OXPProtocol.HID_V1,
         rgb=True,
     ),
-
+    
+    # ========== X1 Air Series (HID v1) ==========
     "ONEXPLAYER X1Air": OXPConfig(
         name="ONEXPLAYER X1 Air",
         protocol=OXPProtocol.HID_V1,
@@ -162,13 +163,6 @@ ONEXPLAYER_CONFIGS = {
     "ONEXPLAYER 2 GA18": OXP_2_CONF,
     "ONEXPLAYER 2 PRO ARP23": OXP_2_CONF,
     "ONEXPLAYER 2 PRO ARP23 EVA-01": OXP_2_CONF,
-    
-    # ========== Mini Pro (HID v2) ==========
-    "ONEXPLAYER Mini Pro": OXPConfig(
-        name="ONEXPLAYER Mini Pro",
-        protocol=OXPProtocol.HID_V2,
-        rgb=True,
-    ),
     
     # ========== Original OneXPlayer ==========
     "ONE XPLAYER": OXPConfig(
