@@ -51,5 +51,6 @@ py_modules/**/*.c
 /cli
 /out
 
-# Debugging/research documents
-DEBUGGING_*.md
+
+test
+/submodule
