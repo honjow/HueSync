@@ -58,7 +58,10 @@ DEVICE_CONFIGS = {
 
 # 公共常量 | Common constants
 WMI_PATH = r"\_SB.GZFD.WMAF"       # WMI 方法路径 (Go 和 Go S 一致)
-WMI_LIGHTING_ID = 0x04              # Lighting_ID (Go 和 Go S 一致)
+WMI_LIGHTING_ID = 0x04              # LEDP Lighting_ID (Go 和 Go S 一致)
+WMI_LED_MODE_ID = 0x24              # LEDM Lighting_ID, 睡眠呼吸灯控制 (BIOS 35+)
+LED_MODE_OFFSET = 0x58              # LEDM EC 寄存器偏移
+LED_MODE_BIT = 0                    # LEDM 位位置
 ECMM_BASE = 0xFE0B0300              # ECMM/ERAM 基地址 (Go 和 Go S 一致)
 ECMM_SIZE = 0xFF
 
@@ -84,8 +87,9 @@ class AcpiCallBackend:
     name = "acpi_call"
     ACPI_CALL_PATH = "/proc/acpi/call"
 
-    def __init__(self, lighting_id: int):
+    def __init__(self, lighting_id: int, led_mode_id: int = 0x24):
         self._lighting_id = lighting_id
+        self._led_mode_id = led_mode_id
 
     def is_available(self) -> bool:
         """检查 acpi_call 是否可用，不可用则尝试加载。"""
@@ -110,6 +114,18 @@ class AcpiCallBackend:
             print(f"  acpi_call 错误: {e}")
             return None
 
+    def _set_led_mode(self, disable_breathing: bool) -> None:
+        """设置 LEDM 控制睡眠呼吸灯 (BIOS 35+, 静默忽略失败)。"""
+        mode = 0x01 if disable_breathing else 0x03
+        cmd = (
+            f"{WMI_PATH} 0 0x02 "
+            f"{{0x{self._led_mode_id:02X}, 0x00, 0x{mode:02X}}}"
+        )
+        result = self._acpi_call(cmd)
+        if result is not None:
+            state = "禁用" if disable_breathing else "启用"
+            print(f"  LEDM 睡眠呼吸: {state}")
+
     def set_power_led(self, enabled: bool) -> bool:
         """设置电源灯状态。"""
         # brightness=0x02 → 开灯, brightness=0x01 → 关灯
@@ -123,6 +139,9 @@ class AcpiCallBackend:
         if result is None:
             return False
         print(f"  响应: {result}")
+
+        # 关灯时禁用睡眠呼吸, 开灯时恢复
+        self._set_led_mode(disable_breathing=not enabled)
 
         # 回读验证
         current = self.get_power_led()
@@ -167,10 +186,14 @@ class MMIOBackend:
 
     name = "mmio"
 
-    def __init__(self, offset: int, bit: int):
+    def __init__(self, offset: int, bit: int,
+                 led_mode_offset: int = 0x58, led_mode_bit: int = 0):
         self._offset = offset
         self._bit = bit
         self._bit_mask = 1 << bit
+        self._led_mode_offset = led_mode_offset
+        self._led_mode_bit = led_mode_bit
+        self._led_mode_mask = 1 << led_mode_bit
         self._fd = None
         self._mm = None
         self._page_offset = 0
@@ -224,6 +247,22 @@ class MMIOBackend:
             self._cleanup()
             return False
 
+    def _set_led_mode(self, disable_breathing: bool) -> None:
+        """通过 MMIO 设置 LEDM (静默忽略失败)。"""
+        if not self._ensure_mapped():
+            return
+        try:
+            addr = self._page_offset + self._led_mode_offset
+            current = self._mm[addr]
+            if disable_breathing:
+                self._mm[addr] = current | self._led_mode_mask
+            else:
+                self._mm[addr] = current & ~self._led_mode_mask
+            state = "禁用" if disable_breathing else "启用"
+            print(f"  LEDM EC[0x{self._led_mode_offset:02X}]: 0x{current:02X} → 0x{self._mm[addr]:02X} (睡眠呼吸: {state})")
+        except Exception as e:
+            print(f"  LEDM 设置失败 (可能不支持): {e}")
+
     def set_power_led(self, enabled: bool) -> bool:
         """通过 MMIO 设置电源灯状态。"""
         if not self._ensure_mapped():
@@ -246,6 +285,10 @@ class MMIOBackend:
             # 验证写入
             verify = self._mm[addr]
             print(f"  mmio 验证 0x{verify:02X} ({verify:08b})")
+
+            # 关灯时禁用睡眠呼吸, 开灯时恢复
+            self._set_led_mode(disable_breathing=not enabled)
+
             return (verify & self._bit_mask) == (new_value & self._bit_mask)
         except Exception as e:
             print(f"  mmio 错误: {e}")
@@ -282,10 +325,14 @@ class ECPortBackend:
     EC_IBF = 0x02          # Input Buffer Full
     EC_OBF = 0x01          # Output Buffer Full
 
-    def __init__(self, offset: int, bit: int):
+    def __init__(self, offset: int, bit: int,
+                 led_mode_offset: int = 0x58, led_mode_bit: int = 0):
         self._offset = offset
         self._bit = bit
         self._bit_mask = 1 << bit
+        self._led_mode_offset = led_mode_offset
+        self._led_mode_bit = led_mode_bit
+        self._led_mode_mask = 1 << led_mode_bit
         self._port_fd = None
 
     def _ensure_port(self) -> bool:
@@ -364,6 +411,22 @@ class ECPortBackend:
         except Exception:
             return False
 
+    def _set_led_mode(self, disable_breathing: bool) -> None:
+        """通过 EC I/O 端口设置 LEDM (静默忽略失败)。"""
+        if not self._ensure_port():
+            return
+        try:
+            current = self.read_ec(self._led_mode_offset)
+            if disable_breathing:
+                new_value = current | self._led_mode_mask
+            else:
+                new_value = current & ~self._led_mode_mask
+            self.write_ec(self._led_mode_offset, new_value)
+            state = "禁用" if disable_breathing else "启用"
+            print(f"  LEDM EC[0x{self._led_mode_offset:02X}]: 0x{current:02X} → 0x{new_value:02X} (睡眠呼吸: {state})")
+        except Exception as e:
+            print(f"  LEDM 设置失败 (可能不支持): {e}")
+
     def set_power_led(self, enabled: bool) -> bool:
         """通过 EC I/O 端口设置电源灯状态。"""
         if not self._ensure_port():
@@ -385,6 +448,10 @@ class ECPortBackend:
             # 验证写入
             verify = self.read_ec(self._offset)
             print(f"  ec_port 验证 0x{verify:02X} ({verify:08b})")
+
+            # 关灯时禁用睡眠呼吸, 开灯时恢复
+            self._set_led_mode(disable_breathing=not enabled)
+
             return (verify & self._bit_mask) == (new_value & self._bit_mask)
         except Exception as e:
             print(f"  ec_port 错误: {e}")
@@ -470,9 +537,11 @@ def detect_device() -> tuple[str, dict] | None:
 def create_backends(offset: int, bit: int) -> list:
     """按优先级顺序创建所有后端。"""
     return [
-        AcpiCallBackend(lighting_id=WMI_LIGHTING_ID),
-        MMIOBackend(offset=offset, bit=bit),
-        ECPortBackend(offset=offset, bit=bit),
+        AcpiCallBackend(lighting_id=WMI_LIGHTING_ID, led_mode_id=WMI_LED_MODE_ID),
+        MMIOBackend(offset=offset, bit=bit,
+                    led_mode_offset=LED_MODE_OFFSET, led_mode_bit=LED_MODE_BIT),
+        ECPortBackend(offset=offset, bit=bit,
+                      led_mode_offset=LED_MODE_OFFSET, led_mode_bit=LED_MODE_BIT),
     ]
 
 

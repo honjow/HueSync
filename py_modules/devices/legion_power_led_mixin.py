@@ -38,6 +38,7 @@ class LegionPowerLEDMixin:
     - Both use inverted logic | 两者都使用反向逻辑: bit=0 means ON(亮), bit=1 means OFF(灭)
     - ECMM/ERAM base address | 基地址: 0xFE0B0300 (Go 和 Go S 一致)
     - WMI path | WMI 路径: \\_SB.GZFD.WMAF, Lighting_ID=0x04 (Go 和 Go S 一致)
+    - LEDM (sleep breathing mode | 睡眠呼吸灯): EC[0x58] bit 0, Lighting_ID=0x24 (BIOS 35+)
 
     Backend fallback order | 后端降级顺序:
     1. acpi_call  - 官方 WMI 接口 via /proc/acpi/call | Official WMI interface
@@ -57,6 +58,12 @@ class LegionPowerLEDMixin:
     # Optional: WMI Lighting_ID (default 0x04, works for both Go and Go S)
     WMI_LIGHTING_ID: int = 0x04
 
+    # LEDM: 睡眠呼吸灯控制 (BIOS 35+) | Sleep breathing mode control (BIOS 35+)
+    # LEDM=1 disables breathing during sleep | LEDM=1 禁用睡眠呼吸灯
+    LED_MODE_ID: int = 0x24          # WMI Lighting_ID for LEDM
+    LED_MODE_OFFSET: int = 0x58      # EC register offset for LEDM
+    LED_MODE_BIT: int = 0            # Bit position for LEDM
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -71,6 +78,9 @@ class LegionPowerLEDMixin:
             offset=self.POWER_LED_OFFSET,
             bit=self.POWER_LED_BIT,
             lighting_id=self.WMI_LIGHTING_ID,
+            led_mode_id=self.LED_MODE_ID,
+            led_mode_offset=self.LED_MODE_OFFSET,
+            led_mode_bit=self.LED_MODE_BIT,
         )
         self._power_led_available = self._power_led_backend is not None
 

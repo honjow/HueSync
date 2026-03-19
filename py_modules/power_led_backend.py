@@ -5,6 +5,12 @@ Power LED Backend Abstraction Layer
 Provides multiple backends for controlling Legion Go power LED with automatic fallback.
 为 Legion Go 电源灯控制提供多后端自动降级支持。
 
+Controls two EC registers | 控制两个 EC 寄存器:
+- LEDP: Power LED on/off state | 电源灯开关状态
+- LEDM: Sleep breathing mode (BIOS 35+) | 睡眠呼吸灯模式 (BIOS 35+)
+  LEDM=1 disables breathing during sleep, LEDM=0 enables it
+  LEDM=1 禁用睡眠呼吸灯, LEDM=0 启用
+
 Priority order | 优先级顺序:
 1. AcpiCallBackend  - Uses /proc/acpi/call (WMAF WMI method) | 通过 acpi_call 调用 WMI 方法
 2. MMIOBackend      - Uses /dev/mem memory-mapped I/O | 通过 /dev/mem 内存映射 I/O
@@ -86,18 +92,22 @@ class AcpiCallBackend(PowerLEDBackend):
     这是联想提供的官方 ACPI 接口。
 
     WMI command format | WMI 命令格式:
-        Set | 设置: \\_SB.GZFD.WMAF 0 0x02 {lighting_id, 0x00, brightness}
-             brightness=0x02 → ON (LEDP/LPBL=0), brightness=0x01 → OFF (LEDP/LPBL=1)
-        Get | 获取: \\_SB.GZFD.WMAF 0 0x01 lighting_id
-             Returns buffer where byte 1: 0x02=ON, 0x01=OFF
-             返回 buffer，其中 byte 1: 0x02=亮, 0x01=灭
+        LEDP Set | 设置: \\_SB.GZFD.WMAF 0 0x02 {lighting_id, 0x00, brightness}
+             brightness=0x02 → ON (LEDP=0), brightness=0x01 → OFF (LEDP=1)
+        LEDP Get | 获取: \\_SB.GZFD.WMAF 0 0x01 lighting_id
+             Returns buffer, byte 1: 0x02=ON, 0x01=OFF
+             返回 buffer，byte 1: 0x02=亮, 0x01=灭
+        LEDM Set | 设置: \\_SB.GZFD.WMAF 0 0x02 {led_mode_id, 0x00, mode}
+             mode=0x01 → disable breathing (LEDM=1), mode=0x03 → enable (LEDM=0)
+             mode=0x01 → 禁用呼吸 (LEDM=1), mode=0x03 → 启用 (LEDM=0)
     """
 
     ACPI_CALL_PATH = "/proc/acpi/call"
     WMI_PATH = r"\_SB.GZFD.WMAF"
 
-    def __init__(self, lighting_id: int = 0x04):
+    def __init__(self, lighting_id: int = 0x04, led_mode_id: int = 0x24):
         self._lighting_id = lighting_id
+        self._led_mode_id = led_mode_id
 
     @property
     def name(self) -> str:
@@ -153,6 +163,25 @@ class AcpiCallBackend(PowerLEDBackend):
             logger.error(f"acpi_call failed for '{command}': {e}")
             return None
 
+    def _set_led_mode(self, disable_breathing: bool) -> None:
+        """Set LEDM register to control sleep breathing behavior.
+        设置 LEDM 寄存器控制睡眠呼吸灯行为。
+        Silently ignores failures (BIOS < 35 doesn't support LEDM).
+        静默忽略失败（BIOS < 35 不支持 LEDM）。"""
+        # mode=0x01 → LEDM=1 (disable breathing) | 禁用呼吸
+        # mode=0x03 → LEDM=0 (enable breathing) | 启用呼吸
+        mode = 0x01 if disable_breathing else 0x03
+        cmd = (
+            f"{self.WMI_PATH} 0 0x02 "
+            f"{{0x{self._led_mode_id:02X}, 0x00, 0x{mode:02X}}}"
+        )
+        result = self._acpi_call(cmd)
+        if result is not None:
+            logger.debug(
+                f"LEDM set to {'disabled' if disable_breathing else 'enabled'} "
+                f"via acpi_call (Lighting_ID=0x{self._led_mode_id:02X})"
+            )
+
     def set_power_led(self, enabled: bool) -> bool:
         # brightness=0x02 → ON (LEDP=0), brightness=0x01 → OFF (LEDP=1)
         # brightness=0x02 → 开灯 (LEDP=0), brightness=0x01 → 关灯 (LEDP=1)
@@ -165,6 +194,10 @@ class AcpiCallBackend(PowerLEDBackend):
         result = self._acpi_call(cmd)
         if result is None:
             return False
+
+        # LEDM: disable breathing when LED off, enable when LED on
+        # 关灯时禁用睡眠呼吸, 开灯时恢复
+        self._set_led_mode(disable_breathing=not enabled)
 
         # Verify by reading back | 回读验证
         current = self.get_power_led()
@@ -232,15 +265,20 @@ class MMIOBackend(PowerLEDBackend):
 
     ECMM/ERAM base address | 基地址: 0xFE0B0300 (same for Legion Go and Go S | Go 和 Go S 一致)
     Uses inverted logic | 使用反向逻辑: bit=0 means ON(亮), bit=1 means OFF(灭)
+    Also controls LEDM register for sleep breathing mode | 同时控制 LEDM 寄存器的睡眠呼吸灯模式
     """
 
     ECMM_BASE = 0xFE0B0300
     ECMM_SIZE = 0xFF
 
-    def __init__(self, offset: int, bit: int):
+    def __init__(self, offset: int, bit: int,
+                 led_mode_offset: int = 0x58, led_mode_bit: int = 0):
         self._offset = offset
         self._bit = bit
         self._bit_mask = 1 << bit
+        self._led_mode_offset = led_mode_offset
+        self._led_mode_bit = led_mode_bit
+        self._led_mode_mask = 1 << led_mode_bit
         self._fd = None
         self._mm = None
         self._page_offset = 0
@@ -318,6 +356,25 @@ class MMIOBackend(PowerLEDBackend):
             self._cleanup()
             return False
 
+    def _set_led_mode(self, disable_breathing: bool) -> None:
+        """Set LEDM register via MMIO. Silently ignores failures.
+        通过 MMIO 设置 LEDM 寄存器。静默忽略失败。"""
+        if not self._ensure_mapped():
+            return
+        try:
+            addr = self._page_offset + self._led_mode_offset
+            current = self._mm[addr]
+            if disable_breathing:
+                self._mm[addr] = current | self._led_mode_mask
+            else:
+                self._mm[addr] = current & ~self._led_mode_mask
+            logger.debug(
+                f"LEDM set to {'disabled' if disable_breathing else 'enabled'} via MMIO: "
+                f"EC[0x{self._led_mode_offset:02X}] 0x{current:02X} → 0x{self._mm[addr]:02X}"
+            )
+        except Exception as e:
+            logger.debug(f"LEDM MMIO write failed (may be unsupported): {e}")
+
     def set_power_led(self, enabled: bool) -> bool:
         if not self._ensure_mapped():
             return False
@@ -350,6 +407,11 @@ class MMIOBackend(PowerLEDBackend):
                     f"MMIO write verification failed: "
                     f"expected 0x{new_value:02X}, got 0x{verify:02X}"
                 )
+
+            # LEDM: disable breathing when LED off, enable when LED on
+            # 关灯时禁用睡眠呼吸, 开灯时恢复
+            self._set_led_mode(disable_breathing=not enabled)
+
             return success
         except Exception as e:
             logger.error(f"MMIO set_power_led failed: {e}", exc_info=True)
@@ -391,12 +453,17 @@ class ECPortBackend(PowerLEDBackend):
     使用标准 EC 读取 (0x80) 和写入 (0x81) 命令通信。
 
     Uses inverted logic | 使用反向逻辑: bit=0 means ON(亮), bit=1 means OFF(灭)
+    Also controls LEDM register for sleep breathing mode | 同时控制 LEDM 寄存器的睡眠呼吸灯模式
     """
 
-    def __init__(self, offset: int, bit: int):
+    def __init__(self, offset: int, bit: int,
+                 led_mode_offset: int = 0x58, led_mode_bit: int = 0):
         self._offset = offset
         self._bit = bit
         self._bit_mask = 1 << bit
+        self._led_mode_offset = led_mode_offset
+        self._led_mode_bit = led_mode_bit
+        self._led_mode_mask = 1 << led_mode_bit
 
     @property
     def name(self) -> str:
@@ -414,6 +481,25 @@ class ECPortBackend(PowerLEDBackend):
         except Exception as e:
             logger.debug(f"EC port not available: {e}")
             return False
+
+    def _set_led_mode(self, disable_breathing: bool) -> None:
+        """Set LEDM register via EC I/O port. Silently ignores failures.
+        通过 EC I/O 端口设置 LEDM 寄存器。静默忽略失败。"""
+        try:
+            from ec import EC
+
+            current = EC.Read(self._led_mode_offset)
+            if disable_breathing:
+                new_value = current | self._led_mode_mask
+            else:
+                new_value = current & ~self._led_mode_mask
+            EC.Write(self._led_mode_offset, new_value)
+            logger.debug(
+                f"LEDM set to {'disabled' if disable_breathing else 'enabled'} via EC port: "
+                f"EC[0x{self._led_mode_offset:02X}] 0x{current:02X} → 0x{new_value:02X}"
+            )
+        except Exception as e:
+            logger.debug(f"LEDM EC port write failed (may be unsupported): {e}")
 
     def set_power_led(self, enabled: bool) -> bool:
         try:
@@ -446,6 +532,11 @@ class ECPortBackend(PowerLEDBackend):
                     f"EC port write verification failed: "
                     f"expected bit {'0' if enabled else '1'}, got 0x{verify:02X}"
                 )
+
+            # LEDM: disable breathing when LED off, enable when LED on
+            # 关灯时禁用睡眠呼吸, 开灯时恢复
+            self._set_led_mode(disable_breathing=not enabled)
+
             return success
         except Exception as e:
             logger.error(f"EC port set_power_led failed: {e}", exc_info=True)
@@ -476,6 +567,9 @@ def select_backend(
     offset: int,
     bit: int,
     lighting_id: int = 0x04,
+    led_mode_id: int = 0x24,
+    led_mode_offset: int = 0x58,
+    led_mode_bit: int = 0,
     forced_backend: str | None = None,
 ) -> PowerLEDBackend | None:
     """
@@ -485,12 +579,18 @@ def select_backend(
     Priority | 优先级: acpi_call → MMIO → EC port
 
     Args:
-        offset: EC register offset (e.g. 0x52 for Go, 0x10 for Go S)
-                EC 寄存器偏移 (Go 用 0x52, Go S 用 0x10)
-        bit: Bit position within the register (e.g. 5 for Go, 6 for Go S)
-             寄存器内的位位置 (Go 用 5, Go S 用 6)
-        lighting_id: WMI Lighting_ID for acpi_call backend (default 0x04)
-                     acpi_call 后端使用的 WMI Lighting_ID (默认 0x04)
+        offset: EC register offset for LEDP (e.g. 0x52 for Go, 0x10 for Go S)
+                LEDP 的 EC 寄存器偏移 (Go 用 0x52, Go S 用 0x10)
+        bit: Bit position for LEDP (e.g. 5 for Go, 6 for Go S)
+             LEDP 位位置 (Go 用 5, Go S 用 6)
+        lighting_id: WMI Lighting_ID for LEDP (default 0x04)
+                     LEDP 的 WMI Lighting_ID (默认 0x04)
+        led_mode_id: WMI Lighting_ID for LEDM (default 0x24, BIOS 35+)
+                     LEDM 的 WMI Lighting_ID (默认 0x24, BIOS 35+ 支持)
+        led_mode_offset: EC register offset for LEDM (default 0x58)
+                         LEDM 的 EC 寄存器偏移 (默认 0x58)
+        led_mode_bit: Bit position for LEDM (default 0)
+                      LEDM 位位置 (默认 0)
         forced_backend: Force a specific backend ("acpi_call", "mmio", "ec_port")
                         强制指定后端名称
 
@@ -499,9 +599,11 @@ def select_backend(
         选中的后端实例，全部失败时返回 None
     """
     backends = [
-        AcpiCallBackend(lighting_id=lighting_id),
-        MMIOBackend(offset=offset, bit=bit),
-        ECPortBackend(offset=offset, bit=bit),
+        AcpiCallBackend(lighting_id=lighting_id, led_mode_id=led_mode_id),
+        MMIOBackend(offset=offset, bit=bit,
+                    led_mode_offset=led_mode_offset, led_mode_bit=led_mode_bit),
+        ECPortBackend(offset=offset, bit=bit,
+                      led_mode_offset=led_mode_offset, led_mode_bit=led_mode_bit),
     ]
 
     # Forced mode | 强制指定模式
