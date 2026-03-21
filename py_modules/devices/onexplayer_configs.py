@@ -22,7 +22,6 @@ class OXPProtocol(Enum):
     HID_V2 = "hid_v2"          # XFly, A1X - newer protocol
     HID_V1_G1 = "hid_v1_g1"    # G1 series - v1 with 5 LED zones
     SERIAL = "serial"          # X1 series - serial port communication
-    MIXED = "mixed"            # F1 series - both HID and Serial
     NONE = "none"              # No RGB support
 
 
@@ -57,9 +56,11 @@ class OXPConfig:
 
 # OneXFly F1 series configuration
 # OneXFly F1系列配置
+# F1: RGB via HID V2 (XFLY); onboard serial is not used for RGB in this plugin
+# F1：RGB 走 HID V2（XFLY）；本插件不使用机内串口控灯
 OXP_F1_CONF = OXPConfig(
     name="ONEXPLAYER ONEXFLY",
-    protocol=OXPProtocol.MIXED,
+    protocol=OXPProtocol.HID_V2,
     rgb=True,
 )
 
