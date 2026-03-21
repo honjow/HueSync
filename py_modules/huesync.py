@@ -19,6 +19,7 @@ from devices.legion_go_s import LegionGoSLEDDevice
 from devices.legion_go_tablet import LegionGoTabletLEDDevice
 from devices.msi import MSILEDDevice
 from devices.onexplayer import OneXLEDDevice
+from devices.zotac import ZotacLEDDevice
 from utils import Color, RGBMode, RGBModeCapabilities
 
 
@@ -51,7 +52,8 @@ class LedControl:
         5. GPD (SYS_VENDOR == "GPD")
         6. OneXPlayer/AOKZOE (SYS_VENDOR matching)
         7. Lenovo Legion Go (SYS_VENDOR == "LENOVO")
-        8. Generic (IS_LED_SUPPORTED) - fallback for any device with sysfs LED
+        8. Zotac Zone (Zotac HID interface)
+        9. Generic (IS_LED_SUPPORTED) - fallback for any device with sysfs LED
 
         根据系统配置确定并返回合适的LEDDevice实例。
         
@@ -63,7 +65,8 @@ class LedControl:
         5. GPD (SYS_VENDOR == "GPD")
         6. OneXPlayer/AOKZOE (SYS_VENDOR 匹配)
         7. Lenovo Legion Go (SYS_VENDOR == "LENOVO")
-        8. Generic (IS_LED_SUPPORTED) - 任何带有 sysfs LED 的设备的备用方案
+        8. Zotac Zone（Zotac HID 接口）
+        9. Generic (IS_LED_SUPPORTED) - 任何带有 sysfs LED 的设备的备用方案
 
         Returns:
             LEDDevice: An instance of a specific LED device class.
@@ -132,9 +135,15 @@ class LedControl:
             else:
                 logger.info("Using Legion Go S LED device (SYS_VENDOR)")
                 return LegionGoSLEDDevice()
+
+        # Priority 8: Zotac Zone devices
+        # 优先级 8: Zotac Zone 设备
+        if ZotacLEDDevice.should_use():
+            logger.info("Using Zotac LED device")
+            return ZotacLEDDevice()
         
-        # Priority 8: Generic sysfs LED device (fallback)
-        # 优先级 8: 通用 sysfs LED 设备（备用方案）
+        # Priority 9: Generic sysfs LED device (fallback)
+        # 优先级 9: 通用 sysfs LED 设备（备用方案）
         if IS_LED_SUPPORTED:
             logger.info("Using generic LED device (IS_LED_SUPPORTED)")
             return GenericLEDDevice()
