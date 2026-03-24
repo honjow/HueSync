@@ -10,7 +10,11 @@ protocol types, RGB capabilities, and device features.
 Based on HHD: hhd/device/oxp/const.py
 """
 
+from __future__ import annotations
+
 from enum import Enum
+
+from config import logger
 
 
 class OXPProtocol(Enum):
@@ -18,12 +22,12 @@ class OXPProtocol(Enum):
     OneXPlayer HID protocol versions.
     OneXPlayer HID协议版本。
     """
-    HID_V1 = "hid_v1"          # X1 Mini series - older protocol
-    HID_V2 = "hid_v2"          # XFly, A1X - newer protocol
-    HID_V1_G1 = "hid_v1_g1"    # G1 series - v1 with 5 LED zones
-    SERIAL = "serial"          # X1 series - serial port communication
-    MIXED = "mixed"            # F1 series - both HID and Serial
-    NONE = "none"              # No RGB support
+
+    HID_V1 = "hid_v1"  # X1 Mini series - older protocol
+    HID_V2 = "hid_v2"  # XFly, A1X - newer protocol
+    HID_V1_G1 = "hid_v1_g1"  # G1 series - v1 with 5 LED zones
+    SERIAL = "serial"  # X1 series - serial port communication
+    NONE = "none"  # No RGB support
 
 
 class OXPConfig:
@@ -31,7 +35,7 @@ class OXPConfig:
     Configuration for a specific OneXPlayer model.
     特定OneXPlayer型号的配置。
     """
-    
+
     def __init__(
         self,
         name: str,
@@ -55,11 +59,80 @@ class OXPConfig:
         self.g1 = g1
 
 
+def _infer_onex_led_hid_protocol() -> OXPProtocol | None:
+    """
+    Pick HID_V1 vs HID_V2 by scanning for known OneX LED HID interfaces.
+    Falls back to None when neither or both families are present (ambiguous).
+    """
+    try:
+        import lib_hid as hid
+        from led.onex_led_device_hid import (
+            X1_MINI_PAGE,
+            X1_MINI_PID,
+            X1_MINI_USAGE,
+            X1_MINI_VID,
+            XFLY_PAGE,
+            XFLY_PID,
+            XFLY_USAGE,
+            XFLY_VID,
+        )
+    except ImportError:
+        return None
+
+    try:
+        devices = hid.enumerate()
+    except Exception:
+        logger.debug("HID enumerate failed during protocol inference", exc_info=True)
+        return None
+
+    has_v1 = False
+    has_v2 = False
+    for d in devices:
+        if not isinstance(d, dict):
+            continue
+        vid = d.get("vendor_id")
+        pid = d.get("product_id")
+        page = d.get("usage_page")
+        usage = d.get("usage")
+        if (
+            vid == XFLY_VID
+            and pid == XFLY_PID
+            and page == XFLY_PAGE
+            and usage == XFLY_USAGE
+        ):
+            has_v2 = True
+        if (
+            vid == X1_MINI_VID
+            and pid == X1_MINI_PID
+            and page == X1_MINI_PAGE
+            and usage == X1_MINI_USAGE
+        ):
+            has_v1 = True
+
+    if has_v2 ^ has_v1:
+        chosen = OXPProtocol.HID_V2 if has_v2 else OXPProtocol.HID_V1
+        logger.info(
+            "Inferred OneX LED HID protocol from enumeration: %s (v2=%s v1=%s)",
+            chosen.value,
+            has_v2,
+            has_v1,
+        )
+        return chosen
+
+    if has_v2 and has_v1:
+        logger.debug(
+            "Both XFLY and X1_MINI LED HIDs seen; skipping inference (ambiguous)"
+        )
+    return None
+
+
 # OneXFly F1 series configuration
 # OneXFly F1系列配置
+# F1: RGB via HID V2 (XFLY); onboard serial is not used for RGB in this plugin
+# F1：RGB 走 HID V2（XFLY）；本插件不使用机内串口控灯
 OXP_F1_CONF = OXPConfig(
     name="ONEXPLAYER ONEXFLY",
-    protocol=OXPProtocol.MIXED,
+    protocol=OXPProtocol.HID_V2,
     rgb=True,
 )
 
@@ -90,7 +163,8 @@ ONEXPLAYER_CONFIGS = {
     "ONEXPLAYER F1 OLED": OXP_F1_CONF,
     "ONEXPLAYER F1Pro": OXP_F1_CONF,
     "ONEXPLAYER F1 EVA-02": OXP_F1_CONF,
-    
+    # ========== APEX  ==========
+    "ONEXPLAYER APEX": OXP_F1_CONF,
     # ========== X1 Mini Series (HID v1) ==========
     "ONEXPLAYER X1 mini": OXPConfig(
         name="ONEXPLAYER X1 Mini",
@@ -102,7 +176,6 @@ ONEXPLAYER_CONFIGS = {
         protocol=OXPProtocol.HID_V1,
         rgb=True,
     ),
-    
     # ========== X1 Air Series (HID v1) ==========
     "ONEXPLAYER X1Air": OXPConfig(
         name="ONEXPLAYER X1 Air",
@@ -110,7 +183,6 @@ ONEXPLAYER_CONFIGS = {
         rgb=True,
         rgb_secondary=True,
     ),
-    
     # ========== X1 Series (Serial) ==========
     "ONEXPLAYER X1 A": OXPConfig(
         name="ONEXPLAYER X1 (AMD)",
@@ -142,7 +214,6 @@ ONEXPLAYER_CONFIGS = {
         rgb=True,
         rgb_secondary=True,
     ),
-    
     # ========== G1 Series (HID v1 G1) ==========
     "ONEXPLAYER G1 i": OXPConfig(
         name="ONEXPLAYER G1 (Intel)",
@@ -156,14 +227,12 @@ ONEXPLAYER_CONFIGS = {
         rgb=True,
         g1=True,
     ),
-    
     # ========== OneXPlayer 2 Series (No RGB) ==========
     "ONEXPLAYER 2": OXP_2_CONF,
     "ONEXPLAYER 2 ARP23": OXP_2_CONF,
     "ONEXPLAYER 2 GA18": OXP_2_CONF,
     "ONEXPLAYER 2 PRO ARP23": OXP_2_CONF,
     "ONEXPLAYER 2 PRO ARP23 EVA-01": OXP_2_CONF,
-    
     # ========== Original OneXPlayer ==========
     "ONE XPLAYER": OXPConfig(
         name="ONE XPLAYER",
@@ -175,7 +244,6 @@ ONEXPLAYER_CONFIGS = {
         protocol=OXPProtocol.HID_V1,
         rgb=True,
     ),
-    
     # ========== AOKZOE Series ==========
     "AOKZOE A1 AR07": AOKZOE_CONF,
     "AOKZOE A1 Pro": AOKZOE_CONF,
@@ -192,15 +260,17 @@ def get_config(product_name: str) -> OXPConfig | None:
     """
     Get device configuration for a product name.
     获取产品名称的设备配置。
-    
+
     Tries exact match first, then falls back to fuzzy matching
-    for unknown models.
-    
-    首先尝试精确匹配，然后对未知型号进行模糊匹配。
-    
+    for unknown models. Unknown OneXPlayer / AOKZOE may use HID VID/PID
+    enumeration to choose HID_V1 vs HID_V2 when unambiguous.
+
+    首先精确匹配，未知型号再模糊匹配。未收录的 ONEXPLAYER / AOKZOE 可在 HID
+    上无歧义时根据 VID/PID 推断 HID_V1 / HID_V2。
+
     Args:
         product_name: DMI product name from /sys/devices/virtual/dmi/id/product_name
-        
+
     Returns:
         OXPConfig if recognized, None if not an OneXPlayer/AOKZOE device
     """
@@ -208,7 +278,7 @@ def get_config(product_name: str) -> OXPConfig | None:
     # 精确匹配
     if product_name in ONEXPLAYER_CONFIGS:
         return ONEXPLAYER_CONFIGS[product_name]
-    
+
     # Fuzzy matching for unknown OneXPlayer models
     # 对未知OneXPlayer型号进行模糊匹配
     if "ONEXPLAYER" in product_name:
@@ -221,15 +291,22 @@ def get_config(product_name: str) -> OXPConfig | None:
                 rgb=True,
                 rgb_secondary=True,
             )
-        
-        # Default to HID v2 for unknown models
-        # 未知型号默认使用HID v2
+
+        inferred = _infer_onex_led_hid_protocol()
+        if inferred is not None:
+            return OXPConfig(
+                name=product_name,
+                protocol=inferred,
+                rgb=True,
+            )
+        # Default when HID probe fails or is ambiguous
+        # HID 探测失败或同时存在 v1/v2 时默认 HID v2
         return OXPConfig(
             name=product_name,
             protocol=OXPProtocol.HID_V2,
             rgb=True,
         )
-    
+
     # Fuzzy matching for unknown AOKZOE models
     # 对未知AOKZOE型号进行模糊匹配
     if "AOKZOE" in product_name:
@@ -241,7 +318,14 @@ def get_config(product_name: str) -> OXPConfig | None:
                 protocol=OXPProtocol.HID_V2,
                 rgb=True,
             )
-        
+
+        inferred = _infer_onex_led_hid_protocol()
+        if inferred is not None:
+            return OXPConfig(
+                name=product_name,
+                protocol=inferred,
+                rgb=True,
+            )
         # Default to no RGB for unknown AOKZOE
         # 未知AOKZOE默认无RGB
         return OXPConfig(
@@ -249,8 +333,7 @@ def get_config(product_name: str) -> OXPConfig | None:
             protocol=OXPProtocol.NONE,
             rgb=False,
         )
-    
+
     # Not an OneXPlayer or AOKZOE device
     # 不是OneXPlayer或AOKZOE设备
     return None
-
