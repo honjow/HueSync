@@ -4,8 +4,13 @@ Packet framing and RGB command layout derived from:
 - https://github.com/OpenZotacZone/ZotacZone-Drivers/blob/main/driver/hid/zotac-zone-hid-config.c
 - https://github.com/OpenZotacZone/ZotacZone-Drivers/blob/main/driver/hid/zotac-zone-hid-rgb.c
 
-Related upstream driver work:
+Related driver work:
 - https://github.com/flukejones/linux/tree/wip/zotac-zone-6.15/drivers/hid/zotac-zone-hid
+
+Official Zotac references:
+- https://www.zotac.com/ge/news/zotac-gaming-zone-handheld-%E2%80%93-one-launcher-20-here
+- https://www.zotac.com/us-store/news/amp-holo-spectra-20-rgb-lighting-features
+
 """
 
 import lib_hid as hid
@@ -38,12 +43,15 @@ SETTING_EFFECT = 0x02
 SETTING_BRIGHTNESS = 0x03
 
 # Firmware effect, speed, and brightness values
-EFFECT_RAINBOW = 0x00
-EFFECT_BREATHE = 0x01
-EFFECT_STARS = 0x02
-EFFECT_FADE = 0x03
-EFFECT_DANCE = 0x04
-EFFECT_OFF = 0xF0
+EFFECT_RAINBOW = 0x00  # Rainbow
+EFFECT_BREATHE = 0x01  # Pulse
+EFFECT_STARS = 0x02  # no HueSync equivalent
+EFFECT_FADE = 0x03  # no HueSync equivalent
+EFFECT_DANCE = 0x04  # no HueSync equivalent
+# EFFECT_UNKNOWN = 0x05 # Flashes 4 times with a color, then 4 times with a different color, Color had no effect. Speed works. Brightness Level no effect.
+
+# Unknown One Launcher effect names: Flash, Wink, Random
+EFFECT_OFF = 0xF0  # Disabled
 
 SPEED_LOW = 0x00
 SPEED_MEDIUM = 0x01
@@ -212,11 +220,9 @@ class ZotacLEDDeviceHID:
     def set_brightness(self, brightness: int) -> None:
         self._set_rgb(SETTING_BRIGHTNESS, bytes([brightness]))
 
-    def apply_disabled(self, brightness: int = None) -> None:
-        """Turn the Zotac lighting off and optionally apply a brightness level."""
+    def apply_disabled(self) -> None:
+        """Turn the Zotac lighting off without changing firmware brightness."""
         self.set_effect(EFFECT_OFF)
-        if brightness is not None:
-            self.set_brightness(brightness)
         self.save_config()
 
     def apply_effect(self, effect: int, color: Color, speed: int, brightness: int) -> None:

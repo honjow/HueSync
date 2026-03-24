@@ -2,7 +2,7 @@ from config import logger
 from led.zotac_led_device_hid import (
     ZotacLEDDeviceHID,
     BRIGHTNESS_LOW,
-    BRIGHTNESS_HIGH,
+    BRIGHTNESS_MED,
     BRIGHTNESS_MAX,
     EFFECT_BREATHE,
     EFFECT_RAINBOW,
@@ -89,9 +89,8 @@ class ZotacLEDDevice(BaseLEDDevice):
         speed = _speed_value(speed)
 
         try:
-            # Keep Zotac limited to the currently confirmed hardware overlap with HueSync.
             if mode == RGBMode.Disabled:
-                device.apply_disabled(brightness)
+                device.apply_disabled()
             elif mode == RGBMode.Pulse:
                 device.apply_effect(EFFECT_BREATHE, color, speed, brightness)
             elif mode == RGBMode.Rainbow:
