@@ -164,12 +164,7 @@ ONEXPLAYER_CONFIGS = {
     "ONEXPLAYER F1Pro": OXP_F1_CONF,
     "ONEXPLAYER F1 EVA-02": OXP_F1_CONF,
     # ========== APEX  ==========
-    # Unverified on hardware; adjust rgb_secondary if a second zone appears.
-    "ONEXPLAYER APEX": OXPConfig(
-        name="ONEXPLAYER APEX",
-        protocol=OXPProtocol.HID_V2,
-        rgb=True,
-    ),
+    "ONEXPLAYER APEX": OXP_F1_CONF,
     # ========== X1 Mini Series (HID v1) ==========
     "ONEXPLAYER X1 mini": OXPConfig(
         name="ONEXPLAYER X1 Mini",
