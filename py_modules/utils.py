@@ -47,7 +47,6 @@ class RGBMode(Enum):
 
     # Zotac specific preset modes
     ZOTAC_STARS = "zotac_stars"
-    ZOTAC_DANCE = "zotac_dance"
     ZOTAC_FLASH = "zotac_flash"
     ZOTAC_WINK = "zotac_wink"
     ZOTAC_RANDOM = "zotac_random"

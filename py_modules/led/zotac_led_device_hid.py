@@ -47,10 +47,10 @@ EFFECT_RAINBOW = 0x00  # Zotac Rainbow -> HueSync Spiral; options: Speed, Bright
 EFFECT_BREATHE = 0x01  # Zotac Breathe -> HueSync Pulse; options: Speed, Brightness, Color
 EFFECT_STARS = 0x02  # Zotac Stars; options: Speed, Brightness, Color
 EFFECT_FADE = 0x03  # Zotac Fade -> HueSync Rainbow; options: Speed, Brightness
-EFFECT_DANCE = 0x04  # Zotac Dance; options: Brightness, Color
+EFFECT_SOLID = 0x04  # Zotac Dance -> HueSync Solid; options: Brightness, Color
 EFFECT_FLASH = 0x05  # Zotac Flash; options: Speed
-EFFECT_WINK = 0x06  # Zotac Wink; provisional ID; options: Speed, Brightness, Color
-EFFECT_RANDOM = 0x07  # Zotac Random; provisional ID; options: Speed, Brightness, Color
+EFFECT_WINK = 0x06  # Zotac Wink; options: Speed, Brightness, Color
+EFFECT_RANDOM = 0x07  # Zotac Random; options: Speed, Brightness, Color
 EFFECT_OFF = 0xF0  # Disabled
 
 SPEED_LOW = 0x00

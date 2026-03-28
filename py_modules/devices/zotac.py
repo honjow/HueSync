@@ -5,11 +5,11 @@ from led.zotac_led_device_hid import (
     BRIGHTNESS_MED,
     BRIGHTNESS_MAX,
     EFFECT_BREATHE,
-    EFFECT_DANCE,
     EFFECT_FADE,
     EFFECT_FLASH,
     EFFECT_RAINBOW,
     EFFECT_RANDOM,
+    EFFECT_SOLID,
     EFFECT_STARS,
     EFFECT_WINK,
     SPEED_HIGH,
@@ -61,11 +61,11 @@ class ZotacLEDDevice(BaseLEDDevice):
     @property
     def hardware_supported_modes(self) -> list[RGBMode]:
         return [
+            RGBMode.Solid,
             RGBMode.Rainbow,
             RGBMode.Spiral,
             RGBMode.Pulse,
             RGBMode.ZOTAC_STARS,
-            RGBMode.ZOTAC_DANCE,
             RGBMode.ZOTAC_FLASH,
             RGBMode.ZOTAC_WINK,
             RGBMode.ZOTAC_RANDOM,
@@ -108,6 +108,8 @@ class ZotacLEDDevice(BaseLEDDevice):
         try:
             if mode == RGBMode.Disabled:
                 device.apply_disabled()
+            elif mode == RGBMode.Solid:
+                device.apply_effect(EFFECT_SOLID, color, speed, brightness)
             elif mode == RGBMode.Pulse:
                 device.apply_effect(EFFECT_BREATHE, color, speed, brightness)
             elif mode == RGBMode.Rainbow:
@@ -116,8 +118,6 @@ class ZotacLEDDevice(BaseLEDDevice):
                 device.apply_effect(EFFECT_RAINBOW, color, speed, brightness)
             elif mode == RGBMode.ZOTAC_STARS:
                 device.apply_effect(EFFECT_STARS, color, speed, brightness)
-            elif mode == RGBMode.ZOTAC_DANCE:
-                device.apply_effect(EFFECT_DANCE, color, speed, brightness)
             elif mode == RGBMode.ZOTAC_FLASH:
                 device.apply_effect(EFFECT_FLASH, color, speed, brightness)
             elif mode == RGBMode.ZOTAC_WINK:
@@ -134,6 +134,13 @@ class ZotacLEDDevice(BaseLEDDevice):
     def get_mode_capabilities(self) -> dict[RGBMode, RGBModeCapabilities]:
         """Describe the Zotac modes and controls currently exposed to HueSync."""
         return {
+            RGBMode.Solid: RGBModeCapabilities(
+                mode=RGBMode.Solid,
+                color=True,
+                color2=False,
+                speed=False,
+                brightness_level=True,
+            ),
             RGBMode.Rainbow: RGBModeCapabilities(
                 mode=RGBMode.Rainbow,
                 color=False,
@@ -160,13 +167,6 @@ class ZotacLEDDevice(BaseLEDDevice):
                 color=True,
                 color2=False,
                 speed=True,
-                brightness_level=True,
-            ),
-            RGBMode.ZOTAC_DANCE: RGBModeCapabilities(
-                mode=RGBMode.ZOTAC_DANCE,
-                color=True,
-                color2=False,
-                speed=False,
                 brightness_level=True,
             ),
             RGBMode.ZOTAC_FLASH: RGBModeCapabilities(

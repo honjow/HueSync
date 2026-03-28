@@ -31,7 +31,6 @@ export enum RGBMode {
 
     // Zotac specific preset modes
     zotac_stars = "zotac_stars",
-    zotac_dance = "zotac_dance",
     zotac_flash = "zotac_flash",
     zotac_wink = "zotac_wink",
     zotac_random = "zotac_random",
