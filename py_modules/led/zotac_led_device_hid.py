@@ -45,12 +45,12 @@ SETTING_BRIGHTNESS = 0x03
 # Firmware effect, speed, and brightness values
 EFFECT_RAINBOW = 0x00  # Zotac Rainbow -> HueSync Spiral; options: Speed, Brightness
 EFFECT_BREATHE = 0x01  # Zotac Breathe -> HueSync Pulse; options: Speed, Brightness, Color
-EFFECT_STARS = 0x02  # Zotac Stars; no HueSync mode; options: Speed, Brightness, Color
+EFFECT_STARS = 0x02  # Zotac Stars; options: Speed, Brightness, Color
 EFFECT_FADE = 0x03  # Zotac Fade -> HueSync Rainbow; options: Speed, Brightness
-EFFECT_DANCE = 0x04  # Zotac Dance; no HueSync mode; options: Brightness, Color
-EFFECT_FLASH = 0x05  # Zotac Flash; no HueSync mode; options: Speed
-EFFECT_WINK = 0x06  # Zotac Wink; no HueSync mode; options: Speed, Brightness, Color
-EFFECT_RANDOM = 0x07  # Zotac Random; no HueSync mode; options: Speed, Brightness, Color
+EFFECT_DANCE = 0x04  # Zotac Dance; options: Brightness, Color
+EFFECT_FLASH = 0x05  # Zotac Flash; options: Speed
+EFFECT_WINK = 0x06  # Zotac Wink; provisional ID; options: Speed, Brightness, Color
+EFFECT_RANDOM = 0x07  # Zotac Random; provisional ID; options: Speed, Brightness, Color
 EFFECT_OFF = 0xF0  # Disabled
 
 SPEED_LOW = 0x00

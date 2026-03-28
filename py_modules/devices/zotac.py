@@ -5,11 +5,17 @@ from led.zotac_led_device_hid import (
     BRIGHTNESS_MED,
     BRIGHTNESS_MAX,
     EFFECT_BREATHE,
+    EFFECT_DANCE,
     EFFECT_FADE,
+    EFFECT_FLASH,
     EFFECT_RAINBOW,
+    EFFECT_RANDOM,
+    EFFECT_STARS,
+    EFFECT_WINK,
     SPEED_HIGH,
     SPEED_LOW,
     SPEED_MEDIUM,
+
 )
 from utils import Color, RGBMode, RGBModeCapabilities
 
@@ -54,7 +60,17 @@ class ZotacLEDDevice(BaseLEDDevice):
 
     @property
     def hardware_supported_modes(self) -> list[RGBMode]:
-        return [RGBMode.Rainbow, RGBMode.Spiral, RGBMode.Pulse, RGBMode.Disabled]
+        return [
+            RGBMode.Rainbow,
+            RGBMode.Spiral,
+            RGBMode.Pulse,
+            RGBMode.ZOTAC_STARS,
+            RGBMode.ZOTAC_DANCE,
+            RGBMode.ZOTAC_FLASH,
+            RGBMode.ZOTAC_WINK,
+            RGBMode.ZOTAC_RANDOM,
+            RGBMode.Disabled,
+        ]
 
     def _get_device(self):
         """Get a cached Zotac HID device or open it lazily on first use."""
@@ -98,6 +114,16 @@ class ZotacLEDDevice(BaseLEDDevice):
                 device.apply_effect(EFFECT_FADE, color, speed, brightness)
             elif mode == RGBMode.Spiral:
                 device.apply_effect(EFFECT_RAINBOW, color, speed, brightness)
+            elif mode == RGBMode.ZOTAC_STARS:
+                device.apply_effect(EFFECT_STARS, color, speed, brightness)
+            elif mode == RGBMode.ZOTAC_DANCE:
+                device.apply_effect(EFFECT_DANCE, color, speed, brightness)
+            elif mode == RGBMode.ZOTAC_FLASH:
+                device.apply_effect(EFFECT_FLASH, color, speed, brightness)
+            elif mode == RGBMode.ZOTAC_WINK:
+                device.apply_effect(EFFECT_WINK, color, speed, brightness)
+            elif mode == RGBMode.ZOTAC_RANDOM:
+                device.apply_effect(EFFECT_RANDOM, color, speed, brightness)
             else:
                 raise ValueError(f"Unsupported Zotac RGB mode: {mode}")
         except Exception as error:
@@ -124,6 +150,41 @@ class ZotacLEDDevice(BaseLEDDevice):
             ),
             RGBMode.Pulse: RGBModeCapabilities(
                 mode=RGBMode.Pulse,
+                color=True,
+                color2=False,
+                speed=True,
+                brightness_level=True,
+            ),
+            RGBMode.ZOTAC_STARS: RGBModeCapabilities(
+                mode=RGBMode.ZOTAC_STARS,
+                color=True,
+                color2=False,
+                speed=True,
+                brightness_level=True,
+            ),
+            RGBMode.ZOTAC_DANCE: RGBModeCapabilities(
+                mode=RGBMode.ZOTAC_DANCE,
+                color=True,
+                color2=False,
+                speed=False,
+                brightness_level=True,
+            ),
+            RGBMode.ZOTAC_FLASH: RGBModeCapabilities(
+                mode=RGBMode.ZOTAC_FLASH,
+                color=False,
+                color2=False,
+                speed=True,
+                brightness_level=False,
+            ),
+            RGBMode.ZOTAC_WINK: RGBModeCapabilities(
+                mode=RGBMode.ZOTAC_WINK,
+                color=True,
+                color2=False,
+                speed=True,
+                brightness_level=True,
+            ),
+            RGBMode.ZOTAC_RANDOM: RGBModeCapabilities(
+                mode=RGBMode.ZOTAC_RANDOM,
                 color=True,
                 color2=False,
                 speed=True,

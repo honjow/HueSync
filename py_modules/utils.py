@@ -45,6 +45,13 @@ class RGBMode(Enum):
     # MSI 专属预设模式
     MSI_FROSTFIRE = "msi_frostfire"  # A Song of Ice and Fire | 冰火之歌
 
+    # Zotac specific preset modes
+    ZOTAC_STARS = "zotac_stars"
+    ZOTAC_DANCE = "zotac_dance"
+    ZOTAC_FLASH = "zotac_flash"
+    ZOTAC_WINK = "zotac_wink"
+    ZOTAC_RANDOM = "zotac_random"
+
 
 class RGBSpeed(Enum):
     """RGB animation speed levels"""
