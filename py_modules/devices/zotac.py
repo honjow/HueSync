@@ -5,6 +5,7 @@ from led.zotac_led_device_hid import (
     BRIGHTNESS_MED,
     BRIGHTNESS_MAX,
     EFFECT_BREATHE,
+    EFFECT_FADE,
     EFFECT_RAINBOW,
     SPEED_HIGH,
     SPEED_LOW,
@@ -53,7 +54,7 @@ class ZotacLEDDevice(BaseLEDDevice):
 
     @property
     def hardware_supported_modes(self) -> list[RGBMode]:
-        return [RGBMode.Rainbow, RGBMode.Pulse, RGBMode.Disabled]
+        return [RGBMode.Rainbow, RGBMode.Spiral, RGBMode.Pulse, RGBMode.Disabled]
 
     def _get_device(self):
         """Get a cached Zotac HID device or open it lazily on first use."""
@@ -94,6 +95,8 @@ class ZotacLEDDevice(BaseLEDDevice):
             elif mode == RGBMode.Pulse:
                 device.apply_effect(EFFECT_BREATHE, color, speed, brightness)
             elif mode == RGBMode.Rainbow:
+                device.apply_effect(EFFECT_FADE, color, speed, brightness)
+            elif mode == RGBMode.Spiral:
                 device.apply_effect(EFFECT_RAINBOW, color, speed, brightness)
             else:
                 raise ValueError(f"Unsupported Zotac RGB mode: {mode}")
@@ -107,6 +110,13 @@ class ZotacLEDDevice(BaseLEDDevice):
         return {
             RGBMode.Rainbow: RGBModeCapabilities(
                 mode=RGBMode.Rainbow,
+                color=False,
+                color2=False,
+                speed=True,
+                brightness_level=True,
+            ),
+            RGBMode.Spiral: RGBModeCapabilities(
+                mode=RGBMode.Spiral,
                 color=False,
                 color2=False,
                 speed=True,

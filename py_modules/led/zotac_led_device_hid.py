@@ -43,14 +43,14 @@ SETTING_EFFECT = 0x02
 SETTING_BRIGHTNESS = 0x03
 
 # Firmware effect, speed, and brightness values
-EFFECT_RAINBOW = 0x00  # Rainbow
-EFFECT_BREATHE = 0x01  # Pulse
-EFFECT_STARS = 0x02  # no HueSync equivalent
-EFFECT_FADE = 0x03  # no HueSync equivalent
-EFFECT_DANCE = 0x04  # no HueSync equivalent
-# EFFECT_UNKNOWN = 0x05 # Flashes 4 times with a color, then 4 times with a different color, Color had no effect. Speed works. Brightness Level no effect.
-
-# Unknown One Launcher effect names: Flash, Wink, Random
+EFFECT_RAINBOW = 0x00  # Zotac Rainbow -> HueSync Spiral; options: Speed, Brightness
+EFFECT_BREATHE = 0x01  # Zotac Breathe -> HueSync Pulse; options: Speed, Brightness, Color
+EFFECT_STARS = 0x02  # Zotac Stars; no HueSync mode; options: Speed, Brightness, Color
+EFFECT_FADE = 0x03  # Zotac Fade -> HueSync Rainbow; options: Speed, Brightness
+EFFECT_DANCE = 0x04  # Zotac Dance; no HueSync mode; options: Brightness, Color
+EFFECT_FLASH = 0x05  # Zotac Flash; no HueSync mode; options: Speed
+EFFECT_WINK = 0x06  # Zotac Wink; no HueSync mode; options: Speed, Brightness, Color
+EFFECT_RANDOM = 0x07  # Zotac Random; no HueSync mode; options: Speed, Brightness, Color
 EFFECT_OFF = 0xF0  # Disabled
 
 SPEED_LOW = 0x00
