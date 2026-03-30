@@ -28,6 +28,12 @@ export enum RGBMode {
     
     // MSI specific preset modes
     msi_frostfire = "msi_frostfire",
+
+    // Zotac specific preset modes
+    zotac_stars = "zotac_stars",
+    zotac_flash = "zotac_flash",
+    zotac_wink = "zotac_wink",
+    zotac_random = "zotac_random",
     
     // Unified custom RGB mode for all multi-zone devices
     // 所有多区域设备的统一自定义 RGB 模式
