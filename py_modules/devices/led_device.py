@@ -186,6 +186,7 @@ class BaseLEDDevice(LEDDevice):
         init: bool = False,
         speed: str | None = None,
         brightness_level: str | None = None,
+        brightness: int | None = None,
         **kwargs,  # Accept zone_colors, zone_enabled and other future parameters
     ) -> None:
         """
@@ -200,6 +201,7 @@ class BaseLEDDevice(LEDDevice):
             init: Whether this is an initialization call
             speed: Animation speed ("low", "medium", "high")
             brightness_level: Hardware brightness level ("low", "medium", "high")
+            brightness: Numeric brightness (0-100) for hardware effects
             **kwargs: Additional parameters for future extension
         """
         raise NotImplementedError
@@ -242,7 +244,17 @@ class BaseLEDDevice(LEDDevice):
             try:
                 logger.info(f"use hardware control: mode={mode}")
                 self.stop_effects()
-                self._set_hardware_color(mode, color, color2, init=init, zone_colors=zone_colors, speed=speed, brightness_level=brightness_level, **kwargs)
+                self._set_hardware_color(
+                    mode,
+                    color,
+                    color2,
+                    init=init,
+                    zone_colors=zone_colors,
+                    brightness=brightness,
+                    speed=speed,
+                    brightness_level=brightness_level,
+                    **kwargs,
+                )
                 return
             except Exception as e:
                 logger.error(e, exc_info=True)
@@ -287,6 +299,10 @@ class BaseLEDDevice(LEDDevice):
         elif mode == RGBMode.Disabled:
             # Set to disabled state | 设置为禁用状态
             self._set_solid_color(Color(0, 0, 0))
+        elif mode == RGBMode.Spiral:
+            # Spiral requires a native multi-zone hardware effect. Falling back
+            # to one static color would report success with the wrong effect.
+            logger.warning("Spiral mode has no software fallback")
         else:
             # Other modes directly set color | 其他模式直接设置颜色
             self._set_solid_color(color)

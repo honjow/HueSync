@@ -71,6 +71,7 @@ class LegionGoTabletLEDDevice(LegionPowerLEDMixin, BaseLEDDevice):
         color2: Color | None = None,
         init: bool = False,
         speed: str | None = None,
+        brightness: int | None = None,
         **kwargs,  # Accept brightness_level and other future parameters
     ) -> None:
         """
@@ -87,6 +88,7 @@ class LegionGoTabletLEDDevice(LegionPowerLEDMixin, BaseLEDDevice):
             color2: Secondary color (not used for Legion Go)
             init: Whether this is an initialization call
             speed: Animation speed ("low", "medium", "high")
+            brightness: Hardware brightness for Rainbow/Spiral (0-100)
         """
         if not color:
             return
@@ -115,15 +117,23 @@ class LegionGoTabletLEDDevice(LegionPowerLEDMixin, BaseLEDDevice):
                 init = self._current_real_mode != mode or init
                 logger.debug(
                     f"set_legion_go_tablet_color: mode={mode} color={color} "
-                    f"secondary={color2} init={init} speed={speed}"
+                    f"secondary={color2} init={init} brightness={brightness} "
+                    f"speed={speed}"
                 )
                 
                 if mode:
-                    brightness = 100  # Default brightness (will be converted to 0-1)
+                    # Solid and Pulse already carry HSV brightness in their RGB
+                    # values. Applying it again in hardware would double-dim them.
+                    hardware_brightness = 100
+                    if (
+                        mode in (RGBMode.Rainbow, RGBMode.Spiral)
+                        and brightness is not None
+                    ):
+                        hardware_brightness = max(0, min(100, int(brightness)))
                     ledDevice.set_led_color(
                         mode=mode,
                         color=color,
-                        brightness=brightness,
+                        brightness=hardware_brightness,
                         speed=speed or "medium",
                         init=init,
                     )
@@ -208,4 +218,3 @@ class LegionGoTabletLEDDevice(LegionPowerLEDMixin, BaseLEDDevice):
                 brightness=True,
             ),
         }
-

@@ -6,7 +6,9 @@
   "scripts": {
     "build": "shx rm -rf dist && rollup -c",
     "watch": "rollup -c -w",
-    "test": "node --test test/*.test.mjs"
+    "test": "pnpm run test:node && pnpm run test:python",
+    "test:node": "node --test test/*.test.mjs",
+    "test:python": "python3 -m unittest discover -s test -p 'test_*.py'"
   },
   "repository": {
     "type": "git",

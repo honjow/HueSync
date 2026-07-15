@@ -19,7 +19,7 @@ jobs:
     steps:
       - name: set git global safe directory
         run: |
-          pacman -Syu git npm zip unzip --noconfirm
+          pacman -Syu git npm python zip unzip --noconfirm
           git config --global --add safe.directory $(realpath .)
 
       - uses: actions/checkout@v4
