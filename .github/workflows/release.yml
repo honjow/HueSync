@@ -38,6 +38,7 @@ jobs:
           pnpm install --no-frozen-lockfile
           pnpm update @decky/ui --latest
           pnpm update @decky/api --latest
+          pnpm test
           pnpm run build
           rm -f dist/*.map
           temp_dir=$(mktemp -d)

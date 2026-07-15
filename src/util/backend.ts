@@ -3,6 +3,7 @@ import { call } from "@decky/api";
 import { debounce } from "lodash";
 import { Logger, RGBModeCapabilities } from ".";
 import { RGBMode } from "./const";
+import { shouldHandleSuspendResume } from "./suspendPolicy";
 
 export interface ZoneInfo {
   id: string;
@@ -121,6 +122,14 @@ export class Backend {
     await this.data.init();
   }
 
+  private static shouldForwardSuspendResume(): boolean {
+    return shouldHandleSuspendResume({
+      rgbControlEnabled: Setting.enableControl,
+      powerLedSuspendOff: Setting.powerLedSuspendOff,
+      powerLedSupported: Setting.deviceCapabilities?.power_led === true,
+    });
+  }
+
   private static applyColor(options: ApplyColorOptions = {}) {
     console.log(
       `Applying color: mode=${options.mode} r=${options.red} g=${options.green} b=${options.blue} r2=${options.red2} g2=${options.green2} b2=${options.blue2} zoneColors=${JSON.stringify(options.zoneColors)} init=${options.isInit} brightness=${options.brightness} speed=${options.speed} brightnessLevel=${options.brightnessLevel}`,
@@ -187,7 +196,7 @@ export class Backend {
 
   // suspend
   public static async suspend() {
-    if (!Setting.enableControl) {
+    if (!this.shouldForwardSuspendResume()) {
       return;
     }
     await call("suspend");
@@ -195,7 +204,7 @@ export class Backend {
 
   // resume
   public static async resume() {
-    if (!Setting.enableControl) {
+    if (!this.shouldForwardSuspendResume()) {
       return;
     }
     await call("resume");
