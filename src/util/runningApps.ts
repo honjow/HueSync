@@ -37,13 +37,18 @@ export class RunningApps {
     if (this.intervalId !== undefined) {
       clearInterval(this.intervalId);
     }
-    this.listeners.splice(0, this.listeners.length);
+    this.intervalId = undefined;
+    this.lastAppId = DEFAULT_APP;
+    this.listeners.length = 0;
   }
 
   static listenActiveChange(fn: ActiveAppChangedHandler): UnregisterFn {
-    const idx = this.listeners.push(fn) - 1;
+    this.listeners.push(fn);
     return () => {
-      this.listeners.splice(idx, 1);
+      const currentIdx = this.listeners.indexOf(fn);
+      if (currentIdx >= 0) {
+        this.listeners.splice(currentIdx, 1);
+      }
     };
   }
 
@@ -55,4 +60,3 @@ export class RunningApps {
     return (Router.MainRunningApp as unknown as AppOverviewExt) || null;
   }
 }
-

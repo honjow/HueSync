@@ -104,23 +104,26 @@ def _build_command(cmd_code: int, setting: int = 0, data: bytes = b"", sequence:
 
 
 def _select_device_info(devices):
-    """Select the best Zotac HID interface, preferring the command interface."""
-    matches = [
-        device
-        for device in devices
-        if device.get("vendor_id") in ZOTAC_VENDOR_IDS
-        and device.get("product_id") == ZOTAC_PRODUCT_ID
-    ]
-    if not matches:
-        return None
-
-    return sorted(
-        matches,
-        key=lambda device: (
-            device.get("interface_number") != ZOTAC_COMMAND_INTERFACE,
-            device.get("interface_number", 999),
+    """Select only the Zotac command interface used by the RGB protocol."""
+    return next(
+        (
+            device
+            for device in devices
+            if device.get("vendor_id") in ZOTAC_VENDOR_IDS
+            and device.get("product_id") == ZOTAC_PRODUCT_ID
+            and device.get("interface_number") == ZOTAC_COMMAND_INTERFACE
         ),
-    )[0]
+        None,
+    )
+
+
+def _has_supported_device(devices) -> bool:
+    """Detect the controller before every USB interface has enumerated."""
+    return any(
+        device.get("vendor_id") in ZOTAC_VENDOR_IDS
+        and device.get("product_id") == ZOTAC_PRODUCT_ID
+        for device in devices
+    )
 
 
 class ZotacLEDDeviceHID:
@@ -133,7 +136,7 @@ class ZotacLEDDeviceHID:
 
     @staticmethod
     def has_supported_device() -> bool:
-        return _select_device_info(list(hid.enumerate())) is not None
+        return _has_supported_device(list(hid.enumerate()))
 
     def is_ready(self) -> bool:
         if self.hid_device is not None:
@@ -198,7 +201,9 @@ class ZotacLEDDeviceHID:
             raise RuntimeError("Zotac RGB command failed")
 
     def save_config(self) -> None:
-        self._exchange(CMD_SAVE_CONFIG)
+        response = self._exchange(CMD_SAVE_CONFIG)
+        if len(response) <= SETTING_POS or response[SETTING_POS] != 0:
+            raise RuntimeError("Zotac save-config command failed")
 
     def _write_uniform_zone_color(self, setting: int, color: Color) -> None:
         """Mirror the same color payload to both physical Zotac halo zones."""
@@ -220,15 +225,24 @@ class ZotacLEDDeviceHID:
     def set_brightness(self, brightness: int) -> None:
         self._set_rgb(SETTING_BRIGHTNESS, bytes([brightness]))
 
-    def apply_disabled(self) -> None:
+    def apply_disabled(self, persist: bool = True) -> None:
         """Turn the Zotac lighting off without changing firmware brightness."""
         self.set_effect(EFFECT_OFF)
-        self.save_config()
+        if persist:
+            self.save_config()
 
-    def apply_effect(self, effect: int, color: Color, speed: int, brightness: int) -> None:
+    def apply_effect(
+        self,
+        effect: int,
+        color: Color,
+        speed: int,
+        brightness: int,
+        persist: bool = True,
+    ) -> None:
         """Apply a hardware RGB effect using the standard color/effect/speed/brightness sequence."""
         self.set_uniform_color(color)
         self.set_effect(effect)
         self.set_speed(speed)
         self.set_brightness(brightness)
-        self.save_config()
+        if persist:
+            self.save_config()

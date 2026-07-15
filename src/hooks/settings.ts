@@ -1,4 +1,15 @@
-import { Backend, hsvToRgb, RGBMode, RGBModeCapabilities, RunningApps, ACStateManager, EACState, DEFAULT_APP, DeviceCapabilities } from "../util";
+import {
+  ACStateManager,
+  Backend,
+  DEFAULT_APP,
+  DeviceCapabilities,
+  EACState,
+  hsvToRgb,
+  RGBMode,
+  RGBModeCapabilities,
+  RunningApps,
+} from "../util";
+import { LatestValueWriter } from "../util/latestValueWriter";
 
 export class RgbSetting {
   public enableControl = false;
@@ -265,6 +276,16 @@ export class SettingsData {
 
 export class Setting {
   private static _settingsData: SettingsData = new SettingsData();
+  private static settingsWriter = new LatestValueWriter<SettingsData>(
+    async (settings) => {
+      await Backend.setSettings(settings);
+    },
+    (settings) => {
+      const snapshot = new SettingsData();
+      snapshot.deepCopy(settings);
+      return snapshot;
+    },
+  );
 
   // Static members | 静态成员
   public static isSupportSuspendMode: boolean = false;
@@ -421,11 +442,19 @@ export class Setting {
     this.currentCustomPreset = this.settingsData.currentCustomPreset;
   }
 
-  public static async saveSettingsData() {
+  public static saveSettingsData(): Promise<void> {
     // Sync static properties to settingsData before saving
     this.settingsData.currentCustomPreset = this.currentCustomPreset;
     // Logger.debug(`HueSync: saveSettingsData: ${JSON.stringify(this.settingsData)}`);
-    await Backend.setSettings(this.settingsData);
+    const save = this.settingsWriter.enqueue(this.settingsData);
+    void save.catch((error) => {
+      console.error("HueSync: failed to save settings", error);
+    });
+    return save;
+  }
+
+  public static flushSettingsData(): Promise<void> {
+    return this.settingsWriter.flush();
   }
 
   private static createGetter<T>(

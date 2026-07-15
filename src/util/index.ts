@@ -6,4 +6,6 @@ export * from './version';
 export * from './versionCache';
 export * from './runningApps';
 export * from './acStateManager';
+export * from './profilePolicy';
+export * from './latestValueWriter';
 export { DEFAULT_APP } from './runningApps';

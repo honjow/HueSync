@@ -4,6 +4,7 @@ import { debounce } from "lodash";
 import { Logger, RGBModeCapabilities } from ".";
 import { RGBMode } from "./const";
 import { shouldHandleSuspendResume } from "./suspendPolicy";
+import { shouldPersistHardwareState } from "./profilePolicy";
 
 export interface ZoneInfo {
   id: string;
@@ -47,6 +48,7 @@ interface ApplyColorOptions {
   brightness?: number;
   speed?: string;
   brightnessLevel?: string;
+  persist?: boolean;
 }
 
 // Exported callable functions
@@ -132,7 +134,7 @@ export class Backend {
 
   private static applyColor(options: ApplyColorOptions = {}) {
     console.log(
-      `Applying color: mode=${options.mode} r=${options.red} g=${options.green} b=${options.blue} r2=${options.red2} g2=${options.green2} b2=${options.blue2} zoneColors=${JSON.stringify(options.zoneColors)} init=${options.isInit} brightness=${options.brightness} speed=${options.speed} brightnessLevel=${options.brightnessLevel}`,
+      `Applying color: mode=${options.mode} r=${options.red} g=${options.green} b=${options.blue} r2=${options.red2} g2=${options.green2} b2=${options.blue2} zoneColors=${JSON.stringify(options.zoneColors)} init=${options.isInit} brightness=${options.brightness} speed=${options.speed} brightnessLevel=${options.brightnessLevel} persist=${options.persist}`,
     );
     const {
       mode = "disabled",
@@ -148,6 +150,7 @@ export class Backend {
       brightness = 100,
       speed = "low",
       brightnessLevel = "high",
+      persist = true,
     } = options;
     
     // Convert zoneColors format for backend
@@ -181,9 +184,34 @@ export class Backend {
         brightnessLevel: string,
         zoneColors: any,
         zoneEnabled: any,
+        persist: boolean,
       ],
-      void
-    >("set_color", mode, red, green, blue, red2, green2, blue2, isInit, brightness, speed, brightnessLevel, zoneColorsDict, zoneEnabledDict);
+      boolean
+    >(
+      "set_color",
+      mode,
+      red,
+      green,
+      blue,
+      red2,
+      green2,
+      blue2,
+      isInit,
+      brightness,
+      speed,
+      brightnessLevel,
+      zoneColorsDict,
+      zoneEnabledDict,
+      persist,
+    )
+      .then((success) => {
+        if (!success) {
+          Logger.warn("HueSync backend did not apply the RGB state");
+        }
+      })
+      .catch((error) => {
+        Logger.error(`HueSync RGB request failed: ${error}`);
+      });
   }
 
   public static throwSuspendEvt() {
@@ -310,6 +338,7 @@ export class Backend {
       brightness: Setting.brightness,
       speed: Setting.speed,
       brightnessLevel: Setting.brightnessLevel,
+      persist: shouldPersistHardwareState(Setting.appOverWrite()),
     });
 
   };

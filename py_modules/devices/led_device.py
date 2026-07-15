@@ -47,6 +47,7 @@ class LEDDevice(ABC):
         brightness: int | None = None,
         speed: str | None = None,
         brightness_level: str | None = None,
+        persist: bool = True,
         **kwargs,  # Accept zone_enabled and other future parameters
     ):
         """
@@ -61,6 +62,7 @@ class LEDDevice(ABC):
             brightness: Software brightness (0-100, for HSV-based modes)
             speed: Animation speed ("low", "medium", "high")
             brightness_level: Hardware brightness level ("low", "medium", "high")
+            persist: Whether to save the state to device firmware
             **kwargs: Additional parameters for future extension
         """
         pass
@@ -163,6 +165,11 @@ class BaseLEDDevice(LEDDevice):
         """
         return []
 
+    @property
+    def supports_software_fallback(self) -> bool:
+        """Whether a failed hardware effect can be reproduced in software."""
+        return True
+
     def is_current_software_mode(self) -> bool:
         return self._current_mode not in self.hardware_supported_modes
 
@@ -216,6 +223,7 @@ class BaseLEDDevice(LEDDevice):
         brightness: int | None = None,
         speed: str | None = None,
         brightness_level: str | None = None,
+        persist: bool = True,
         **kwargs,  # Accept zone_enabled and other future parameters
     ):
         """
@@ -231,6 +239,7 @@ class BaseLEDDevice(LEDDevice):
             brightness: Software brightness (0-100, for HSV-based modes)
             speed: Animation speed ("low", "medium", "high")
             brightness_level: Hardware brightness level ("low", "medium", "high")
+            persist: Whether to save the state to device firmware
             **kwargs: Additional parameters for future extension
         """
         if not color:
@@ -253,11 +262,14 @@ class BaseLEDDevice(LEDDevice):
                     brightness=brightness,
                     speed=speed,
                     brightness_level=brightness_level,
+                    persist=persist,
                     **kwargs,
                 )
                 return
             except Exception as e:
                 logger.error(e, exc_info=True)
+                if not self.supports_software_fallback:
+                    raise
                 # If hardware control fails, fallback to software implementation | 如果硬件控制失败，回退到软件实现
                 pass
 

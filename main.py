@@ -58,6 +58,7 @@ class Plugin:
         brightness_level: str | None = None,
         zone_colors: dict | None = None,
         zone_enabled: dict | None = None,
+        persist: bool = True,
     ):
         try:
             from utils import Color, RGBMode
@@ -100,7 +101,16 @@ class Plugin:
                 else None
             )
             self.ledControl.set_color(
-                rgb_mode, color, color2, zone_colors=zone_colors_converted, zone_enabled=zone_enabled, init=init, brightness=brightness, speed=speed, brightness_level=brightness_level
+                rgb_mode,
+                color,
+                color2,
+                zone_colors=zone_colors_converted,
+                zone_enabled=zone_enabled,
+                init=init,
+                brightness=brightness,
+                speed=speed,
+                brightness_level=brightness_level,
+                persist=persist,
             )
             return True
         except Exception as e:
