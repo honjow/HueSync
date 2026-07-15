@@ -158,10 +158,10 @@ class AyaNeoLEDDevice(SysfsLEDMixin, BaseLEDDevice):
         logger.debug(f"AyaNeoLEDDevice.set_suspend_mode('{mode}')")
         self.aya_led_device_ec.set_suspend_mode(mode)
 
-    def suspend(self) -> None:
+    def suspend(self, settings: dict = None) -> None:
         self.aya_led_device_ec.suspend()
 
-    def resume(self) -> None:
+    def resume(self, settings: dict = None) -> None:
         self.aya_led_device_ec.resume()
 
     def get_mode_capabilities(self) -> dict[RGBMode, RGBModeCapabilities]:

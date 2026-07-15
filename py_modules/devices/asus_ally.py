@@ -299,7 +299,7 @@ class AllyLEDDevice(SysfsLEDMixin, AsusLEDDevice):
                 **kwargs
             )
 
-    def suspend(self) -> None:
+    def suspend(self, settings: dict = None) -> None:
         """
         Handle suspend event (before sleep).
         处理挂起事件（睡眠前）。
@@ -308,7 +308,7 @@ class AllyLEDDevice(SysfsLEDMixin, AsusLEDDevice):
         # 当前挂起时无需特殊处理
         pass
 
-    def resume(self) -> None:
+    def resume(self, settings: dict = None) -> None:
         """
         Handle resume event (after wakeup).
         处理恢复事件（唤醒后）。
