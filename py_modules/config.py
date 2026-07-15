@@ -52,6 +52,7 @@ except Exception as e:
     logger.error(f"Device information configuration error: {e}", exc_info=True)
 
 LED_PATH_LIST = [
+    "/sys/class/leds/go:rgb:joystick_rings",
     "/sys/class/leds/ayaneo:rgb:joystick_rings",
     "/sys/class/leds/ayn:rgb:joystick_rings",
     "/sys/class/leds/multicolor:chassis",

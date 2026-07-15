@@ -15,6 +15,7 @@ from devices.ayaneo import AyaNeoLEDDevice
 from devices.generic import GenericLEDDevice
 from devices.gpd import GPDLEDDevice
 from devices.led_device import LEDDevice
+from devices.legion_go2 import LegionGo2LEDDevice
 from devices.legion_go_s import LegionGoSLEDDevice
 from devices.legion_go_tablet import LegionGoTabletLEDDevice
 from devices.msi import MSILEDDevice
@@ -130,6 +131,14 @@ class LedControl:
         if SYS_VENDOR == "LENOVO":
             # Check if it's Legion Go (tablet mode) or Legion Go S
             if PRODUCT_NAME in ["83E1", "83N0", "83N1"]:
+                # Legion Go 2 on kernels with the hid-lenovo-go driver expose the
+                # controller RGB as a sysfs LED-class device and hide the raw HID
+                # node, so the HID path fails there. Prefer the sysfs backend when
+                # that device is present; fall back to HID otherwise (and for the
+                # original Legion Go 83E1, which has no such node).
+                if os.path.exists("/sys/class/leds/go:rgb:joystick_rings"):
+                    logger.info("Using Legion Go 2 sysfs LED device (go:rgb:joystick_rings)")
+                    return LegionGo2LEDDevice()
                 logger.info("Using Legion Go (tablet mode) LED device (SYS_VENDOR + PRODUCT_NAME)")
                 return LegionGoTabletLEDDevice()
             else:
