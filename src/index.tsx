@@ -43,10 +43,10 @@ const Content: FC<{ initialize: () => Promise<void> }> = ({ initialize }) => {
             {status === "error"
               ? localizationManager.getString(localizeStrEnum.INITIALIZATION_ERROR, {
                   defaultValue: "Could not load device settings. Please retry.",
-                })
+                }) || "Could not load device settings. Please retry."
               : localizationManager.getString(localizeStrEnum.INITIALIZATION_LOADING, {
                   defaultValue: "Loading device settings...",
-                })}
+                }) || "Loading device settings..."}
           </div>
         </PanelSectionRow>
         {status === "error" && (
@@ -60,7 +60,7 @@ const Content: FC<{ initialize: () => Promise<void> }> = ({ initialize }) => {
             >
               {localizationManager.getString(localizeStrEnum.INITIALIZATION_RETRY, {
                 defaultValue: "Retry",
-              })}
+              }) || "Retry"}
             </ButtonItem>
           </PanelSectionRow>
         )}
