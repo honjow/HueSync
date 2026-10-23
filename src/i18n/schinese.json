@@ -1,4 +1,7 @@
 {
+  "INITIALIZATION_LOADING": "正在加载设备设置…",
+  "INITIALIZATION_ERROR": "无法加载设备设置，请重试。",
+  "INITIALIZATION_RETRY": "重试",
     "TITEL_SETTINGS": "设置",
     "ENABLE_RGB_CONTROL": "启用RGB灯效控制",
     "ENABLE_RGB_CONTROL_DESC": "为您的设备启用RGB灯效控制系统",

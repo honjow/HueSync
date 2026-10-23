@@ -1,4 +1,7 @@
 {
+  "INITIALIZATION_LOADING": "Loading device settings...",
+  "INITIALIZATION_ERROR": "Could not load device settings. Please retry.",
+  "INITIALIZATION_RETRY": "Retry",
     "TITEL_SETTINGS": "Settings",
     "ENABLE_RGB_CONTROL": "Enable RGB Lighting Control",
     "ENABLE_RGB_CONTROL_DESC": "Enable the RGB lighting control system for your device",

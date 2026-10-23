@@ -1,4 +1,5 @@
 import os
+import threading
 import time
 from typing import Optional
 
@@ -13,10 +14,12 @@ ZONE_SECONDARY = "secondary"
 ZONE_REAR = "rear"
 
 ZONE_DIRS = {
-    ZONE_PRIMARY: "go:rgb:joystick_rings",
+    ZONE_PRIMARY: "oxp:rgb:joystick_rings",
     ZONE_SECONDARY: "oxp:rgb:guide_button",
     ZONE_REAR: "oxp:rgb:rear_logo",
 }
+
+PRIMARY_ZONE_DIRS = ("oxp:rgb:joystick_rings", "go:rgb:joystick_rings")
 
 ZONE_NAME_KEYS = {
     ZONE_PRIMARY: "ZONE_PRIMARY_NAME",
@@ -67,6 +70,11 @@ SOFTWARE_MODES = frozenset(
 
 STATIC_BRIGHTNESS = 100
 
+# The driver restarts a 50ms delayed-work timer on every RGB write.
+# Leave headroom for that work to run. Only this device's animation thread
+# waits; an Event lets stop_effects interrupt the wait during mode changes.
+SOFTWARE_FRAME_INTERVAL = 0.075
+
 
 class OneXPlayer3LEDDevice(GenericLEDDevice):
     """
@@ -80,6 +88,12 @@ class OneXPlayer3LEDDevice(GenericLEDDevice):
 
     def __init__(self, led_root: str = LED_ROOT):
         self._led_root = led_root
+        self._zone_dirs = dict(ZONE_DIRS)
+        primary = self._find_primary_dir(led_root)
+        if primary is not None:
+            self._zone_dirs[ZONE_PRIMARY] = primary
+        self._last_software_frame: Optional[float] = None
+        self._software_stop = threading.Event()
         self._sysfs_cache: dict[tuple[str, str], str] = {}
         self._requested_colors: dict[str, Color] = {}
         self._zone_enabled: dict[str, bool] = {}
@@ -92,16 +106,23 @@ class OneXPlayer3LEDDevice(GenericLEDDevice):
             self._zone_enabled[zone] = True
 
     @classmethod
+    def _find_primary_dir(cls, led_root: str) -> Optional[str]:
+        """Prefer the current driver name, accepting the legacy go: alias."""
+        for directory in PRIMARY_ZONE_DIRS:
+            if all(
+                os.path.exists(os.path.join(led_root, directory, attr))
+                for attr in REQUIRED_ZONE_ATTRS
+            ):
+                return directory
+        return None
+
+    @classmethod
     def is_available(cls, led_root: str = LED_ROOT) -> bool:
-        """The ring's brightness and multi_intensity attributes are required."""
-        primary = os.path.join(led_root, ZONE_DIRS[ZONE_PRIMARY])
-        return all(
-            os.path.exists(os.path.join(primary, attr))
-            for attr in REQUIRED_ZONE_ATTRS
-        )
+        """Use the same required attributes and candidates as initialization."""
+        return cls._find_primary_dir(led_root) is not None
 
     def _zone_path(self, zone: str) -> str:
-        return os.path.join(self._led_root, ZONE_DIRS[zone])
+        return os.path.join(self._led_root, self._zone_dirs[zone])
 
     def _attr_path(self, zone: str, attr: str) -> str:
         return os.path.join(self._zone_path(zone), attr)
@@ -258,15 +279,30 @@ class OneXPlayer3LEDDevice(GenericLEDDevice):
         if self._primary_has("enabled"):
             self._write_cached(ZONE_PRIMARY, "enabled", "true")
 
+    def stop_effects(self):
+        self._software_stop.set()
+        try:
+            super().stop_effects()
+        finally:
+            self._software_stop.clear()
+
     def _set_solid_color(self, color: Color) -> None:
         """Software animation callback; only the ring is animated."""
-        self._current_color = color
         if ZONE_PRIMARY not in self._available_zones:
             return
+        now = time.monotonic()
+        if self._software_stop.is_set():
+            return
+        if self._last_software_frame is not None:
+            remaining = SOFTWARE_FRAME_INTERVAL - (now - self._last_software_frame)
+            if remaining > 0 and self._software_stop.wait(remaining):
+                return
         if self._zone_enabled.get(ZONE_PRIMARY, True):
             self._write_static_zone(ZONE_PRIMARY, color)
         else:
             self._write_zone_off(ZONE_PRIMARY)
+        self._current_color = color
+        self._last_software_frame = time.monotonic()
 
     def set_color(
         self,
@@ -330,6 +366,10 @@ class OneXPlayer3LEDDevice(GenericLEDDevice):
             return
 
         if mode in SOFTWARE_MODES:
+            # Join the old effect before resetting the clock. The first frame
+            # of a new effect (including a zone toggle) must apply immediately.
+            self.stop_effects()
+            self._last_software_frame = None
             self._update_requested_colors(color, zone_colors)
             self._update_enabled(zone_enabled)
             super().set_color(

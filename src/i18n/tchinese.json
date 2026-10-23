@@ -1,4 +1,7 @@
 {
+  "INITIALIZATION_LOADING": "正在載入裝置設定…",
+  "INITIALIZATION_ERROR": "無法載入裝置設定，請重試。",
+  "INITIALIZATION_RETRY": "重試",
     "TITEL_SETTINGS": "設置",
     "ENABLE_RGB_CONTROL": "啟用RGB燈效控制",
     "ENABLE_RGB_CONTROL_DESC": "為您的設備啟用RGB燈效控制系統",

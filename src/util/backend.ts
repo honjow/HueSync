@@ -67,10 +67,11 @@ export class BackendData {
   private latest_version = "";
 
   public async init() {
-    await call<[], string>("get_version").then((result) => {
-      console.info("current_version = " + result);
-      this.current_version = result;
-    });
+    try {
+      this.current_version = await call<[], string>("get_version");
+    } catch (error) {
+      console.error("Failed to fetch current version:", error);
+    }
 
     // Check cache first to avoid excessive API requests
     // 优先检查缓存以避免过度的 API 请求
@@ -121,11 +122,19 @@ export class BackendData {
 }
 
 export class Backend {
-  public static data: BackendData;
+  public static data: BackendData = new BackendData();
+  private static versionInitialization: Promise<void> | undefined;
 
-  public static async init() {
-    this.data = new BackendData();
-    await this.data.init();
+  public static init(): Promise<void> {
+    // Share the optional check with MoreComponent; retries of essential
+    // initialization must not create overlapping network requests.
+    if (!this.versionInitialization) {
+      this.versionInitialization = this.data.init().catch((error) => {
+        this.versionInitialization = undefined;
+        throw error;
+      });
+    }
+    return this.versionInitialization;
   }
 
   private static shouldForwardSuspendResume(): boolean {

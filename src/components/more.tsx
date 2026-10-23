@@ -68,25 +68,27 @@ export const MoreComponent: FC = () => {
     };
 
     useEffect(() => {
+        let mounted = true;
+        setIsChecking(true);
         const initVersions = async () => {
-            // 本地版本：直接读取，不缓存
-            const current = Backend.data.getCurrentVersion();
-            setCurrentVersion(current);
-
-            // 远程版本：使用缓存
-            const cache = getVersionCache();
-            if (cache) {
-                setLatestVersion(cache.latestVersion);
-                setLastCheckTime(cache.lastCheckTime);
-                return;
+            try {
+                // Share the background check started by the plugin. Never
+                // hold up device controls or issue a second cache-miss request.
+                await Backend.init();
+                if (!mounted) return;
+                setCurrentVersion(Backend.data.getCurrentVersion());
+                setLatestVersion(Backend.data.getLatestVersion());
+                const cache = getVersionCache() || getStaleCache();
+                if (cache) setLastCheckTime(cache.lastCheckTime);
+            } catch (error) {
+                console.error("Version initialization failed:", error);
+            } finally {
+                if (mounted) setIsChecking(false);
             }
-
-            // 缓存失效，进行检查
-            await performVersionCheck();
         };
-
-        initVersions();
-    }, []); // 空依赖数组，仅首次执行
+        void initVersions();
+        return () => { mounted = false; };
+    }, []);
 
     let uptButtonText =
         localizationManager.getString(localizeStrEnum.REINSTALL_PLUGIN) ||
