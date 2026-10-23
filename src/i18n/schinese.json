@@ -1,4 +1,7 @@
 {
+  "INITIALIZATION_LOADING": "正在加载设备设置…",
+  "INITIALIZATION_ERROR": "无法加载设备设置，请重试。",
+  "INITIALIZATION_RETRY": "重试",
     "TITEL_SETTINGS": "设置",
     "ENABLE_RGB_CONTROL": "启用RGB灯效控制",
     "ENABLE_RGB_CONTROL_DESC": "为您的设备启用RGB灯效控制系统",
@@ -83,6 +86,9 @@
     "ZONE_SECONDARY_GENERIC_NAME": "副区域",
     "RGB_BASIC_SETTINGS": "灯光控制",
     "ENABLE_SECONDARY_ZONE": "启用副区域灯光",
+    "ZONE_GUIDE_BUTTON_NAME": "功能键灯",
+    "ZONE_REAR_LOGO_NAME": "背部标志灯",
+    "ENABLE_ZONE": "启用此区域",
     "MSI_CUSTOM_EDIT_EFFECT": "编辑灯效",
     "MSI_CUSTOM_NEW_EFFECT": "新建灯效",
     "MSI_CUSTOM_MANAGE_EFFECTS": "管理自定义灯效",

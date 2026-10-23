@@ -1,4 +1,7 @@
 {
+  "INITIALIZATION_LOADING": "Loading device settings...",
+  "INITIALIZATION_ERROR": "Could not load device settings. Please retry.",
+  "INITIALIZATION_RETRY": "Retry",
     "TITEL_SETTINGS": "Settings",
     "ENABLE_RGB_CONTROL": "Enable RGB Lighting Control",
     "ENABLE_RGB_CONTROL_DESC": "Enable the RGB lighting control system for your device",
@@ -87,6 +90,9 @@
     "ZONE_SECONDARY_GENERIC_NAME": "Secondary Zone",
     "RGB_BASIC_SETTINGS": "Light Control",
     "ENABLE_SECONDARY_ZONE": "Enable Secondary Zone",
+    "ZONE_GUIDE_BUTTON_NAME": "Guide button",
+    "ZONE_REAR_LOGO_NAME": "Rear logo",
+    "ENABLE_ZONE": "Enable this zone",
     "MSI_CUSTOM_EDIT_EFFECT": "Edit Effect",
     "MSI_CUSTOM_NEW_EFFECT": "New Effect",
     "MSI_CUSTOM_MANAGE_EFFECTS": "Manage Custom Effects",

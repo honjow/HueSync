@@ -13,6 +13,12 @@ export const useRgb = () => {
   const [secondaryZoneBrightness, setSecondaryZoneBrightness] = useState<number>(Setting.secondaryZoneBrightness);
   const [secondaryZoneEnabled, setSecondaryZoneEnabledState] = useState<boolean>(Setting.secondaryZoneEnabled);
 
+  const [primaryZoneEnabled, setPrimaryZoneEnabled] = useState<boolean>(Setting.primaryZoneEnabled);
+  const [rearZoneHue, setRearZoneHue] = useState<number>(Setting.rearZoneHue);
+  const [rearZoneSaturation, setRearZoneSaturation] = useState<number>(Setting.rearZoneSaturation);
+  const [rearZoneBrightness, setRearZoneBrightness] = useState<number>(Setting.rearZoneBrightness);
+  const [rearZoneEnabled, setRearZoneEnabledState] = useState<boolean>(Setting.rearZoneEnabled);
+
   const [rgbMode, setRgbMode] = useState<RGBMode>(Setting.mode);
 
   const [enableControl, setEnableControl] = useState<boolean>(
@@ -35,6 +41,11 @@ export const useRgb = () => {
       setSecondaryZoneSaturation(Setting.secondaryZoneSaturation);
       setSecondaryZoneBrightness(Setting.secondaryZoneBrightness);
       setSecondaryZoneEnabledState(Setting.secondaryZoneEnabled);
+      setPrimaryZoneEnabled(Setting.primaryZoneEnabled);
+      setRearZoneHue(Setting.rearZoneHue);
+      setRearZoneSaturation(Setting.rearZoneSaturation);
+      setRearZoneBrightness(Setting.rearZoneBrightness);
+      setRearZoneEnabledState(Setting.rearZoneEnabled);
       setRgbMode(Setting.mode);
       setEnableControl(Setting.enableControl);
       setLedEnabled(Setting.ledEnabled);
@@ -134,6 +145,36 @@ export const useRgb = () => {
     await Backend.applySettings();
   };
 
+  const updatePrimaryZoneEnabled = async (enabled: boolean) => {
+    setPrimaryZoneEnabled(enabled);
+    Setting.primaryZoneEnabled = enabled;
+    await Backend.applySettings();
+  };
+
+  const setRearZoneHsv = async (
+    h: number,
+    s: number,
+    v: number,
+    apply: boolean = true
+  ) => {
+    setRearZoneHue(h);
+    setRearZoneSaturation(s);
+    setRearZoneBrightness(v);
+    Setting.rearZoneHue = h;
+    Setting.rearZoneSaturation = s;
+    Setting.rearZoneBrightness = v;
+
+    if (apply) {
+      await Backend.applySettings();
+    }
+  };
+
+  const updateRearZoneEnabled = async (enabled: boolean) => {
+    setRearZoneEnabledState(enabled);
+    Setting.rearZoneEnabled = enabled;
+    await Backend.applySettings();
+  };
+
   return {
     hue,
     hue2,
@@ -143,10 +184,18 @@ export const useRgb = () => {
     secondaryZoneSaturation,
     secondaryZoneBrightness,
     secondaryZoneEnabled,
+    primaryZoneEnabled,
+    rearZoneHue,
+    rearZoneSaturation,
+    rearZoneBrightness,
+    rearZoneEnabled,
     setHsv,
     setHue2Value,
     setSecondaryZoneHsv,
     updateSecondaryZoneEnabled,
+    setRearZoneHsv,
+    updateRearZoneEnabled,
+    updatePrimaryZoneEnabled,
     rgbMode,
     updateRgbMode,
     enableControl,
