@@ -25,7 +25,7 @@ interface ColorControlsProps {
   hue2?: number;
   setHue2?: (h: number, immediate?: boolean) => void;
   onlyBrightness?: boolean;
-  zone?: 'primary' | 'secondary';  // New: zone identifier for CSS class names
+  zone?: 'primary' | 'secondary' | 'rear';  // New: zone identifier for CSS class names
 }
 
 const ColorControls: FC<ColorControlsProps> = ({
@@ -183,10 +183,18 @@ export const RGBComponent: FC = () => {
     secondaryZoneSaturation,
     secondaryZoneBrightness,
     secondaryZoneEnabled,
+    primaryZoneEnabled,
+    rearZoneHue,
+    rearZoneSaturation,
+    rearZoneBrightness,
+    rearZoneEnabled,
     setHsv,
     setHue2Value,
     setSecondaryZoneHsv,
+    setRearZoneHsv,
+    updatePrimaryZoneEnabled,
     updateSecondaryZoneEnabled,
+    updateRearZoneEnabled,
     rgbMode,
     updateRgbMode,
     enableControl,
@@ -366,6 +374,28 @@ export const RGBComponent: FC = () => {
     if (!Setting.deviceCapabilities?.zones) return null;
     const secondaryZone = Setting.deviceCapabilities.zones.find(z => z.id === 'secondary');
     return secondaryZone?.name_key || null;
+  }, []);
+
+  // Primary zone enable toggle is only available when the zone advertises it
+  // 仅当主区域声明支持独立开关时显示开关
+  const primaryZoneEnabledControl = useMemo(() => {
+    return Setting.deviceCapabilities?.zones?.find(z => z.id === 'primary')?.enabled_control === true;
+  }, []);
+
+  // Check if device has rear zone and current mode supports it
+  // 检查设备是否有背部区域且当前模式支持
+  const hasRearZone = useMemo(() => {
+    return (
+      Setting.deviceCapabilities?.zones?.some(z => z.id === 'rear') === true &&
+      currentModeCapabilities.zones?.includes('rear') === true
+    );
+  }, [currentModeCapabilities]);
+
+  // Get rear zone name key for i18n
+  // 获取背部区域名称key用于i18n
+  const rearZoneNameKey = useMemo(() => {
+    const rearZone = Setting.deviceCapabilities?.zones?.find(z => z.id === 'rear');
+    return rearZone?.name_key || 'ZONE_REAR_LOGO_NAME';
   }, []);
 
   // Handle mode selection
@@ -597,29 +627,44 @@ export const RGBComponent: FC = () => {
               <PanelSection
                 title={localizationManager.getString(localizeStrEnum.ZONE_PRIMARY_NAME)}
               >
-                {(currentModeCapabilities.color ||
-                  currentModeCapabilities.brightness) && (
-                    <ColorControls
-                      hue={hue}
-                      saturation={saturation}
-                      brightness={brightness}
-                      setHsv={setHsv}
-                      supportsColor2={currentModeCapabilities.color2}
-                      hue2={hue2}
-                      setHue2={setHue2Value}
-                      onlyBrightness={currentModeCapabilities.brightness}
-                      zone="primary"
-                    />
-                  )}
-                {currentModeCapabilities.speed && (
+                {primaryZoneEnabledControl && (
                   <PanelSectionRow>
-                    <SpeedControl speed={speed} onChange={updateSpeed} />
+                    <ToggleField
+                      label={localizationManager.getString(localizeStrEnum.ENABLE_ZONE)}
+                      checked={primaryZoneEnabled}
+                      onChange={(value) => {
+                        updatePrimaryZoneEnabled(value);
+                      }}
+                    />
                   </PanelSectionRow>
                 )}
-                {currentModeCapabilities.brightness_level && (
-                  <PanelSectionRow>
-                    <BrightnessLevelControl brightnessLevel={brightnessLevel} onChange={updateBrightnessLevel} />
-                  </PanelSectionRow>
+                {(!primaryZoneEnabledControl || primaryZoneEnabled) && (
+                  <>
+                    {(currentModeCapabilities.color ||
+                      currentModeCapabilities.brightness) && (
+                        <ColorControls
+                          hue={hue}
+                          saturation={saturation}
+                          brightness={brightness}
+                          setHsv={setHsv}
+                          supportsColor2={currentModeCapabilities.color2}
+                          hue2={hue2}
+                          setHue2={setHue2Value}
+                          onlyBrightness={currentModeCapabilities.brightness}
+                          zone="primary"
+                        />
+                      )}
+                    {currentModeCapabilities.speed && (
+                      <PanelSectionRow>
+                        <SpeedControl speed={speed} onChange={updateSpeed} />
+                      </PanelSectionRow>
+                    )}
+                    {currentModeCapabilities.brightness_level && (
+                      <PanelSectionRow>
+                        <BrightnessLevelControl brightnessLevel={brightnessLevel} onChange={updateBrightnessLevel} />
+                      </PanelSectionRow>
+                    )}
+                  </>
                 )}
               </PanelSection>
             )}
@@ -651,6 +696,36 @@ export const RGBComponent: FC = () => {
                   supportsColor2={false}
                   onlyBrightness={false}
                   zone="secondary"
+                />
+              )}
+            </PanelSection>
+          )}
+
+          {/* Rear Zone Section | 背部标志灯设置 */}
+          {hasRearZone && (
+            <PanelSection
+              title={localizationManager.getString(
+                localizeStrEnum[rearZoneNameKey as keyof typeof localizeStrEnum]
+              )}
+            >
+              <PanelSectionRow>
+                <ToggleField
+                  label={localizationManager.getString(localizeStrEnum.ENABLE_ZONE)}
+                  checked={rearZoneEnabled}
+                  onChange={(value) => {
+                    updateRearZoneEnabled(value);
+                  }}
+                />
+              </PanelSectionRow>
+              {rearZoneEnabled && (
+                <ColorControls
+                  hue={rearZoneHue}
+                  saturation={rearZoneSaturation}
+                  brightness={rearZoneBrightness}
+                  setHsv={setRearZoneHsv}
+                  supportsColor2={false}
+                  onlyBrightness={false}
+                  zone="rear"
                 />
               )}
             </PanelSection>

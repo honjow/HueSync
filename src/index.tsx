@@ -3,7 +3,7 @@ import {
   PanelSection,
   staticClasses,
 } from "@decky/ui";
-import { FC } from "react";
+import { FC, useEffect, useState } from "react";
 import { FaLightbulb } from "react-icons/fa";
 
 import { localizeStrEnum, localizationManager } from "./i18n";
@@ -13,7 +13,29 @@ import { Setting } from "./hooks";
 import { MoreComponent } from "./components/more";
 import { SteamUtils } from "./util/steamUtils";
 
-const Content: FC = () => {
+const Content: FC<{ initialization: Promise<void> }> = ({ initialization }) => {
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+    initialization.then(
+      () => {
+        if (mounted) {
+          setReady(true);
+        }
+      },
+      (error) => {
+        console.error("[HueSync] Initialization failed", error);
+      },
+    );
+    return () => {
+      mounted = false;
+    };
+  }, [initialization]);
+
+  if (!ready) {
+    return null;
+  }
 
   return (
     <>
@@ -58,7 +80,7 @@ export default definePlugin(() => {
     Backend.applySettings({ isInit: true });
   }
 
-  init();
+  const initialization = init();
 
   SteamUtils.RegisterForOnResumeFromSuspend(async () => {
     setTimeout(async () => {
@@ -83,7 +105,7 @@ export default definePlugin(() => {
   });
   return {
     title: <div className={staticClasses.Title}>HueSync</div>,
-    content: <Content />,
+    content: <Content initialization={initialization} />,
     icon: <FaLightbulb />,
     onDismount() {
       RunningApps.unregister();

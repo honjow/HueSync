@@ -9,6 +9,7 @@ import { shouldPersistHardwareState } from "./profilePolicy";
 export interface ZoneInfo {
   id: string;
   name_key: string;
+  enabled_control?: boolean;
 }
 
 export interface DeviceCapabilities {
@@ -41,9 +42,12 @@ interface ApplyColorOptions {
   blue2?: number;
   zoneColors?: {
     secondary?: { r: number; g: number; b: number };
+    rear?: { r: number; g: number; b: number };
   };
   zoneEnabled?: {
+    primary?: boolean;
     secondary?: boolean;
+    rear?: boolean;
   };
   brightness?: number;
   speed?: string;
@@ -161,12 +165,21 @@ export class Backend {
         G: zoneColors.secondary.g,
         B: zoneColors.secondary.b,
       } : null,
+      ...(zoneColors.rear ? {
+        rear: {
+          R: zoneColors.rear.r,
+          G: zoneColors.rear.g,
+          B: zoneColors.rear.b,
+        },
+      } : {}),
     } : null;
     
     // Convert zoneEnabled format for backend
     // 将 zoneEnabled 格式转换为后端格式
     const zoneEnabledDict = zoneEnabled ? {
+      ...(zoneEnabled.primary !== undefined ? { primary: zoneEnabled.primary } : {}),
       secondary: zoneEnabled.secondary,
+      ...(zoneEnabled.rear !== undefined ? { rear: zoneEnabled.rear } : {}),
     } : null;
     
     call<
@@ -301,28 +314,45 @@ export class Backend {
       Backend.setSuspendMode(Setting.suspendMode);
     }
 
-    // Only construct zone parameters if device supports secondary zone
-    // 只有设备支持副区域时才构造区域参数
-    const hasSecondaryZone = Setting.deviceCapabilities?.zones?.some(z => z.id === 'secondary');
+    // Only construct zone parameters for zones advertised by the device
+    // 仅针对设备已声明的区域构造区域参数
+    const zones = Setting.deviceCapabilities?.zones;
+    const hasSecondaryZone = zones?.some(z => z.id === 'secondary');
+    const hasRearZone = zones?.some(z => z.id === 'rear');
+    const hasPrimaryZoneToggle = zones?.find(z => z.id === 'primary')?.enabled_control === true;
 
-    const zoneColors = hasSecondaryZone &&
-                       Setting.secondaryZoneRed !== undefined && 
-                       Setting.secondaryZoneGreen !== undefined && 
-                       Setting.secondaryZoneBlue !== undefined
-      ? {
-          secondary: {
-            r: Setting.secondaryZoneRed,
-            g: Setting.secondaryZoneGreen,
-            b: Setting.secondaryZoneBlue,
-          },
-        }
-      : undefined;
+    const zoneColors: NonNullable<ApplyColorOptions["zoneColors"]> = {};
+    if (hasSecondaryZone &&
+        Setting.secondaryZoneRed !== undefined &&
+        Setting.secondaryZoneGreen !== undefined &&
+        Setting.secondaryZoneBlue !== undefined) {
+      zoneColors.secondary = {
+        r: Setting.secondaryZoneRed,
+        g: Setting.secondaryZoneGreen,
+        b: Setting.secondaryZoneBlue,
+      };
+    }
+    if (hasRearZone &&
+        Setting.rearZoneRed !== undefined &&
+        Setting.rearZoneGreen !== undefined &&
+        Setting.rearZoneBlue !== undefined) {
+      zoneColors.rear = {
+        r: Setting.rearZoneRed,
+        g: Setting.rearZoneGreen,
+        b: Setting.rearZoneBlue,
+      };
+    }
 
-    const zoneEnabled = hasSecondaryZone
-      ? {
-          secondary: Setting.secondaryZoneEnabled,
-        }
-      : undefined;
+    const zoneEnabled: NonNullable<ApplyColorOptions["zoneEnabled"]> = {};
+    if (hasPrimaryZoneToggle) {
+      zoneEnabled.primary = Setting.primaryZoneEnabled;
+    }
+    if (hasSecondaryZone) {
+      zoneEnabled.secondary = Setting.secondaryZoneEnabled;
+    }
+    if (hasRearZone) {
+      zoneEnabled.rear = Setting.rearZoneEnabled;
+    }
 
     Backend.applyColor({
       mode: actualMode,
@@ -332,8 +362,8 @@ export class Backend {
       red2: Setting.red2,
       green2: Setting.green2,
       blue2: Setting.blue2,
-      zoneColors,
-      zoneEnabled,
+      zoneColors: Object.keys(zoneColors).length > 0 ? zoneColors : undefined,
+      zoneEnabled: Object.keys(zoneEnabled).length > 0 ? zoneEnabled : undefined,
       isInit,
       brightness: Setting.brightness,
       speed: Setting.speed,

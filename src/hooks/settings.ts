@@ -25,6 +25,11 @@ export class RgbSetting {
   public secondaryZoneSaturation = 100;
   public secondaryZoneBrightness = 100;
   public secondaryZoneEnabled = true;  // Default to enabled for backward compatibility
+  public primaryZoneEnabled = true;
+  public rearZoneHue = 0;
+  public rearZoneSaturation = 100;
+  public rearZoneBrightness = 100;
+  public rearZoneEnabled = true;
   public speed = "low";
   public brightnessLevel = "high";
 
@@ -42,6 +47,13 @@ export class RgbSetting {
     this.secondaryZoneSaturation = source.secondaryZoneSaturation;
     this.secondaryZoneBrightness = source.secondaryZoneBrightness;
     this.secondaryZoneEnabled = source.secondaryZoneEnabled;
+    // Older saved profiles have no primary/rear zone fields, keep the defaults.
+    // 旧配置没有主区域/背部区域字段时保留默认值
+    this.primaryZoneEnabled = source.primaryZoneEnabled ?? true;
+    this.rearZoneHue = source.rearZoneHue ?? 0;
+    this.rearZoneSaturation = source.rearZoneSaturation ?? 100;
+    this.rearZoneBrightness = source.rearZoneBrightness ?? 100;
+    this.rearZoneEnabled = source.rearZoneEnabled ?? true;
     this.speed = source.speed;
     this.brightnessLevel = source.brightnessLevel;
   }
@@ -89,6 +101,21 @@ export class RgbSetting {
 
   get secondaryZoneBlue(): number {
     const [, , b] = hsvToRgb(this.secondaryZoneHue, this.secondaryZoneSaturation, this.secondaryZoneBrightness);
+    return b;
+  }
+
+  get rearZoneRed(): number {
+    const [r] = hsvToRgb(this.rearZoneHue, this.rearZoneSaturation, this.rearZoneBrightness);
+    return r;
+  }
+
+  get rearZoneGreen(): number {
+    const [, g] = hsvToRgb(this.rearZoneHue, this.rearZoneSaturation, this.rearZoneBrightness);
+    return g;
+  }
+
+  get rearZoneBlue(): number {
+    const [, , b] = hsvToRgb(this.rearZoneHue, this.rearZoneSaturation, this.rearZoneBrightness);
     return b;
   }
 }
@@ -580,6 +607,30 @@ export class Setting {
 
   @Setting.settingProperty<boolean>("secondaryZoneEnabled")
   public static secondaryZoneEnabled: boolean;
+
+  @Setting.settingProperty<boolean>("primaryZoneEnabled")
+  public static primaryZoneEnabled: boolean;
+
+  @Setting.settingProperty<number>("rearZoneHue")
+  public static rearZoneHue: number;
+
+  @Setting.settingProperty<number>("rearZoneSaturation")
+  public static rearZoneSaturation: number;
+
+  @Setting.settingProperty<number>("rearZoneBrightness")
+  public static rearZoneBrightness: number;
+
+  @Setting.readonlyProperty<number>("rearZoneRed")
+  public static rearZoneRed: number;
+
+  @Setting.readonlyProperty<number>("rearZoneGreen")
+  public static rearZoneGreen: number;
+
+  @Setting.readonlyProperty<number>("rearZoneBlue")
+  public static rearZoneBlue: number;
+
+  @Setting.settingProperty<boolean>("rearZoneEnabled")
+  public static rearZoneEnabled: boolean;
 
   @Setting.settingProperty<string>("speed")
   public static speed: string;
