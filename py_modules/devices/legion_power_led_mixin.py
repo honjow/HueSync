@@ -191,6 +191,9 @@ class LegionPowerLEDMixin:
         if settings.get("power_led_suspend_off"):
             try:
                 # 关闭前保存当前状态 | Save current state before turning off
+                # Keep the first snapshot when duplicate suspend events arrive.
+                if self._power_led_state is not None:
+                    return
                 self._power_led_state = self.get_power_light()
                 if self._power_led_state:
                     self.set_power_light(False)
@@ -218,10 +221,12 @@ class LegionPowerLEDMixin:
         try:
             # 如果睡眠前电源灯是开启的，则恢复 | Restore power LED if it was on before suspend
             if self._power_led_state:
-                self.set_power_light(True)
+                if not self.set_power_light(True):
+                    # Preserve the snapshot so a later resume can retry.
+                    return
                 logger.info("Power LED restored after resume (Legion)")
-                # 清除保存的状态 | Clear saved state
-                self._power_led_state = None
+            # Clear both ON and OFF snapshots for the next sleep cycle.
+            self._power_led_state = None
         except Exception as e:
             logger.error(
                 f"Failed to restore power LED on resume: {e}", exc_info=True

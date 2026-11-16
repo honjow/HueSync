@@ -12,7 +12,6 @@ from led.onex_led_device_hid import (
     XFLY_VID,
     OneXLEDDeviceHID,
 )
-from led.onex_led_device_serial import OneXLEDDeviceSerial
 from utils import Color, RGBMode, RGBModeCapabilities
 
 from .led_device import BaseLEDDevice
@@ -424,6 +423,10 @@ class OneXLEDDevice(BaseLEDDevice):
             color = Color(0xB7, 0x30, 0x00)
             
         try:
+            # Only serial models need pyserial/termios. Decky may omit termios;
+            # importing it at startup would also break unrelated HID/sysfs devices.
+            from led.onex_led_device_serial import OneXLEDDeviceSerial
+
             ledDevice = OneXLEDDeviceSerial()
             if ledDevice.is_ready():
                 logger.info(f"set_onex_color_serial: color={color}, mode={mode.value}")
