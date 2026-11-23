@@ -1,27 +1,10 @@
-import { Module, findModuleChild } from "@decky/ui";
 import { ReactNode } from "react";
 import { FaSuperpowers } from "react-icons/fa";
 import { toaster } from "@decky/api";
 import { isNil } from 'lodash';
 import { SystemInfo } from "@decky/ui/dist/globals/steam-client/system";
 import { SuspendProgress } from "@decky/ui/dist/globals/steam-client/User";
-
-//#region Find SteamOS modules
-const findModule = (property: string) => {
-  return findModuleChild((m: Module) => {
-    if (typeof m !== "object") return undefined;
-    for (let prop in m) {
-      try {
-        if (m[prop][property]) return m[prop];
-      } catch {
-        return undefined;
-      }
-    }
-  });
-};
-// @ts-ignore
-const NavSoundMap = findModule("ToastMisc");
-//#endregion
+import { ESteamUISound } from "@decky/ui/dist/globals/shared/enums";
 
 export interface NotifyProps {
   message: ReactNode;
@@ -52,7 +35,7 @@ export class SteamUtils {
       logo: logo,
       icon: icon || <FaSuperpowers />,
       duration: duration,
-      sound: sound || NavSoundMap?.ToastMisc,
+      sound: sound || ESteamUISound.ToastMisc,
       playSound: playSound || false,
       showToast: showToast || false,
     };
